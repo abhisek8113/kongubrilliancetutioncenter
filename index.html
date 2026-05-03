@@ -168,10 +168,10 @@ img{max-width:100%;height:auto;}
   .ai-chat-area{padding:12px 14px;}
 }
 .ai-video-badge{display:flex;align-items:center;gap:7px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.35);color:#A5B4FC;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:0.5px;}
-.ai-video-screen{background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;width:100%;}
+.ai-video-screen{background:linear-gradient(145deg,#0a0820,#050318,#080030);min-height:320px;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;width:100%;}
 .ai-video-placeholder{text-align:center;position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;width:100%;height:100%;}
 .ai-vid-bg{position:absolute;inset:0;background:linear-gradient(145deg,#0a0820,#050318,#080030);animation:aiVidBg 6s ease infinite alternate;z-index:0;}
-.anim-stage-svg{width:100%;height:100%;}
+.anim-stage-svg{width:100%;height:100%;overflow:visible;display:block;}
 @keyframes aiVidBg{0%{opacity:1}100%{opacity:0.5}}
 .ai-vid-particles{position:absolute;inset:0;overflow:hidden;}
 .ai-chat-area{padding:20px 24px;border-top:1px solid var(--border);}
@@ -8346,7 +8346,7 @@ function renderAnimatedScene(module) {
   container.innerHTML = `
     <div class="ai-vid-bg" style="position:absolute;inset:0;z-index:0;"></div>
     <div style="position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;">
-      <div id="anim-stage" style="flex:1;min-height:260px;display:flex;align-items:center;justify-content:center;padding:20px;">
+     <div id="anim-stage" style="flex:1;min-height:300px;max-height:400px;display:flex;align-items:center;justify-content:center;padding:20px 10px;overflow:visible;width:100%;">
         ${engineHTML || '<div style="color:#fff;font-size:14px;">Loading animation...</div>'}
       </div>
       <div id="anim-caption" style="padding:16px 24px;background:linear-gradient(180deg,rgba(0,0,0,0.3),rgba(0,0,0,0.7));text-align:center;min-height:80px;">
@@ -8448,13 +8448,13 @@ function skipAnimationScene() {
 // ══════════════════════════════════════════════
 const ANIMATION_ENGINES = {
   numberLine: {
-    html: `<svg id="anim-svg" viewBox="0 0 600 200" style="width:100%;height:100%;max-height:300px;">
+ html: `<svg id="anim-svg" viewBox="0 0 600 240" style="width:100%;height:auto;min-height:200px;max-height:380px;display:block;overflow:visible;">
       <defs><linearGradient id="nlGrad" x1="0%" x2="100%"><stop offset="0%" stop-color="#EF4444"/><stop offset="50%" stop-color="#F5C842"/><stop offset="100%" stop-color="#00E5A0"/></linearGradient></defs>
       <line x1="20" y1="100" x2="580" y2="100" stroke="url(#nlGrad)" stroke-width="3"/>
       ${[-5,-4,-3,-2,-1,0,1,2,3,4,5].map((n,i) => {
         const x = 20 + i * 56;
         return `<line x1="${x}" y1="90" x2="${x}" y2="110" stroke="#fff" stroke-width="2"/>
-        <text x="${x}" y="135" fill="${n===0?'#F5C842':n<0?'#FF5757':'#00E5A0'}" font-size="16" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">${n}</text>`;
+        <text x="${x}" y="145" fill="${n===0?'#F5C842':n<0?'#FF5757':'#00E5A0'}" font-size="16" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">${n}</text>`;
       }).join('')}
       <circle id="nl-walker" cx="300" cy="100" r="14" fill="#6366F1" stroke="#fff" stroke-width="3"/>
       <text id="nl-label" x="300" y="75" fill="#fff" font-size="12" text-anchor="middle" font-family="JetBrains Mono">0</text>
