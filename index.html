@@ -4275,20 +4275,10 @@ async function studentLogin() {
 
   if (!phone || !pass) { errEl.textContent='Enter mobile and password'; errEl.style.display='flex'; return; }
 
-  const students = await dbGetAll('students');
-  const candidates = students.filter(s => s.phone === phone);
-  if (!candidates.length) {
-    errEl.textContent = 'Mobile number not found. Please register first.';
-    errEl.style.display = 'flex'; return;
-  }
-
-  let student = null;
-  for (const c of candidates) {
-    // Try new hash
-    if (await verifyPassword(pass, c.pass)) { student = c; break; }
-    // Try old base64 (backward compat)
-    if (c.pass === btoa(pass) || c.pass === pass) { student = c; break; }
-  }
+if (!supabase_client) { errEl.textContent = 'Login service unavailable. Please try again shortly.'; errEl.style.display = 'flex'; return; }
+    const { data: matches, error: rpcErr } = await supabase_client.rpc('check_student_login', { p_phone: phone, p_pass: pass });
+    if (rpcErr) { errEl.textContent = 'Login error. Please try again.'; errEl.style.display = 'flex'; return; }
+    let student = matches && matches[0];
 
   if (!student) {
     studentLoginAttempts = (studentLoginAttempts || 0) + 1;
