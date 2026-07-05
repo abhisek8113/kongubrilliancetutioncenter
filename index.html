@@ -5538,15 +5538,11 @@ async function tutorLogin() {
   const pass = document.getElementById('tl-pass').value.trim();
   const errEl = document.getElementById('tl-err');
   if (!id || !pass) { errEl.textContent = 'Enter ID and password'; errEl.style.display='flex'; return; }
-  const tutors = await dbGetAll('tutors');
-  const candidates = tutors.filter(t => t.email === id || t.phone === id);
-  if (!candidates.length) { errEl.textContent='No tutor found with this ID. Contact admin.'; errEl.style.display='flex'; return; }
-  let tutor = null;
-  for (const c of candidates) {
-    if (await verifyPassword(pass, c.pass)) { tutor = c; break; }
-    if (c.pass === pass) { tutor = c; break; }   // legacy plain text
-  }
-  if (!tutor) { errEl.textContent='Wrong password.'; errEl.style.display='flex'; return; }
+  if (!supabase_client) { errEl.textContent = 'Login service unavailable. Please try again shortly.'; errEl.style.display='flex'; return; }
+    const { data: tmatches, error: tRpcErr } = await supabase_client.rpc('check_tutor_login', { p_id: id, p_pass: pass });
+    if (tRpcErr) { errEl.textContent = 'Login error. Please try again.'; errEl.style.display='flex'; return; }
+    let tutor = tmatches && tmatches[0];
+    if (!tutor) { errEl.textContent='Wrong ID or password.'; errEl.style.display='flex'; return; }
   if (tutor.status === 'disabled') { errEl.textContent='Account disabled. Contact admin.'; errEl.style.display='flex'; return; }
   errEl.style.display = 'none';
   closeModal('loginModal');
