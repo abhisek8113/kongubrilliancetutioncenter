@@ -137,7 +137,7 @@
         <input id="model" placeholder="gpt-4o-mini">
         <label>API key</label>
         <input id="apikey" type="password" placeholder="sk-…  (stored only in this browser)">
-        <div class="hint">On the live site, route this through a Netlify function so the key stays server-side. See the note in the code comments.</div>
+        <div class="hint">For public use, route this through a Vercel serverless function so the key stays server-side — don't ship a real key in this page.</div>
       </div>
 
       <button class="btn" id="gen">Generate question paper</button>
@@ -156,7 +156,7 @@
   </div>
 </div>
 
-<!-- CDN libs: allowed on kongubrilliance.com (Netlify). If your CSP blocks these, self-host the two files. -->
+<!-- CDN libs (pdf.js + mammoth) for PDF/DOCX text extraction. If a CSP blocks these, self-host the two files. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script>
@@ -235,43 +235,61 @@ function genOffline(cfg){
   const sents=(cfg.src||"").replace(/\s+/g," ")
     .split(/(?<=[.!?])\s+/).map(s=>s.trim())
     .filter(s=>s.length>40&&s.length<220&&/[a-zA-Z]/.test(s));
-  const stop=new Set("the a an of to in on and or is are was were be by for with as that this it its from at which such into can will has have had not you your they their our we".split(" "));
-  const keyword=s=>{const w=s.replace(/[^a-zA-Z\- ]/g," ").split(" ")
-      .filter(x=>x.length>4&&!stop.has(x.toLowerCase()));
-    return w.sort((a,b)=>b.length-a.length)[0]||"";};
-  let pool=[...sents];const take=()=>pool.length?pool.splice(Math.floor(Math.random()*pool.length),1)[0]:null;
+  const stop=new Set("the a an of to in on and or is are was were be by for with as that this it its from at which such into can will has have had not you your they their our we has have does definite".split(" "));
+  // all meaningful keywords in a sentence, longest first
+  const keywords=s=>[...new Set(s.replace(/[^a-zA-Z\- ]/g," ").split(" ")
+      .filter(x=>x.length>4&&!stop.has(x.toLowerCase())))].sort((a,b)=>b.length-a.length);
+  const keyword=s=>keywords(s)[0]||"";
+  // global keyword bank for distractors
+  const BANK=[...new Set(sents.flatMap(keywords))];
+
+  // pool that reshuffles & reuses instead of running dry
+  let pool=shuffle(sents), pi=0;
+  const take=()=>{ if(!sents.length) return null; if(pi>=pool.length){pool=shuffle(sents);pi=0;} return pool[pi++]; };
+
+  // pick k distractors close in length to the answer, never equal to it
+  const distractors=(ans,k)=>{
+    const cand=BANK.filter(x=>x.toLowerCase()!==ans.toLowerCase())
+      .sort((a,b)=>Math.abs(a.length-ans.length)-Math.abs(b.length-ans.length));
+    let out=shuffle(cand.slice(0,Math.max(k+3,6))).slice(0,k);
+    while(out.length<k) out.push(["process","factor","property","reaction","element"][out.length]);
+    return out;
+  };
+
   const secs=[];
   for(const {t,n} of cfg.types){
-    const items=[];
+    const items=[]; const usedTF=new Set();
     for(let i=0;i<n;i++){
       const s=take();
+      if(!s){ items.push({q:"["+cfg.subject+" — add a "+t+" question]",ans:""}); continue; }
       if(t==="mcq"){
-        if(!s){items.push(ph("mcq"));continue;}
-        const k=keyword(s);const q=k?s.replace(new RegExp(k,"i"),"_____"):s;
-        const others=sents.map(keyword).filter(x=>x&&x.toLowerCase()!==k.toLowerCase());
-        const opts=shuffle([k,...pick(others,3,k)]).map((o,j)=>String.fromCharCode(97+j)+") "+o);
+        const k=keyword(s); const q=k?s.replace(new RegExp("\\b"+k+"\\b","i"),"_____"):s;
+        const opts=shuffle([k,...distractors(k,3)]).map((o,j)=>String.fromCharCode(97+j)+") "+o);
         items.push({q:"Fill the blank: "+q,opts,ans:k});
       }else if(t==="fill"){
-        if(!s){items.push(ph("fill"));continue;}
-        const k=keyword(s);items.push({q:(k?s.replace(new RegExp(k,"i"),"__________"):s),ans:k});
+        const k=keyword(s); items.push({q:(k?s.replace(new RegExp("\\b"+k+"\\b","i"),"__________"):s),ans:k});
       }else if(t==="tf"){
-        if(!s){items.push(ph("tf"));continue;}
-        items.push({q:s,ans:"True"});
+        // ~40% of the time, corrupt the sentence into a FALSE statement
+        const k=keyword(s), makeFalse=k && Math.random()<0.45;
+        if(makeFalse){
+          const wrong=distractors(k,1)[0];
+          items.push({q:s.replace(new RegExp("\\b"+k+"\\b","i"),wrong),ans:"False"});
+        }else{
+          items.push({q:s,ans:"True"});
+        }
       }else if(t==="short"){
-        const k=s?keyword(s):"";
-        items.push({q:k?("Explain / define: "+k+".") : ("Answer briefly the "+(i+1)+ordinal(i+1)+" concept from "+cfg.subject+"."),ans:s||""});
+        const k=keyword(s);
+        items.push({q:k?("Explain / define: "+k+".") : ("Answer briefly the "+(i+1)+ordinal(i+1)+" concept from "+cfg.subject+"."),ans:s});
       }else if(t==="long"){
-        const k=s?keyword(s):"";
-        items.push({q:k?("Describe in detail: "+k+", with examples.") : ("Write a detailed note on a key topic of "+cfg.subject+" ("+cfg.cls+").")});
+        const k=keyword(s);
+        items.push({q:k?("Describe in detail: "+k+", with examples.") : ("Write a detailed note on a key topic of "+cfg.subject+" ("+cfg.cls+")."),ans:s});
       }
     }
     secs.push({t,items});
   }
-  return {...cfg,secs,warn:sents.length<5?"Little source text supplied — questions are generic. Upload a chapter for content-based questions.":""};
+  return {...cfg,secs,warn:sents.length<4?"Little source text supplied — questions are generic. Upload a chapter or paste notes for content-based questions.":""};
 }
-function ph(t){return{q:"[Add a question — not enough source text]",ans:""};}
 function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th";}
-function pick(arr,k,not){const u=[...new Set(arr)].filter(x=>x&&x.toLowerCase()!==(not||"").toLowerCase());return shuffle(u).slice(0,k).length?shuffle(u).slice(0,k):["option A","option B","option C"];}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 /* ---------- ONLINE generator (real LLM) ---------- */
