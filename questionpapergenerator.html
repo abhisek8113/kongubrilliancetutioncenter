@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Question Paper Generator — Kongu Brilliance</title>
+<style>
+  :root{
+    --brand:#6d28d9; --brand2:#9333ea; --ink:#1e1b2e; --muted:#6b7280;
+    --bg:#f6f5fb; --card:#ffffff; --line:#e7e4f0; --ok:#16a34a; --accent:#f59e0b;
+    --radius:14px; --shadow:0 6px 22px rgba(80,40,140,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px}
+  header.top{display:flex;align-items:center;gap:14px;padding:18px 22px;
+       background:linear-gradient(120deg,var(--brand),var(--brand2));
+       color:#fff;border-radius:var(--radius);box-shadow:var(--shadow)}
+  header.top .logo{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);
+       display:grid;place-items:center;font-weight:800;font-size:20px}
+  header.top h1{margin:0;font-size:20px}
+  header.top p{margin:2px 0 0;font-size:13px;opacity:.9}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:20px;margin-top:20px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+       padding:18px;box-shadow:var(--shadow)}
+  .card h2{margin:0 0 12px;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--brand)}
+  label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);
+       border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+  textarea{resize:vertical;min-height:70px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .chip{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;
+       cursor:pointer;user-select:none;background:#faf9ff}
+  .chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .drop{margin-top:6px;border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;
+       color:var(--muted);font-size:13px;cursor:pointer;background:#faf9ff;transition:.15s}
+  .drop.hover{border-color:var(--brand);background:#f3eeff;color:var(--brand)}
+  .files{margin-top:8px;font-size:12px;color:var(--muted)}
+  .files span{display:inline-block;background:#eef;border-radius:6px;padding:2px 8px;margin:3px 3px 0 0;color:var(--brand)}
+  .modewrap{display:flex;gap:8px;margin-top:6px}
+  .modewrap .chip{flex:1;text-align:center}
+  .btn{margin-top:16px;width:100%;padding:12px;border:0;border-radius:11px;font-size:15px;font-weight:700;
+       background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;cursor:pointer;box-shadow:var(--shadow)}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line);box-shadow:none;margin-top:8px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .status{font-size:13px;margin-top:10px;min-height:18px}
+  .status.err{color:#dc2626}.status.ok{color:var(--ok)}
+  .paper{background:#fff;color:#111;padding:34px 40px;border-radius:8px;min-height:300px;
+       font-family:'Georgia',serif;box-shadow:inset 0 0 0 1px var(--line)}
+  .paper .ph{text-align:center;color:#9ca3af;font-family:'Segoe UI',sans-serif;padding:80px 0}
+  .paper h3{text-align:center;margin:0}.paper .sub{text-align:center;color:#444;font-size:14px}
+  .paper hr{border:0;border-top:1px solid #ccc;margin:14px 0}
+  .paper .meta{display:flex;justify-content:space-between;font-size:13px;color:#333}
+  .paper .sec{font-weight:bold;margin:18px 0 6px;text-decoration:underline}
+  .paper ol{padding-left:22px}.paper li{margin:8px 0}
+  .paper .opts{list-style:none;padding-left:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:4px}
+  .paper .opts li{margin:2px 0;font-size:14px}
+  details{margin-top:10px;font-size:12px}
+  details summary{cursor:pointer;color:var(--brand);font-weight:600}
+  code{background:#f3eeff;padding:1px 5px;border-radius:5px;font-size:12px}
+  @media print{body{background:#fff}.wrap>*:not(.printzone){display:none}
+       .grid{display:block}.card.left,header.top,.toolbar{display:none!important}
+       .paper{box-shadow:none;padding:0}}
+  .toolbar{display:flex;gap:8px;margin-bottom:10px}
+  .toolbar button{flex:1;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;
+       cursor:pointer;font-weight:600;color:var(--brand);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">KB</div>
+    <div>
+      <h1>Question Paper Generator</h1>
+      <p>Kongu Brilliance · Centum Studio — enter subject &amp; class, upload material, generate a paper</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- CONTROLS -->
+    <div class="card left">
+      <h2>Paper setup</h2>
+
+      <label>Subject</label>
+      <input id="subject" placeholder="e.g. Science" list="subjlist">
+      <datalist id="subjlist">
+        <option>Science</option><option>Social Science</option><option>Mathematics</option>
+        <option>Physics</option><option>Chemistry</option><option>Biology</option>
+        <option>English</option><option>Computer Science</option>
+      </datalist>
+
+      <label>Class</label>
+      <input id="cls" placeholder="e.g. Class 9" list="clslist">
+      <datalist id="clslist">
+        <option>Class 6</option><option>Class 7</option><option>Class 8</option>
+        <option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option>
+      </datalist>
+
+      <div class="row">
+        <div><label>Total marks</label><input id="marks" type="number" value="40" min="5"></div>
+        <div><label>Duration</label><input id="dur" value="1½ hrs"></div>
+      </div>
+
+      <label>Difficulty</label>
+      <select id="diff"><option>Easy</option><option selected>Moderate</option><option>Hard</option></select>
+
+      <label>Question types &amp; count</label>
+      <div class="chips" id="types">
+        <span class="chip on" data-t="mcq" data-n="5">MCQ ×5</span>
+        <span class="chip on" data-t="fill" data-n="5">Fill blanks ×5</span>
+        <span class="chip on" data-t="tf" data-n="5">True/False ×5</span>
+        <span class="chip on" data-t="short" data-n="4">Short ×4</span>
+        <span class="chip" data-t="long" data-n="2">Long ×2</span>
+      </div>
+      <div class="hint">Click a type to toggle. Double-click to change its count.</div>
+
+      <h2 style="margin-top:20px">Source material</h2>
+      <div class="drop" id="drop">📄 Drop or click to upload<br><b>PDF, DOCX, or TXT</b><br>the tool learns from this content</div>
+      <input id="file" type="file" accept=".pdf,.docx,.txt" multiple hidden>
+      <div class="files" id="filelist"></div>
+      <label>…or paste text</label>
+      <textarea id="pasted" placeholder="Paste chapter notes here (optional)"></textarea>
+
+      <h2 style="margin-top:20px">Engine</h2>
+      <div class="modewrap">
+        <span class="chip on" data-mode="offline">⚡ Offline</span>
+        <span class="chip" data-mode="online">🤖 AI (online)</span>
+      </div>
+      <div id="onlinecfg" style="display:none">
+        <label>API endpoint</label>
+        <input id="apiurl" placeholder="https://api.openai.com/v1/chat/completions">
+        <label>Model</label>
+        <input id="model" placeholder="gpt-4o-mini">
+        <label>API key</label>
+        <input id="apikey" type="password" placeholder="sk-…  (stored only in this browser)">
+        <div class="hint">On the live site, route this through a Netlify function so the key stays server-side. See the note in the code comments.</div>
+      </div>
+
+      <button class="btn" id="gen">Generate question paper</button>
+      <button class="btn ghost" id="ans">Toggle answer key</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <!-- OUTPUT -->
+    <div class="card printzone">
+      <div class="toolbar">
+        <button onclick="window.print()">🖨 Print / Save PDF</button>
+        <button id="copybtn">📋 Copy text</button>
+      </div>
+      <div class="paper" id="paper"><div class="ph">Your generated question paper will appear here.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CDN libs: allowed on kongubrilliance.com (Netlify). If your CSP blocks these, self-host the two files. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let SOURCE="";           // extracted text learned from uploads/paste
+let showAnswers=false, lastPaper=null;
+const $=id=>document.getElementById(id);
+const status=(m,c="")=>{const s=$("status");s.textContent=m;s.className="status "+c;};
+
+/* ---------- question-type chips ---------- */
+$("types").addEventListener("click",e=>{if(e.target.classList.contains("chip"))e.target.classList.toggle("on");});
+$("types").addEventListener("dblclick",e=>{
+  if(!e.target.classList.contains("chip"))return;
+  const n=prompt("How many "+e.target.dataset.t+" questions?",e.target.dataset.n);
+  if(n&&+n>=0){e.target.dataset.n=+n;e.target.textContent=e.target.textContent.replace(/×\d+/,"×"+n);e.target.classList.add("on");}
+});
+function selectedTypes(){return[...document.querySelectorAll('#types .chip.on')].map(c=>({t:c.dataset.t,n:+c.dataset.n}));}
+
+/* ---------- engine mode ---------- */
+document.querySelector(".modewrap").addEventListener("click",e=>{
+  if(!e.target.dataset.mode)return;
+  document.querySelectorAll(".modewrap .chip").forEach(c=>c.classList.remove("on"));
+  e.target.classList.add("on");
+  $("onlinecfg").style.display=e.target.dataset.mode==="online"?"block":"none";
+});
+const mode=()=>document.querySelector(".modewrap .chip.on").dataset.mode;
+
+/* ---------- file upload + extraction ---------- */
+const drop=$("drop"),fileEl=$("file");
+drop.onclick=()=>fileEl.click();
+["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("hover");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("hover");}));
+drop.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
+fileEl.onchange=()=>handleFiles(fileEl.files);
+
+async function handleFiles(files){
+  for(const f of files){
+    status("Reading "+f.name+" …");
+    try{
+      let txt="";
+      if(f.name.endsWith(".txt")) txt=await f.text();
+      else if(f.name.endsWith(".pdf")) txt=await readPDF(f);
+      else if(f.name.endsWith(".docx")) txt=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+      SOURCE+="\n"+txt;
+      const s=document.createElement("span");s.textContent=f.name+" ✓";$("filelist").appendChild(s);
+      status("Learned "+f.name+" ("+txt.length.toLocaleString()+" chars)","ok");
+    }catch(err){status("Could not read "+f.name+": "+err.message,"err");}
+  }
+}
+async function readPDF(f){
+  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let out="";
+  for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();
+    out+=c.items.map(it=>it.str).join(" ")+"\n";}
+  return out;
+}
+
+/* ---------- generate ---------- */
+$("gen").onclick=async()=>{
+  const subject=$("subject").value.trim(), cls=$("cls").value.trim();
+  if(!subject||!cls){status("Please enter both subject and class.","err");return;}
+  const src=(SOURCE+"\n"+$("pasted").value).trim();
+  const cfg={subject,cls,marks:$("marks").value,dur:$("dur").value,diff:$("diff").value,types:selectedTypes(),src};
+  if(!cfg.types.length){status("Select at least one question type.","err");return;}
+  $("gen").disabled=true;
+  try{
+    if(mode()==="online") lastPaper=await genOnline(cfg);
+    else lastPaper=genOffline(cfg);
+    render(lastPaper);status("Paper generated. Review before printing.","ok");
+  }catch(err){status("Error: "+err.message,"err");}
+  $("gen").disabled=false;
+};
+
+/* ---------- OFFLINE generator (learns from source text) ---------- */
+function genOffline(cfg){
+  const sents=(cfg.src||"").replace(/\s+/g," ")
+    .split(/(?<=[.!?])\s+/).map(s=>s.trim())
+    .filter(s=>s.length>40&&s.length<220&&/[a-zA-Z]/.test(s));
+  const stop=new Set("the a an of to in on and or is are was were be by for with as that this it its from at which such into can will has have had not you your they their our we".split(" "));
+  const keyword=s=>{const w=s.replace(/[^a-zA-Z\- ]/g," ").split(" ")
+      .filter(x=>x.length>4&&!stop.has(x.toLowerCase()));
+    return w.sort((a,b)=>b.length-a.length)[0]||"";};
+  let pool=[...sents];const take=()=>pool.length?pool.splice(Math.floor(Math.random()*pool.length),1)[0]:null;
+  const secs=[];
+  for(const {t,n} of cfg.types){
+    const items=[];
+    for(let i=0;i<n;i++){
+      const s=take();
+      if(t==="mcq"){
+        if(!s){items.push(ph("mcq"));continue;}
+        const k=keyword(s);const q=k?s.replace(new RegExp(k,"i"),"_____"):s;
+        const others=sents.map(keyword).filter(x=>x&&x.toLowerCase()!==k.toLowerCase());
+        const opts=shuffle([k,...pick(others,3,k)]).map((o,j)=>String.fromCharCode(97+j)+") "+o);
+        items.push({q:"Fill the blank: "+q,opts,ans:k});
+      }else if(t==="fill"){
+        if(!s){items.push(ph("fill"));continue;}
+        const k=keyword(s);items.push({q:(k?s.replace(new RegExp(k,"i"),"__________"):s),ans:k});
+      }else if(t==="tf"){
+        if(!s){items.push(ph("tf"));continue;}
+        items.push({q:s,ans:"True"});
+      }else if(t==="short"){
+        const k=s?keyword(s):"";
+        items.push({q:k?("Explain / define: "+k+".") : ("Answer briefly the "+(i+1)+ordinal(i+1)+" concept from "+cfg.subject+"."),ans:s||""});
+      }else if(t==="long"){
+        const k=s?keyword(s):"";
+        items.push({q:k?("Describe in detail: "+k+", with examples.") : ("Write a detailed note on a key topic of "+cfg.subject+" ("+cfg.cls+").")});
+      }
+    }
+    secs.push({t,items});
+  }
+  return {...cfg,secs,warn:sents.length<5?"Little source text supplied — questions are generic. Upload a chapter for content-based questions.":""};
+}
+function ph(t){return{q:"[Add a question — not enough source text]",ans:""};}
+function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th";}
+function pick(arr,k,not){const u=[...new Set(arr)].filter(x=>x&&x.toLowerCase()!==(not||"").toLowerCase());return shuffle(u).slice(0,k).length?shuffle(u).slice(0,k):["option A","option B","option C"];}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ---------- ONLINE generator (real LLM) ---------- */
+async function genOnline(cfg){
+  const url=$("apiurl").value.trim()||"https://api.openai.com/v1/chat/completions";
+  const key=$("apikey").value.trim(), model=$("model").value.trim()||"gpt-4o-mini";
+  if(!key){throw new Error("Enter an API key, or switch to Offline.");}
+  const typeList=cfg.types.map(x=>x.n+" "+x.t).join(", ");
+  const sys="You are an exam-paper setter for an Indian tuition centre. Return STRICT JSON only.";
+  const usr=`Create a question paper.
+Subject: ${cfg.subject}
+Class: ${cfg.cls}
+Difficulty: ${cfg.diff}
+Sections (type:count): ${typeList}
+${cfg.src?"Base ALL questions strictly on this source material:\n\"\"\"\n"+cfg.src.slice(0,6000)+"\n\"\"\"":"Use standard curriculum for the subject/class."}
+Return JSON: {"secs":[{"t":"mcq|fill|tf|short|long","items":[{"q":"...","opts":["a) ..","b) .."],"ans":".."}]}]}. opts only for mcq. ans = correct answer.`;
+  status("Asking the model …");
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+    body:JSON.stringify({model,temperature:0.5,messages:[{role:"system",content:sys},{role:"user",content:usr}]})});
+  if(!r.ok)throw new Error("API "+r.status+" — "+(await r.text()).slice(0,120));
+  const data=await r.json();let txt=data.choices[0].message.content;
+  txt=txt.replace(/```json|```/g,"").trim();
+  return {...cfg,...JSON.parse(txt)};
+}
+
+/* ---------- render ---------- */
+const LABEL={mcq:"Multiple Choice Questions",fill:"Fill in the Blanks",tf:"True or False",short:"Short Answer Questions",long:"Long Answer Questions"};
+function render(p){
+  let n=0,h=`<h3>KONGU BRILLIANCE</h3><div class="sub">Centum Studio · ${esc(p.cls)} · ${esc(p.subject)}</div><hr>
+    <div class="meta"><span>Time: ${esc(p.dur)}</span><span>Max Marks: ${esc(p.marks)}</span></div>
+    <div class="meta"><span>Name: ____________________</span><span>Difficulty: ${esc(p.diff)}</span></div><hr>`;
+  if(p.warn)h+=`<div style="color:#b45309;font-family:sans-serif;font-size:12px">⚠ ${esc(p.warn)}</div>`;
+  (p.secs||[]).forEach((sec,si)=>{
+    h+=`<div class="sec">${String.fromCharCode(65+si)}. ${LABEL[sec.t]||sec.t}</div><ol>`;
+    (sec.items||[]).forEach(it=>{n++;
+      h+=`<li>${esc(it.q)}`;
+      if(it.opts&&it.opts.length)h+=`<ul class="opts">${it.opts.map(o=>`<li>${esc(o)}</li>`).join("")}</ul>`;
+      if(showAnswers&&it.ans)h+=`<div style="color:#16a34a;font-size:13px">✓ ${esc(it.ans)}</div>`;
+      h+=`</li>`;});
+    h+=`</ol>`;});
+  if(showAnswers)h+=`<hr><div style="text-align:center;font-size:12px;color:#888">— Answer key shown —</div>`;
+  $("paper").innerHTML=h;
+}
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+$("ans").onclick=()=>{showAnswers=!showAnswers;if(lastPaper)render(lastPaper);};
+$("copybtn").onclick=()=>{navigator.clipboard.writeText($("paper").innerText).then(()=>status("Copied to clipboard.","ok"));};
+</script>
+</body>
+</html>
