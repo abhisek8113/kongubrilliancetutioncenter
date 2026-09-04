@@ -3,339 +3,502 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Question Paper Generator — Kongu Brilliance</title>
+<title>Paper Generator &amp; Evaluator — Kongu Brilliance Centum Studio</title>
+<meta name="description" content="Free AI-assisted question paper generator and answer evaluator from Kongu Brilliance Tuition Centre, Coimbatore. Enter subject &amp; class, upload chapter material, auto-generate papers, then grade typed answers or uploaded answer sheets teacher-style for CBSE, ICSE &amp; State Board.">
+<meta name="keywords" content="question paper generator, answer evaluator, answer sheet checker, CBSE practice papers, State Board question paper, MCQ generator, Kongu Brilliance, Coimbatore tuition, centum scoring">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://kongubrilliance.com/questionpapergenerator.html">
+<meta property="og:title" content="Paper Generator &amp; Evaluator — Kongu Brilliance">
+<meta property="og:description" content="Generate question papers from your own material and grade answers teacher-style. CBSE, ICSE &amp; State Board.">
+<meta property="og:url" content="https://kongubrilliance.com/questionpapergenerator.html">
+<meta property="og:type" content="website">
 <style>
-  :root{
-    --brand:#6d28d9; --brand2:#9333ea; --ink:#1e1b2e; --muted:#6b7280;
-    --bg:#f6f5fb; --card:#ffffff; --line:#e7e4f0; --ok:#16a34a; --accent:#f59e0b;
-    --radius:14px; --shadow:0 6px 22px rgba(80,40,140,.10);
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-       font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;line-height:1.5}
-  .wrap{max-width:1080px;margin:0 auto;padding:20px}
-  header.top{display:flex;align-items:center;gap:14px;padding:18px 22px;
-       background:linear-gradient(120deg,var(--brand),var(--brand2));
-       color:#fff;border-radius:var(--radius);box-shadow:var(--shadow)}
-  header.top .logo{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);
-       display:grid;place-items:center;font-weight:800;font-size:20px}
-  header.top h1{margin:0;font-size:20px}
-  header.top p{margin:2px 0 0;font-size:13px;opacity:.9}
-  .grid{display:grid;grid-template-columns:360px 1fr;gap:20px;margin-top:20px}
-  @media(max-width:860px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-       padding:18px;box-shadow:var(--shadow)}
-  .card h2{margin:0 0 12px;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--brand)}
-  label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
-  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);
-       border-radius:10px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
-  textarea{resize:vertical;min-height:70px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-  .chip{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;
-       cursor:pointer;user-select:none;background:#faf9ff}
-  .chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-  .drop{margin-top:6px;border:2px dashed var(--line);border-radius:12px;padding:18px;text-align:center;
-       color:var(--muted);font-size:13px;cursor:pointer;background:#faf9ff;transition:.15s}
-  .drop.hover{border-color:var(--brand);background:#f3eeff;color:var(--brand)}
-  .files{margin-top:8px;font-size:12px;color:var(--muted)}
-  .files span{display:inline-block;background:#eef;border-radius:6px;padding:2px 8px;margin:3px 3px 0 0;color:var(--brand)}
-  .modewrap{display:flex;gap:8px;margin-top:6px}
-  .modewrap .chip{flex:1;text-align:center}
-  .btn{margin-top:16px;width:100%;padding:12px;border:0;border-radius:11px;font-size:15px;font-weight:700;
-       background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;cursor:pointer;box-shadow:var(--shadow)}
-  .btn:disabled{opacity:.55;cursor:not-allowed}
-  .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line);box-shadow:none;margin-top:8px}
-  .hint{font-size:12px;color:var(--muted);margin-top:6px}
-  .status{font-size:13px;margin-top:10px;min-height:18px}
-  .status.err{color:#dc2626}.status.ok{color:var(--ok)}
-  .paper{background:#fff;color:#111;padding:34px 40px;border-radius:8px;min-height:300px;
-       font-family:'Georgia',serif;box-shadow:inset 0 0 0 1px var(--line)}
-  .paper .ph{text-align:center;color:#9ca3af;font-family:'Segoe UI',sans-serif;padding:80px 0}
-  .paper h3{text-align:center;margin:0}.paper .sub{text-align:center;color:#444;font-size:14px}
-  .paper hr{border:0;border-top:1px solid #ccc;margin:14px 0}
-  .paper .meta{display:flex;justify-content:space-between;font-size:13px;color:#333}
-  .paper .sec{font-weight:bold;margin:18px 0 6px;text-decoration:underline}
-  .paper ol{padding-left:22px}.paper li{margin:8px 0}
-  .paper .opts{list-style:none;padding-left:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:4px}
-  .paper .opts li{margin:2px 0;font-size:14px}
-  details{margin-top:10px;font-size:12px}
-  details summary{cursor:pointer;color:var(--brand);font-weight:600}
-  code{background:#f3eeff;padding:1px 5px;border-radius:5px;font-size:12px}
-  @media print{body{background:#fff}.wrap>*:not(.printzone){display:none}
-       .grid{display:block}.card.left,header.top,.toolbar{display:none!important}
-       .paper{box-shadow:none;padding:0}}
-  .toolbar{display:flex;gap:8px;margin-bottom:10px}
-  .toolbar button{flex:1;padding:9px;border:1px solid var(--line);background:#fff;border-radius:9px;
-       cursor:pointer;font-weight:600;color:var(--brand);font-size:13px}
+:root{--navy:#1a237e;--indigo:#3f51b5;--indigo2:#5c6bc0;--gold:#ffd700;--line:#c5cae9;
+  --bg:#f4f5fa;--soft:#e8eaf6;--fill:#f5f6fc;--good:#1f8a5b;--warn:#b8791a;--bad:#c2413c;--ink:#222}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;color:var(--ink);line-height:1.7;background:var(--bg)}
+header{background:var(--navy);color:#fff;padding:20px 40px;text-align:center}
+header h1{margin:0;font-size:2em}
+header p{margin:5px 0 0;font-size:1.1em;color:#c5cae9}
+nav{background:var(--navy);padding:10px 20px;text-align:center;flex-wrap:wrap;display:flex;justify-content:center;gap:12px}
+nav a{color:#fff;text-decoration:none;font-weight:bold;font-size:.9em}
+.hero{background:var(--soft);padding:30px 40px;text-align:center}
+.hero h2{color:var(--navy);font-size:1.7em;margin:0 0 8px}
+.hero p{margin:6px 0;max-width:780px;margin-left:auto;margin-right:auto}
+.centum-badge{display:inline-block;background:var(--gold);color:var(--navy);font-weight:bold;padding:6px 16px;border-radius:20px;margin-top:8px;font-size:.95em}
+
+/* main tabs */
+.mtabs{max-width:1180px;margin:22px auto 0;padding:0 20px;display:flex;gap:10px}
+.mtab{flex:1;padding:15px;border:none;border-radius:12px 12px 0 0;background:#dfe2f3;color:var(--navy);
+  font-weight:bold;font-size:1.05em;cursor:pointer;border-bottom:4px solid transparent}
+.mtab[aria-selected="true"]{background:#fff;border-bottom-color:var(--gold);box-shadow:0 -2px 10px rgba(26,35,126,.06)}
+
+.app{max-width:1180px;margin:0 auto 26px;padding:0 20px;display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:start}
+@media(max-width:880px){.app{grid-template-columns:1fr}}
+.card{background:#fff;border-radius:0 0 12px 12px;border-top:4px solid var(--indigo);box-shadow:0 2px 12px rgba(26,35,126,.09)}
+.rail{padding:20px;border-radius:12px;position:sticky;top:14px;border-top:4px solid var(--indigo)}
+@media(max-width:880px){.rail{position:static}}
+.rail h3{color:var(--navy);margin:0 0 3px;font-size:1.15em}
+.rail .sub{font-size:.82em;color:#666;margin:0 0 16px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.7em;font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:var(--indigo2);margin-bottom:5px}
+input[type=text],input[type=number],select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--fill);color:var(--ink);font-size:14px;font-family:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--indigo);outline-offset:1px}
+.two{display:flex;gap:8px}.two>div{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:var(--fill);font-size:.8em;font-weight:bold;cursor:pointer;color:var(--indigo);user-select:none}
+.chip[aria-pressed="true"],.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.diff-row,.mode-row{display:flex;gap:6px}
+.diff-row .chip,.mode-row .chip{flex:1;text-align:center}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:16px;text-align:center;color:#777;font-size:.82em;cursor:pointer;background:var(--fill);transition:.15s}
+.drop.hover{border-color:var(--indigo);background:var(--soft);color:var(--navy)}
+.files{margin-top:6px;font-size:.72em}
+.files span{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:2px 7px;margin:3px 3px 0 0;color:var(--indigo)}
+.gen-btn{width:100%;margin-top:10px;padding:13px;border:none;border-radius:9px;background:var(--gold);color:var(--navy);font-weight:bold;font-size:15px;cursor:pointer}
+.gen-btn:hover{background:#ffdb3a}.gen-btn:disabled{opacity:.6;cursor:not-allowed}
+.ghost-btn{width:100%;margin-top:8px;padding:11px;border:1px solid var(--indigo);border-radius:9px;background:#fff;color:var(--indigo);font-weight:bold;cursor:pointer}
+.status{font-size:.8em;margin-top:10px;min-height:16px;color:#555}
+.status.err{color:var(--bad)}.status.ok{color:var(--good)}
+.refnote{margin-top:14px;font-size:.72em;color:#777;line-height:1.5;border-top:1px dashed #ddd;padding-top:12px}
+#onlinecfg{display:none;margin-top:6px;border-top:1px dashed var(--line);padding-top:8px}
+
+.out-head{padding:16px 22px;border-bottom:1px solid #e6e8f3;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.out-head h3{margin:0;color:var(--navy);font-size:1.2em}
+.out-head .tools{display:flex;gap:8px}
+.print-btn{border:1px solid var(--navy);background:#fff;color:var(--navy);font-weight:bold;font-size:.8em;padding:7px 12px;border-radius:7px;cursor:pointer}
+.print-btn:hover{background:var(--navy);color:#fff}
+.pill{display:inline-block;padding:4px 11px;border-radius:20px;font-size:.72em;font-weight:bold;background:var(--soft);color:var(--indigo);border:1px solid var(--line)}
+.body{padding:22px 24px;min-height:340px}
+.empty{text-align:center;color:#888;padding:60px 20px}
+.empty .big{font-weight:bold;font-size:1.2em;color:var(--navy);display:block;margin-bottom:6px}
+
+/* printed paper */
+.paper{font-family:Georgia,serif}
+.paper .phead{text-align:center;border-bottom:2px solid var(--navy);padding-bottom:10px;margin-bottom:12px}
+.paper .phead h3{margin:0;color:var(--navy);font-size:1.3em;font-family:Arial}
+.paper .phead .s{color:#444;font-size:.9em}
+.paper .meta{display:flex;justify-content:space-between;font-size:.85em;color:#333;flex-wrap:wrap;gap:6px}
+.paper .warn{color:var(--warn);font-family:Arial;font-size:.8em;margin:8px 0}
+.paper .sec{font-weight:bold;margin:18px 0 6px;color:var(--navy);border-bottom:1px solid #e0e0e0;padding-bottom:3px;font-family:Arial}
+.paper ol{padding-left:22px}.paper li{margin:9px 0}
+.paper .opts{list-style:none;padding-left:4px;display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-top:4px}
+.paper .opts li{font-size:.95em;margin:2px 0}
+.paper .ans{color:var(--good);font-size:.82em;font-family:Arial}
+
+/* evaluator */
+.ev-in{margin-bottom:10px}
+.qcard{border:1px solid #e6e8f3;border-radius:9px;padding:13px 15px;margin-bottom:11px;background:#fbfbfe}
+.qcard .qh{font-weight:bold;color:var(--navy);font-size:.92em;margin-bottom:7px}
+.qcard textarea{min-height:60px}
+.report{margin-top:6px}
+.scoreband{display:flex;align-items:center;gap:18px;padding:18px 20px;background:var(--fill);border:1px solid #e6e8f3;border-radius:11px;flex-wrap:wrap;margin-bottom:16px}
+.score-dial{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;flex:none;font-weight:bold;font-size:20px;color:#fff}
+.score-txt .g{font-weight:bold;font-size:1.15em}.score-txt p{margin:2px 0 0;font-size:.85em;color:#666}
+.qreport{border:1px solid #e6e8f3;border-radius:10px;margin-bottom:12px;overflow:hidden}
+.qreport .top{display:flex;justify-content:space-between;gap:10px;padding:11px 15px;background:var(--fill);border-bottom:1px solid #e6e8f3;align-items:baseline}
+.qreport .top b{color:var(--navy);font-size:.9em}
+.qreport .mk{font-weight:bold;white-space:nowrap}
+.qreport .inner{padding:12px 15px;font-size:.88em}
+.remark{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed #eee}.remark:last-child{border-bottom:none}
+.rk{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:bold;color:#fff}
+.rk-good{background:var(--good)}.rk-warn{background:var(--warn)}.rk-bad{background:var(--bad)}
+.model{margin-top:9px;padding:10px 12px;background:#e2f4ea;border:1px solid var(--good);border-radius:8px;font-size:.85em}
+.model b{color:var(--good)}
+footer{background:var(--navy);color:#c5cae9;text-align:center;padding:20px;margin-top:36px;font-size:.9em}
+.print-only{display:none}
+@media print{header,nav,.hero,footer,.mtabs,.rail,.out-head .tools,.refnote{display:none!important}
+  body{background:#fff}.app{display:block;margin:0;padding:0}.card{box-shadow:none;border:none}
+  .print-only{display:block;text-align:center;margin-bottom:14px}.paper li{break-inside:avoid}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="logo">KB</div>
-    <div>
-      <h1>Question Paper Generator</h1>
-      <p>Kongu Brilliance · Centum Studio — enter subject &amp; class, upload material, generate a paper</p>
-    </div>
-  </header>
+<header>
+<h1>Kongu Brilliance Tuition Centre</h1>
+<p>Coimbatore's Most Trusted Tuition Centre | Centum is Our Standard</p>
+</header>
+<nav>
+<a href="/">Home</a>
+<a href="/centum-studio.html">Centum Studio</a>
+<a href="/questionpapergenerator.html" style="color:#ffd700">Paper Generator</a>
+<a href="/about.html">About</a>
+<a href="/courses.html">Courses</a>
+<a href="/ai-data-science-courses.html">AI &amp; Data Science</a>
+<a href="/admissions.html">Admissions</a>
+<a href="/locations.html">Locations</a>
+<a href="/results.html">Results</a>
+<a href="/testimonials.html">Testimonials</a>
+<a href="/faq.html">FAQ</a>
+<a href="/blog.html">Blog</a>
+<a href="/contact.html">Contact</a>
+</nav>
 
-  <div class="grid">
-    <!-- CONTROLS -->
-    <div class="card left">
-      <h2>Paper setup</h2>
+<div class="hero">
+<h2>Paper Generator &amp; Answer Evaluator</h2>
+<p>Enter subject &amp; class, upload a chapter (PDF / DOCX / TXT), and auto-generate a full question paper from your own material. Then switch to <strong>Evaluate</strong> to grade typed answers or an uploaded answer sheet — teacher-style, with mistakes flagged and a centum-style score.</p>
+<span class="centum-badge">★ Built for 100/100</span>
+</div>
 
-      <label>Subject</label>
-      <input id="subject" placeholder="e.g. Science" list="subjlist">
-      <datalist id="subjlist">
-        <option>Science</option><option>Social Science</option><option>Mathematics</option>
-        <option>Physics</option><option>Chemistry</option><option>Biology</option>
-        <option>English</option><option>Computer Science</option>
-      </datalist>
+<div class="mtabs" role="tablist">
+<button class="mtab" id="mtab-gen" role="tab" aria-selected="true" onclick="switchMain('gen')">📝 Generate Paper</button>
+<button class="mtab" id="mtab-eval" role="tab" aria-selected="false" onclick="switchMain('eval')">✓ Evaluate Answers</button>
+</div>
 
-      <label>Class</label>
-      <input id="cls" placeholder="e.g. Class 9" list="clslist">
-      <datalist id="clslist">
-        <option>Class 6</option><option>Class 7</option><option>Class 8</option>
-        <option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option>
-      </datalist>
-
-      <div class="row">
-        <div><label>Total marks</label><input id="marks" type="number" value="40" min="5"></div>
-        <div><label>Duration</label><input id="dur" value="1½ hrs"></div>
-      </div>
-
-      <label>Difficulty</label>
-      <select id="diff"><option>Easy</option><option selected>Moderate</option><option>Hard</option></select>
-
-      <label>Question types &amp; count</label>
+<!-- ===== GENERATE ===== -->
+<div class="app" id="view-gen">
+  <aside class="card rail">
+    <h3>Build a paper</h3>
+    <p class="sub">Subject → Class → upload material → generate.</p>
+    <div class="field"><label>Subject</label><input type="text" id="subject" placeholder="e.g. Science" list="subjlist">
+      <datalist id="subjlist"><option>Science</option><option>Social Science</option><option>Mathematics</option><option>Physics</option><option>Chemistry</option><option>Biology</option><option>English</option><option>Computer Science</option></datalist></div>
+    <div class="field"><label>Class</label><input type="text" id="cls" placeholder="e.g. Class 9" list="clslist">
+      <datalist id="clslist"><option>Class 6</option><option>Class 7</option><option>Class 8</option><option>Class 9</option><option>Class 10</option><option>Class 11</option><option>Class 12</option></datalist></div>
+    <div class="field two"><div><label>Total marks</label><input type="number" id="marks" value="40" min="5"></div><div><label>Duration</label><input type="text" id="dur" value="1½ hrs"></div></div>
+    <div class="field"><label>Difficulty</label><select id="diff"><option>Easy</option><option selected>Moderate</option><option>Hard</option></select></div>
+    <div class="field"><label>Question types &amp; count</label>
       <div class="chips" id="types">
         <span class="chip on" data-t="mcq" data-n="5">MCQ ×5</span>
-        <span class="chip on" data-t="fill" data-n="5">Fill blanks ×5</span>
-        <span class="chip on" data-t="tf" data-n="5">True/False ×5</span>
+        <span class="chip on" data-t="fill" data-n="5">Fill ×5</span>
+        <span class="chip on" data-t="tf" data-n="5">T/F ×5</span>
         <span class="chip on" data-t="short" data-n="4">Short ×4</span>
         <span class="chip" data-t="long" data-n="2">Long ×2</span>
       </div>
-      <div class="hint">Click a type to toggle. Double-click to change its count.</div>
-
-      <h2 style="margin-top:20px">Source material</h2>
-      <div class="drop" id="drop">📄 Drop or click to upload<br><b>PDF, DOCX, or TXT</b><br>the tool learns from this content</div>
-      <input id="file" type="file" accept=".pdf,.docx,.txt" multiple hidden>
-      <div class="files" id="filelist"></div>
-      <label>…or paste text</label>
-      <textarea id="pasted" placeholder="Paste chapter notes here (optional)"></textarea>
-
-      <h2 style="margin-top:20px">Engine</h2>
-      <div class="modewrap">
+      <div class="refnote" style="border:none;padding-top:6px;margin-top:4px">Click to toggle · double-click to change count.</div>
+    </div>
+    <div class="field"><label>Source material</label>
+      <div class="drop" id="drop">📄 Drop or click — PDF, DOCX, TXT<br><span style="font-size:.9em">the tool learns from this content</span></div>
+      <input type="file" id="file" accept=".pdf,.docx,.txt" multiple hidden>
+      <div class="files" id="filelist"></div></div>
+    <div class="field"><label>…or paste text</label><textarea id="pasted" placeholder="Paste chapter notes (optional)" style="min-height:70px"></textarea></div>
+    <div class="field"><label>Engine</label>
+      <div class="mode-row" id="modeRow">
         <span class="chip on" data-mode="offline">⚡ Offline</span>
         <span class="chip" data-mode="online">🤖 AI (online)</span>
       </div>
-      <div id="onlinecfg" style="display:none">
-        <label>API endpoint</label>
-        <input id="apiurl" placeholder="https://api.openai.com/v1/chat/completions">
-        <label>Model</label>
-        <input id="model" placeholder="gpt-4o-mini">
-        <label>API key</label>
-        <input id="apikey" type="password" placeholder="sk-…  (stored only in this browser)">
-        <div class="hint">For public use, route this through a Vercel serverless function so the key stays server-side — don't ship a real key in this page.</div>
+      <div id="onlinecfg">
+        <div class="field"><label>API endpoint</label><input type="text" id="apiurl" placeholder="https://api.openai.com/v1/chat/completions"></div>
+        <div class="field"><label>Model</label><input type="text" id="model" placeholder="gpt-4o-mini"></div>
+        <div class="field"><label>API key (this browser only)</label><input type="text" id="apikey" placeholder="sk-…"></div>
+        <div class="refnote" style="border:none">For public use, proxy this through a Vercel function so the key stays server-side.</div>
       </div>
-
-      <button class="btn" id="gen">Generate question paper</button>
-      <button class="btn ghost" id="ans">Toggle answer key</button>
-      <div class="status" id="status"></div>
     </div>
-
-    <!-- OUTPUT -->
-    <div class="card printzone">
-      <div class="toolbar">
-        <button onclick="window.print()">🖨 Print / Save PDF</button>
-        <button id="copybtn">📋 Copy text</button>
-      </div>
-      <div class="paper" id="paper"><div class="ph">Your generated question paper will appear here.</div></div>
-    </div>
-  </div>
+    <button class="gen-btn" id="gen">Generate question paper ↦</button>
+    <div class="status" id="genStatus"></div>
+    <p class="refnote"><b>Offline</b> builds questions from your uploaded text instantly, no key. <b>AI</b> writes curriculum-aware questions. Always verify against your official syllabus.</p>
+  </aside>
+  <main class="card">
+    <div class="out-head"><div><h3 id="outTitle">Nothing generated yet</h3><span class="pill" id="outPill" hidden></span></div>
+      <div class="tools" id="genTools" hidden>
+        <button class="print-btn" id="ansBtn">Answer key</button>
+        <button class="print-btn" onclick="window.print()">🖨 Print / PDF</button>
+        <button class="print-btn" id="toEval">Send to Evaluator →</button>
+      </div></div>
+    <div class="print-only" id="printHead"></div>
+    <div class="body"><div id="paperOut"><div class="empty"><span class="big">Ready to generate.</span>Fill subject &amp; class on the left, add source material, and hit Generate.</div></div></div>
+  </main>
 </div>
 
-<!-- CDN libs (pdf.js + mammoth) for PDF/DOCX text extraction. If a CSP blocks these, self-host the two files. -->
+<!-- ===== EVALUATE ===== -->
+<div class="app" id="view-eval" hidden>
+  <aside class="card rail">
+    <h3>Evaluate answers</h3>
+    <p class="sub">Grade typed answers or an uploaded answer sheet.</p>
+    <div class="field"><label>Input method</label>
+      <div class="mode-row" id="evModeRow">
+        <span class="chip on" data-ev="typed">⌨ Typed</span>
+        <span class="chip" data-ev="upload">📎 Upload sheet</span>
+      </div>
+    </div>
+    <div id="evUploadBox" style="display:none">
+      <div class="field"><label>Answer sheet</label>
+        <div class="drop" id="evDrop">📎 Drop or click — PDF, DOCX, TXT, image<br><span style="font-size:.9em">image scans use in-browser OCR</span></div>
+        <input type="file" id="evFile" accept=".pdf,.docx,.txt,image/*" hidden>
+        <div class="files" id="evFilelist"></div></div>
+      <div class="refnote" style="border:none">Extracted text is matched to each question. For messy handwriting, use AI mode for best results.</div>
+    </div>
+    <div class="field"><label>Engine</label>
+      <div class="mode-row" id="evModeEngine">
+        <span class="chip on" data-emode="offline">⚡ Offline</span>
+        <span class="chip" data-emode="online">🤖 AI (online)</span>
+      </div>
+    </div>
+    <button class="gen-btn" id="evGo">Evaluate &amp; score ✓</button>
+    <div class="status" id="evStatus"></div>
+    <p class="refnote"><b>How scoring works:</b> each answer is checked for the expected key points, then presentation (length, capitalisation, full stops, formal language). You get per-question marks, flagged mistakes, model answers and an overall centum-style score.</p>
+  </aside>
+  <main class="card">
+    <div class="out-head"><div><h3 id="evTitle">No paper loaded</h3><span class="pill" id="evPill" hidden></span></div>
+      <div class="tools"><button class="print-btn" onclick="window.print()">🖨 Print report</button></div></div>
+    <div class="body"><div id="evBody"><div class="empty"><span class="big">Generate a paper first.</span>Create a paper in the Generate tab and click “Send to Evaluator”, then type or upload the answers here.</div></div></div>
+  </main>
+</div>
+
+<footer>
+<p>© 2026 Kongu Brilliance Tuition Centre. Paper Generator &amp; Evaluator — free practice for CBSE, ICSE &amp; State Board students. Call: <a href="tel:9514524599" style="color:#ffd700">9514524599</a></p>
+</footer>
+
+<!-- libs: pdf.js + mammoth (extraction), tesseract loaded lazily for images -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script>
 if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-let SOURCE="";           // extracted text learned from uploads/paste
-let showAnswers=false, lastPaper=null;
 const $=id=>document.getElementById(id);
-const status=(m,c="")=>{const s=$("status");s.textContent=m;s.className="status "+c;};
+const esc=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let SOURCE="", showAnswers=false, PAPER=null;
 
-/* ---------- question-type chips ---------- */
+/* ---------- main tab switch ---------- */
+function switchMain(v){
+  $("view-gen").hidden=v!=="gen"; $("view-eval").hidden=v!=="eval";
+  $("mtab-gen").setAttribute("aria-selected",v==="gen"); $("mtab-eval").setAttribute("aria-selected",v==="eval");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- chip helpers ---------- */
 $("types").addEventListener("click",e=>{if(e.target.classList.contains("chip"))e.target.classList.toggle("on");});
-$("types").addEventListener("dblclick",e=>{
-  if(!e.target.classList.contains("chip"))return;
+$("types").addEventListener("dblclick",e=>{if(!e.target.classList.contains("chip"))return;
   const n=prompt("How many "+e.target.dataset.t+" questions?",e.target.dataset.n);
-  if(n&&+n>=0){e.target.dataset.n=+n;e.target.textContent=e.target.textContent.replace(/×\d+/,"×"+n);e.target.classList.add("on");}
-});
-function selectedTypes(){return[...document.querySelectorAll('#types .chip.on')].map(c=>({t:c.dataset.t,n:+c.dataset.n}));}
+  if(n!==null&&+n>=0){e.target.dataset.n=+n;e.target.textContent=e.target.textContent.replace(/×\d+/,"×"+n);e.target.classList.add("on");}});
+const selectedTypes=()=>[...document.querySelectorAll('#types .chip.on')].map(c=>({t:c.dataset.t,n:+c.dataset.n}));
+function rowToggle(rowId,attr,onChange){$(rowId).addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;
+  $(rowId).querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));c.classList.add("on");onChange&&onChange(c.dataset[attr]);});}
+rowToggle("modeRow","mode",m=>$("onlinecfg").style.display=m==="online"?"block":"none");
+rowToggle("evModeRow","ev",m=>$("evUploadBox").style.display=m==="upload"?"block":"none");
+rowToggle("evModeEngine","emode");
+const genMode=()=>document.querySelector('#modeRow .chip.on').dataset.mode;
+const evInput=()=>document.querySelector('#evModeRow .chip.on').dataset.ev;
+const evMode=()=>document.querySelector('#evModeEngine .chip.on').dataset.emode;
 
-/* ---------- engine mode ---------- */
-document.querySelector(".modewrap").addEventListener("click",e=>{
-  if(!e.target.dataset.mode)return;
-  document.querySelectorAll(".modewrap .chip").forEach(c=>c.classList.remove("on"));
-  e.target.classList.add("on");
-  $("onlinecfg").style.display=e.target.dataset.mode==="online"?"block":"none";
-});
-const mode=()=>document.querySelector(".modewrap .chip.on").dataset.mode;
-
-/* ---------- file upload + extraction ---------- */
-const drop=$("drop"),fileEl=$("file");
-drop.onclick=()=>fileEl.click();
-["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("hover");}));
-["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("hover");}));
-drop.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
-fileEl.onchange=()=>handleFiles(fileEl.files);
-
-async function handleFiles(files){
-  for(const f of files){
-    status("Reading "+f.name+" …");
-    try{
-      let txt="";
-      if(f.name.endsWith(".txt")) txt=await f.text();
-      else if(f.name.endsWith(".pdf")) txt=await readPDF(f);
-      else if(f.name.endsWith(".docx")) txt=(await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
-      SOURCE+="\n"+txt;
-      const s=document.createElement("span");s.textContent=f.name+" ✓";$("filelist").appendChild(s);
-      status("Learned "+f.name+" ("+txt.length.toLocaleString()+" chars)","ok");
-    }catch(err){status("Could not read "+f.name+": "+err.message,"err");}
+/* ---------- file extraction (shared) ---------- */
+async function extract(f,statusFn){
+  if(f.name.match(/\.txt$/i)) return await f.text();
+  if(f.name.match(/\.pdf$/i)){const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let o="";
+    for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);o+=(await p.getTextContent()).items.map(t=>t.str).join(" ")+"\n";}return o;}
+  if(f.name.match(/\.docx$/i)) return (await mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()})).value;
+  if(f.type.startsWith("image/")){ statusFn&&statusFn("Loading OCR engine…");
+    await loadTesseract();
+    statusFn&&statusFn("Reading handwriting / image…");
+    const {data}=await Tesseract.recognize(await blobURL(f),"eng");
+    return data.text;
   }
+  throw new Error("Unsupported file type");
 }
-async function readPDF(f){
-  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;let out="";
-  for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const c=await p.getTextContent();
-    out+=c.items.map(it=>it.str).join(" ")+"\n";}
-  return out;
-}
+const blobURL=f=>URL.createObjectURL(f);
+let tessLoaded=false;
+function loadTesseract(){return new Promise((res,rej)=>{if(tessLoaded&&window.Tesseract)return res();
+  const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js";
+  s.onload=()=>{tessLoaded=true;res();};s.onerror=()=>rej(new Error("OCR engine failed to load (needs internet)"));document.head.appendChild(s);});}
 
-/* ---------- generate ---------- */
+/* generator source upload */
+(function(){const drop=$("drop"),fileEl=$("file");
+  drop.onclick=()=>fileEl.click();
+  ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("hover");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("hover");}));
+  drop.addEventListener("drop",e=>gFiles(e.dataTransfer.files));fileEl.onchange=()=>gFiles(fileEl.files);
+  async function gFiles(files){for(const f of files){setStatus("genStatus","Reading "+f.name+"…");
+    try{const t=await extract(f,m=>setStatus("genStatus",m));SOURCE+="\n"+t;
+      const s=document.createElement("span");s.textContent=f.name+" ✓";$("filelist").appendChild(s);
+      setStatus("genStatus","Learned "+f.name+" ("+t.length.toLocaleString()+" chars)","ok");
+    }catch(err){setStatus("genStatus",f.name+": "+err.message,"err");}}}
+})();
+function setStatus(id,m,c){const e=$(id);e.textContent=m;e.className="status "+(c||"");}
+
+/* ================= GENERATOR ================= */
 $("gen").onclick=async()=>{
-  const subject=$("subject").value.trim(), cls=$("cls").value.trim();
-  if(!subject||!cls){status("Please enter both subject and class.","err");return;}
+  const subject=$("subject").value.trim(),cls=$("cls").value.trim();
+  if(!subject||!cls)return setStatus("genStatus","Enter both subject and class.","err");
   const src=(SOURCE+"\n"+$("pasted").value).trim();
   const cfg={subject,cls,marks:$("marks").value,dur:$("dur").value,diff:$("diff").value,types:selectedTypes(),src};
-  if(!cfg.types.length){status("Select at least one question type.","err");return;}
+  if(!cfg.types.length)return setStatus("genStatus","Select at least one question type.","err");
   $("gen").disabled=true;
-  try{
-    if(mode()==="online") lastPaper=await genOnline(cfg);
-    else lastPaper=genOffline(cfg);
-    render(lastPaper);status("Paper generated. Review before printing.","ok");
-  }catch(err){status("Error: "+err.message,"err");}
+  try{ PAPER = genMode()==="online" ? await genOnline(cfg) : genOffline(cfg);
+    renderPaper(); setStatus("genStatus","Paper generated. Review, print, or send to the evaluator.","ok");
+    $("genTools").hidden=false; loadEvaluator();
+  }catch(err){setStatus("genStatus","Error: "+err.message,"err");}
   $("gen").disabled=false;
 };
 
-/* ---------- OFFLINE generator (learns from source text) ---------- */
 function genOffline(cfg){
-  const sents=(cfg.src||"").replace(/\s+/g," ")
-    .split(/(?<=[.!?])\s+/).map(s=>s.trim())
+  const sents=(cfg.src||"").replace(/\s+/g," ").split(/(?<=[.!?])\s+/).map(s=>s.trim())
     .filter(s=>s.length>40&&s.length<220&&/[a-zA-Z]/.test(s));
-  const stop=new Set("the a an of to in on and or is are was were be by for with as that this it its from at which such into can will has have had not you your they their our we has have does definite".split(" "));
-  // all meaningful keywords in a sentence, longest first
-  const keywords=s=>[...new Set(s.replace(/[^a-zA-Z\- ]/g," ").split(" ")
-      .filter(x=>x.length>4&&!stop.has(x.toLowerCase())))].sort((a,b)=>b.length-a.length);
+  const stop=new Set("the a an of to in on and or is are was were be by for with as that this it its from at which such into can will has have had not you your they their our we does definite".split(" "));
+  const keywords=s=>[...new Set(s.replace(/[^a-zA-Z\- ]/g," ").split(" ").filter(x=>x.length>4&&!stop.has(x.toLowerCase())))].sort((a,b)=>b.length-a.length);
   const keyword=s=>keywords(s)[0]||"";
-  // global keyword bank for distractors
   const BANK=[...new Set(sents.flatMap(keywords))];
-
-  // pool that reshuffles & reuses instead of running dry
-  let pool=shuffle(sents), pi=0;
-  const take=()=>{ if(!sents.length) return null; if(pi>=pool.length){pool=shuffle(sents);pi=0;} return pool[pi++]; };
-
-  // pick k distractors close in length to the answer, never equal to it
-  const distractors=(ans,k)=>{
-    const cand=BANK.filter(x=>x.toLowerCase()!==ans.toLowerCase())
-      .sort((a,b)=>Math.abs(a.length-ans.length)-Math.abs(b.length-ans.length));
-    let out=shuffle(cand.slice(0,Math.max(k+3,6))).slice(0,k);
-    while(out.length<k) out.push(["process","factor","property","reaction","element"][out.length]);
-    return out;
-  };
-
+  let pool=shuffle(sents),pi=0;const take=()=>{if(!sents.length)return null;if(pi>=pool.length){pool=shuffle(sents);pi=0;}return pool[pi++];};
+  const distractors=(ans,k)=>{const cand=BANK.filter(x=>x.toLowerCase()!==ans.toLowerCase()).sort((a,b)=>Math.abs(a.length-ans.length)-Math.abs(b.length-ans.length));
+    let out=shuffle(cand.slice(0,Math.max(k+3,6))).slice(0,k);while(out.length<k)out.push(["process","factor","property","reaction","element"][out.length]);return out;};
   const secs=[];
-  for(const {t,n} of cfg.types){
-    const items=[]; const usedTF=new Set();
-    for(let i=0;i<n;i++){
-      const s=take();
-      if(!s){ items.push({q:"["+cfg.subject+" — add a "+t+" question]",ans:""}); continue; }
-      if(t==="mcq"){
-        const k=keyword(s); const q=k?s.replace(new RegExp("\\b"+k+"\\b","i"),"_____"):s;
+  for(const {t,n} of cfg.types){const items=[];
+    for(let i=0;i<n;i++){const s=take();
+      if(!s){items.push({q:"["+cfg.subject+" — add a "+t+" question]",ans:"",key:[]});continue;}
+      const k=keyword(s);
+      if(t==="mcq"){const q=k?s.replace(new RegExp("\\b"+k+"\\b","i"),"_____"):s;
         const opts=shuffle([k,...distractors(k,3)]).map((o,j)=>String.fromCharCode(97+j)+") "+o);
-        items.push({q:"Fill the blank: "+q,opts,ans:k});
-      }else if(t==="fill"){
-        const k=keyword(s); items.push({q:(k?s.replace(new RegExp("\\b"+k+"\\b","i"),"__________"):s),ans:k});
-      }else if(t==="tf"){
-        // ~40% of the time, corrupt the sentence into a FALSE statement
-        const k=keyword(s), makeFalse=k && Math.random()<0.45;
-        if(makeFalse){
-          const wrong=distractors(k,1)[0];
-          items.push({q:s.replace(new RegExp("\\b"+k+"\\b","i"),wrong),ans:"False"});
-        }else{
-          items.push({q:s,ans:"True"});
-        }
-      }else if(t==="short"){
-        const k=keyword(s);
-        items.push({q:k?("Explain / define: "+k+".") : ("Answer briefly the "+(i+1)+ordinal(i+1)+" concept from "+cfg.subject+"."),ans:s});
-      }else if(t==="long"){
-        const k=keyword(s);
-        items.push({q:k?("Describe in detail: "+k+", with examples.") : ("Write a detailed note on a key topic of "+cfg.subject+" ("+cfg.cls+")."),ans:s});
-      }
+        items.push({q:"Fill the blank: "+q,opts,ans:k,key:[k],marks:1});}
+      else if(t==="fill"){items.push({q:(k?s.replace(new RegExp("\\b"+k+"\\b","i"),"__________"):s),ans:k,key:[k],marks:1});}
+      else if(t==="tf"){const mk=k&&Math.random()<0.45;
+        if(mk){const w=distractors(k,1)[0];items.push({q:s.replace(new RegExp("\\b"+k+"\\b","i"),w),ans:"False",key:["False"],marks:1});}
+        else items.push({q:s,ans:"True",key:["True"],marks:1});}
+      else if(t==="short"){items.push({q:k?("Explain / define: "+k+".") : ("Answer briefly a key concept of "+cfg.subject+"."),ans:s,key:keywords(s).slice(0,3),model:s,marks:3});}
+      else if(t==="long"){items.push({q:k?("Describe in detail: "+k+", with examples.") : ("Write a detailed note on a key topic of "+cfg.subject+"."),ans:s,key:keywords(s).slice(0,4),model:s,marks:5});}
     }
     secs.push({t,items});
   }
-  return {...cfg,secs,warn:sents.length<4?"Little source text supplied — questions are generic. Upload a chapter or paste notes for content-based questions.":""};
+  return {...cfg,secs,warn:sents.length<4?"Little source text supplied — questions are generic. Upload a chapter for content-based questions.":""};
 }
-function ordinal(n){return n===1?"st":n===2?"nd":n===3?"rd":"th";}
-function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-
-/* ---------- ONLINE generator (real LLM) ---------- */
 async function genOnline(cfg){
   const url=$("apiurl").value.trim()||"https://api.openai.com/v1/chat/completions";
-  const key=$("apikey").value.trim(), model=$("model").value.trim()||"gpt-4o-mini";
-  if(!key){throw new Error("Enter an API key, or switch to Offline.");}
+  const key=$("apikey").value.trim(),model=$("model").value.trim()||"gpt-4o-mini";
+  if(!key)throw new Error("Enter an API key, or use Offline.");
   const typeList=cfg.types.map(x=>x.n+" "+x.t).join(", ");
-  const sys="You are an exam-paper setter for an Indian tuition centre. Return STRICT JSON only.";
-  const usr=`Create a question paper.
-Subject: ${cfg.subject}
-Class: ${cfg.cls}
-Difficulty: ${cfg.diff}
-Sections (type:count): ${typeList}
-${cfg.src?"Base ALL questions strictly on this source material:\n\"\"\"\n"+cfg.src.slice(0,6000)+"\n\"\"\"":"Use standard curriculum for the subject/class."}
-Return JSON: {"secs":[{"t":"mcq|fill|tf|short|long","items":[{"q":"...","opts":["a) ..","b) .."],"ans":".."}]}]}. opts only for mcq. ans = correct answer.`;
-  status("Asking the model …");
+  const usr=`Create a question paper. Subject: ${cfg.subject}. Class: ${cfg.cls}. Difficulty: ${cfg.diff}. Sections (type:count): ${typeList}. `
+    +(cfg.src?`Base ALL questions strictly on this material:\n"""\n${cfg.src.slice(0,6000)}\n"""`:`Use standard curriculum.`)
+    +` Return JSON {"secs":[{"t":"mcq|fill|tf|short|long","items":[{"q":"","opts":["a) .."],"ans":"","key":["kw"],"model":"","marks":1}]}]}. opts only for mcq. key = list of expected key points for grading. model = ideal answer for short/long.`;
+  setStatus("genStatus","Asking the model…");
   const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-    body:JSON.stringify({model,temperature:0.5,messages:[{role:"system",content:sys},{role:"user",content:usr}]})});
+    body:JSON.stringify({model,temperature:0.5,messages:[{role:"system",content:"You are an exam-paper setter. Return STRICT JSON only."},{role:"user",content:usr}]})});
   if(!r.ok)throw new Error("API "+r.status+" — "+(await r.text()).slice(0,120));
-  const data=await r.json();let txt=data.choices[0].message.content;
-  txt=txt.replace(/```json|```/g,"").trim();
+  let txt=(await r.json()).choices[0].message.content.replace(/```json|```/g,"").trim();
   return {...cfg,...JSON.parse(txt)};
 }
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-/* ---------- render ---------- */
 const LABEL={mcq:"Multiple Choice Questions",fill:"Fill in the Blanks",tf:"True or False",short:"Short Answer Questions",long:"Long Answer Questions"};
-function render(p){
-  let n=0,h=`<h3>KONGU BRILLIANCE</h3><div class="sub">Centum Studio · ${esc(p.cls)} · ${esc(p.subject)}</div><hr>
-    <div class="meta"><span>Time: ${esc(p.dur)}</span><span>Max Marks: ${esc(p.marks)}</span></div>
-    <div class="meta"><span>Name: ____________________</span><span>Difficulty: ${esc(p.diff)}</span></div><hr>`;
-  if(p.warn)h+=`<div style="color:#b45309;font-family:sans-serif;font-size:12px">⚠ ${esc(p.warn)}</div>`;
-  (p.secs||[]).forEach((sec,si)=>{
-    h+=`<div class="sec">${String.fromCharCode(65+si)}. ${LABEL[sec.t]||sec.t}</div><ol>`;
-    (sec.items||[]).forEach(it=>{n++;
-      h+=`<li>${esc(it.q)}`;
-      if(it.opts&&it.opts.length)h+=`<ul class="opts">${it.opts.map(o=>`<li>${esc(o)}</li>`).join("")}</ul>`;
-      if(showAnswers&&it.ans)h+=`<div style="color:#16a34a;font-size:13px">✓ ${esc(it.ans)}</div>`;
-      h+=`</li>`;});
-    h+=`</ol>`;});
-  if(showAnswers)h+=`<hr><div style="text-align:center;font-size:12px;color:#888">— Answer key shown —</div>`;
-  $("paper").innerHTML=h;
+function renderPaper(){const p=PAPER;let n=0;
+  $("outTitle").textContent=p.subject+" — "+p.cls;$("outPill").hidden=false;$("outPill").textContent=p.diff;
+  $("printHead").innerHTML='<h2 style="color:#1a237e;margin:0">Kongu Brilliance Tuition Centre</h2><div>'+esc(p.subject)+' · '+esc(p.cls)+' · '+esc(p.diff)+'</div>';
+  let h='<div class="paper"><div class="phead"><h3>KONGU BRILLIANCE</h3><div class="s">Centum Studio · '+esc(p.cls)+' · '+esc(p.subject)+'</div></div>'
+    +'<div class="meta"><span>Time: '+esc(p.dur)+'</span><span>Max Marks: '+esc(p.marks)+'</span></div>'
+    +'<div class="meta"><span>Name: ____________________</span><span>Difficulty: '+esc(p.diff)+'</span></div>';
+  if(p.warn)h+='<div class="warn">⚠ '+esc(p.warn)+'</div>';
+  (p.secs||[]).forEach((sec,si)=>{h+='<div class="sec">'+String.fromCharCode(65+si)+'. '+(LABEL[sec.t]||sec.t)+'</div><ol>';
+    (sec.items||[]).forEach(it=>{n++;h+='<li>'+esc(it.q);
+      if(it.opts&&it.opts.length)h+='<ul class="opts">'+it.opts.map(o=>'<li>'+esc(o)+'</li>').join("")+'</ul>';
+      if(showAnswers&&it.ans)h+='<div class="ans">✓ '+esc(it.ans)+'</div>';h+='</li>';});
+    h+='</ol>';});
+  h+='</div>';$("paperOut").innerHTML=h;
 }
-function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
-$("ans").onclick=()=>{showAnswers=!showAnswers;if(lastPaper)render(lastPaper);};
-$("copybtn").onclick=()=>{navigator.clipboard.writeText($("paper").innerText).then(()=>status("Copied to clipboard.","ok"));};
+$("ansBtn").onclick=()=>{showAnswers=!showAnswers;renderPaper();};
+$("toEval").onclick=()=>{switchMain("eval");};
+
+/* ================= EVALUATOR ================= */
+let EVTEXT="";
+(function(){const drop=$("evDrop"),fileEl=$("evFile");
+  drop.onclick=()=>fileEl.click();
+  ["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("hover");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("hover");}));
+  drop.addEventListener("drop",e=>eFiles(e.dataTransfer.files));fileEl.onchange=()=>eFiles(fileEl.files);
+  async function eFiles(files){for(const f of files){setStatus("evStatus","Reading "+f.name+"…");
+    try{const t=await extract(f,m=>setStatus("evStatus",m));EVTEXT+="\n"+t;
+      const s=document.createElement("span");s.textContent=f.name+" ✓";$("evFilelist").appendChild(s);
+      setStatus("evStatus","Read "+f.name+" ("+t.length.toLocaleString()+" chars). Hit Evaluate.","ok");
+    }catch(err){setStatus("evStatus",f.name+": "+err.message,"err");}}}
+})();
+
+function loadEvaluator(){
+  if(!PAPER){return;}
+  $("evTitle").textContent=PAPER.subject+" — "+PAPER.cls;$("evPill").hidden=false;$("evPill").textContent="Answer sheet";
+  const flat=[];(PAPER.secs||[]).forEach(sec=>sec.items.forEach(it=>flat.push({...it,type:sec.t})));
+  PAPER._flat=flat;
+  let h='<p class="refnote" style="border:none;margin-top:0">Type each answer below (or switch to “Upload sheet” on the left). Then click <b>Evaluate &amp; score</b>.</p>';
+  flat.forEach((it,i)=>{const mk=it.marks||1;
+    h+='<div class="qcard"><div class="qh">Q'+(i+1)+'. '+esc(it.q)+' <span style="color:#c99a2e">['+mk+'m]</span></div>';
+    if(it.opts&&it.opts.length){h+='<select class="evAns" data-i="'+i+'"><option value="">— choose —</option>'+it.opts.map(o=>'<option value="'+esc(o.replace(/^[a-d]\)\s*/,''))+'">'+esc(o)+'</option>').join('')+'</select>';}
+    else if(it.type==="tf"){h+='<select class="evAns" data-i="'+i+'"><option value="">— choose —</option><option value="True">True</option><option value="False">False</option></select>';}
+    else{h+='<textarea class="evAns" data-i="'+i+'" placeholder="Student answer…"></textarea>';}
+    h+='</div>';});
+  $("evBody").innerHTML=h;
+}
+
+$("evGo").onclick=async()=>{
+  if(!PAPER)return setStatus("evStatus","Generate a paper first.","err");
+  const flat=PAPER._flat||[];
+  let answers=[];
+  if(evInput()==="typed"){
+    answers=flat.map((it,i)=>{const el=document.querySelector('.evAns[data-i="'+i+'"]');return el?el.value.trim():"";});
+  }else{
+    if(!EVTEXT.trim())return setStatus("evStatus","Upload an answer sheet first.","err");
+    answers=matchAnswers(flat,EVTEXT);
+  }
+  $("evGo").disabled=true;
+  try{
+    const report = evMode()==="online" ? await evalOnline(flat,answers) : evalOffline(flat,answers);
+    renderReport(report); setStatus("evStatus","Evaluation complete.","ok");
+  }catch(err){setStatus("evStatus","Error: "+err.message,"err");}
+  $("evGo").disabled=false;
+};
+
+/* naive splitter: map a blob of answer text onto questions by "1." "2." markers, else by paragraph */
+function matchAnswers(flat,text){
+  const parts=text.split(/(?:^|\n|\s)(?:Q?\s*\d{1,2}[\.\)])\s*/i).map(s=>s.trim()).filter(Boolean);
+  if(parts.length>=flat.length) return flat.map((_,i)=>parts[i]||"");
+  const paras=text.split(/\n{2,}|\.\s{2,}/).map(s=>s.trim()).filter(Boolean);
+  return flat.map((_,i)=>paras[i]||parts[i]||"");
+}
+
+function evalOffline(flat,answers){
+  const rows=flat.map((it,i)=>{
+    const ans=(answers[i]||"").trim(),mk=it.marks||1,key=(it.key&&it.key.length?it.key:[it.ans]).filter(Boolean);
+    const remarks=[];let marks=0;
+    if(!ans){return {q:it.q,ans,mk,marks:0,pct:0,remarks:[{t:"bad",b:"No answer",s:"Blank — attempt every question, partial marks still count."}],model:it.model||it.ans};}
+    const low=" "+ans.toLowerCase()+" ";
+    if(it.opts&&it.opts.length || it.type==="tf"){ // objective
+      const correct=(it.ans||"").toLowerCase().trim();
+      const ok=low.includes(correct)||ans.toLowerCase().trim()===correct;
+      marks=ok?mk:0;
+      remarks.push(ok?{t:"good",b:"Correct",s:'Matches the expected answer: "'+it.ans+'".'}
+                     :{t:"bad",b:"Incorrect",s:'Correct answer is "'+it.ans+'".'});
+      return {q:it.q,ans,mk,marks,pct:Math.round(marks/mk*100),remarks,model:it.ans};
+    }
+    // subjective: key-point overlap + presentation
+    const hit=key.filter(k=>low.includes(String(k).toLowerCase().slice(0,Math.min(String(k).length,14))));
+    const miss=key.filter(k=>!hit.includes(k));
+    marks=Math.round(hit.length/Math.max(key.length,1)*mk*10)/10;
+    hit.forEach(k=>remarks.push({t:"good",b:"Key point covered",s:'Included: "'+k+'".'}));
+    miss.forEach(k=>remarks.push({t:"bad",b:"Missing point",s:'Expected idea not found: "'+k+'". Add it for full marks.'}));
+    const words=ans.split(/\s+/).filter(Boolean).length;let pen=0;
+    if(words<Math.max(8,mk*8)){remarks.push({t:"warn",b:"Too short",s:"Only "+words+" words for a "+mk+"-mark answer — expand with steps/examples."});pen+=0.1;}
+    if(!/[.।]$/.test(ans)&&words>6){remarks.push({t:"warn",b:"Presentation",s:"Answer doesn't end with a full stop."});pen+=0.05;}
+    if(ans===ans.toLowerCase()&&/[a-z]/.test(ans)){remarks.push({t:"warn",b:"Presentation",s:"No capital letters — start sentences with capitals."});pen+=0.05;}
+    if(/\b(coz|u|ur|gonna|wanna|dunno)\b/i.test(ans)){remarks.push({t:"bad",b:"Informal language",s:"Avoid SMS/informal words in exam answers."});pen+=0.1;}
+    marks=Math.max(0,Math.round((marks-pen*mk)*10)/10);
+    return {q:it.q,ans,mk,marks,pct:Math.round(marks/mk*100),remarks,model:it.model||it.ans};
+  });
+  return finalize(rows);
+}
+async function evalOnline(flat,answers){
+  const url=$("apiurl").value.trim()||"https://api.openai.com/v1/chat/completions";
+  const key=$("apikey").value.trim(),model=$("model").value.trim()||"gpt-4o-mini";
+  if(!key)throw new Error("Enter an API key in the Generate tab, or use Offline.");
+  const qa=flat.map((it,i)=>({q:it.q,expected:it.model||it.ans,key:it.key||[],marks:it.marks||1,student:answers[i]||""}));
+  setStatus("evStatus","Grading with the model…");
+  const usr="Grade these exam answers like a strict but fair Indian school teacher. For each, give marks (0..max), list what is correct, what is missing/wrong, presentation issues, and a one-line model answer. Data:\n"+JSON.stringify(qa)
+    +'\nReturn JSON {"rows":[{"marks":n,"remarks":[{"t":"good|warn|bad","b":"label","s":"detail"}],"model":"..."}]}. Order matches input.';
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+    body:JSON.stringify({model,temperature:0.2,messages:[{role:"system",content:"Return STRICT JSON only."},{role:"user",content:usr}]})});
+  if(!r.ok)throw new Error("API "+r.status+" — "+(await r.text()).slice(0,120));
+  const out=JSON.parse((await r.json()).choices[0].message.content.replace(/```json|```/g,"").trim());
+  const rows=flat.map((it,i)=>{const g=out.rows[i]||{marks:0,remarks:[],model:it.ans};const mk=it.marks||1;
+    return {q:it.q,ans:answers[i]||"",mk,marks:Math.min(mk,g.marks||0),pct:Math.round((Math.min(mk,g.marks||0))/mk*100),remarks:g.remarks||[],model:g.model||it.ans};});
+  return finalize(rows);
+}
+function finalize(rows){const got=rows.reduce((s,r)=>s+r.marks,0),tot=rows.reduce((s,r)=>s+r.mk,0);
+  return {rows,got:Math.round(got*10)/10,tot,pct:tot?Math.round(got/tot*100):0};}
+
+function renderReport(rep){
+  let grade,col;const p=rep.pct;
+  if(p>=90){grade="Centum-ready ★";col=getCSS("--good");}else if(p>=70){grade="Good — polish it";col=getCSS("--warn");}
+  else if(p>=40){grade="Needs work";col=getCSS("--warn");}else{grade="Re-study this";col=getCSS("--bad");}
+  const ico={good:"✓",warn:"!",bad:"✕"};
+  let h='<div class="scoreband"><div class="score-dial" style="background:'+col+'">'+rep.got+'/'+rep.tot+'</div>'
+    +'<div class="score-txt"><div class="g" style="color:'+col+'">'+grade+'</div><p>'+rep.pct+'% overall · '+rep.rows.length+' questions graded</p></div></div>';
+  rep.rows.forEach((r,i)=>{const rc=r.pct>=90?"var(--good)":r.pct>=40?"var(--warn)":"var(--bad)";
+    h+='<div class="qreport"><div class="top"><b>Q'+(i+1)+'. '+esc(r.q).slice(0,90)+(r.q.length>90?'…':'')+'</b><span class="mk" style="color:'+rc+'">'+r.marks+'/'+r.mk+'</span></div><div class="inner">';
+    (r.remarks||[]).forEach(rm=>h+='<div class="remark"><span class="rk rk-'+rm.t+'">'+ico[rm.t]+'</span><div><b>'+esc(rm.b)+'</b> — '+esc(rm.s)+'</div></div>');
+    if(r.model)h+='<div class="model"><b>Model answer:</b> '+esc(r.model)+'</div>';
+    h+='</div></div>';});
+  $("evBody").innerHTML=h;window.scrollTo({top:document.querySelector('.mtabs').offsetTop,behavior:"smooth"});
+}
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 </script>
 </body>
 </html>
