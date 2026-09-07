@@ -17,8 +17,8 @@ const PROVIDERS = [
   {
     id: 'groq', keyEnv: 'GROQ_API_KEY', kind: 'openai',
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    models: () => [process.env.GROQ_MODEL, 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant',
-                   'llama3-70b-8192', 'llama3-8b-8192', 'gemma2-9b-it', 'openai/gpt-oss-20b'].filter(Boolean),
+    models: () => [process.env.GROQ_MODEL, 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile',
+                   'openai/gpt-oss-20b', 'llama-3.1-8b-instant', 'llama3-70b-8192', 'gemma2-9b-it'].filter(Boolean),
   },
   {
     id: 'gemini', keyEnv: 'GEMINI_API_KEY', kind: 'gemini',
