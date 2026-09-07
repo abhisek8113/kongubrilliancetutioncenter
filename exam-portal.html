@@ -47,6 +47,15 @@ tr:hover td{background:#fafbff}
 .rk-good{background:var(--good)}.rk-warn{background:var(--warn)}.rk-bad{background:var(--bad)}
 .model{margin-top:7px;padding:8px 10px;background:#e2f4ea;border:1px solid var(--good);border-radius:7px;font-size:.83em}
 .muted{color:#888;font-size:.85em}
+.studypack{font-size:.93em;line-height:1.7}
+.studypack .md-h{color:var(--navy);margin:16px 0 6px;border-bottom:1px solid #eef;padding-bottom:3px}
+.studypack h2.md-h{font-size:1.25em}.studypack h3.md-h{font-size:1.08em;border:none}.studypack h4.md-h{font-size:.98em;border:none;color:var(--indigo)}
+.studypack ul,.studypack ol{margin:6px 0 6px 4px;padding-left:20px}.studypack li{margin:3px 0}
+.studypack code{background:var(--fill);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.studypack hr{border:0;border-top:1px dashed var(--line);margin:14px 0}
+.studypack .mdtbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:.9em}
+.studypack .mdtbl th,.studypack .mdtbl td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+.studypack .mdtbl th{background:var(--soft);color:var(--navy)}
 /* auth */
 .authwrap{max-width:400px;margin:8vh auto;padding:0 18px}
 .brandbig{text-align:center;margin-bottom:18px}.brandbig h1{color:var(--navy);margin:0}.brandbig p{color:#666;margin:4px 0 0}
@@ -134,9 +143,9 @@ async function onLogin(user){
 
 /* ================== ROLE-BASED TABS ================== */
 const TABS={
-  student:  [["practice","📝 Practice"],["adaptive","🎯 Targeted practice"],["tutor","🧑‍🏫 Ask a doubt"],["me","📊 My performance"]],
-  evaluator:[["grade","✓ Grade answers"],["students","👥 My students"],["copilot","🛠 Copilot"]],
-  admin:    [["generate","📝 Generate"],["grade","✓ Grade"],["tutor","🧑‍🏫 Tutor"],["copilot","🛠 Copilot"],["users","👤 Users"],["analytics","📈 Analytics"]],
+  student:  [["book","📚 Study Pack"],["practice","📝 Practice"],["adaptive","🎯 Targeted practice"],["tutor","🧑‍🏫 Ask a doubt"],["me","📊 My performance"]],
+  evaluator:[["book","📚 Study Pack"],["grade","✓ Grade answers"],["students","👥 My students"],["copilot","🛠 Copilot"]],
+  admin:    [["book","📚 Study Pack"],["generate","📝 Generate"],["grade","✓ Grade"],["tutor","🧑‍🏫 Tutor"],["copilot","🛠 Copilot"],["users","👤 Users"],["analytics","📈 Analytics"]],
 };
 let curTab=null;
 function buildTabs(){
@@ -146,7 +155,7 @@ function buildTabs(){
 }
 function showTab(k){curTab=k;[...$("tabbar").children].forEach(b=>b.setAttribute("aria-selected",b.dataset.k===k));
   const v=$("views");v.innerHTML='<div class="card"><div class="muted">Loading…</div></div>';
-  ({practice:vPractice,adaptive:vAdaptive,me:vMe,grade:vGrade,students:vStudents,generate:vGenerate,users:vUsers,analytics:vAnalytics,tutor:vTutor,copilot:vCopilot}[k])(v);}
+  ({practice:vPractice,adaptive:vAdaptive,me:vMe,grade:vGrade,students:vStudents,generate:vGenerate,users:vUsers,analytics:vAnalytics,tutor:vTutor,copilot:vCopilot,book:vBook}[k])(v);}
 
 /* ================== SHARED: generator + evaluator engines ================== */
 async function askAI(messages,{temperature=0.4,json=true}={}){
@@ -500,6 +509,63 @@ function vCopilot(v){
     try{const txt=await askAI([{role:"system",content:"You are an experienced Indian school teacher. Write clear, well-structured plain text (use headings and bullet points)."},{role:"user",content:prompts[task]}],{temperature:0.5,json:false});
       $("c_out").innerHTML='<div class="card" style="border-top-color:var(--gold)"><pre style="white-space:pre-wrap;font-family:Arial;font-size:.9em;margin:0">'+esc(txt)+'</pre></div>';setS("cs","Done.","ok");
     }catch(e){setS("cs","AI unavailable ("+e.message+").","err");}$("c_go").disabled=false;};
+}
+
+/* ---- STUDY PACK (AI Complete Book + Board Exam Master) ---- */
+function mdToHtml(md){
+  const esc2=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const inline=s=>esc2(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\*(.+?)\*/g,"<i>$1</i>").replace(/`(.+?)`/g,"<code>$1</code>");
+  const lines=md.replace(/\r/g,"").split("\n");let h="",inUl=false,inOl=false,inTbl=false;
+  const closeLists=()=>{if(inUl){h+="</ul>";inUl=false;}if(inOl){h+="</ol>";inOl=false;}};
+  const closeTbl=()=>{if(inTbl){h+="</tbody></table></div>";inTbl=false;}};
+  for(let i=0;i<lines.length;i++){let l=lines[i];
+    if(/^\s*\|(.+)\|\s*$/.test(l)){const cells=l.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+      if(/^[\s\-:|]+$/.test(l)){continue;} // separator row
+      if(!inTbl){closeLists();h+='<div style="overflow-x:auto"><table class="mdtbl"><tbody>';inTbl=true;
+        h+="<tr>"+cells.map(c=>"<th>"+inline(c)+"</th>").join("")+"</tr>";continue;}
+      h+="<tr>"+cells.map(c=>"<td>"+inline(c)+"</td>").join("")+"</tr>";continue;}
+    else closeTbl();
+    let m;
+    if(m=l.match(/^(#{1,4})\s+(.*)/)){closeLists();const lv=m[1].length;h+="<h"+(lv+1)+' class="md-h">'+inline(m[2])+"</h"+(lv+1)+">";continue;}
+    if(/^\s*[-*]\s+/.test(l)){if(!inUl){closeLists();h+="<ul>";inUl=true;}h+="<li>"+inline(l.replace(/^\s*[-*]\s+/,""))+"</li>";continue;}
+    if(/^\s*\d+\.\s+/.test(l)){if(!inOl){closeLists();h+="<ol>";inOl=true;}h+="<li>"+inline(l.replace(/^\s*\d+\.\s+/,""))+"</li>";continue;}
+    if(/^\s*---+\s*$/.test(l)){closeLists();h+="<hr>";continue;}
+    if(l.trim()===""){closeLists();continue;}
+    closeLists();h+="<p>"+inline(l)+"</p>";
+  }
+  closeLists();closeTbl();return h;
+}
+const MASTER_SYS=`You are an Advanced Board-Aware AI Academic Content Generator, Textbook Analyst, Examiner and Personal Study Planner for Indian school education (CBSE, ICSE, State Boards, Samacheer Kalvi, Matriculation, NCERT).
+Transform the given Board+Class+Subject+Chapter into a COMPLETE, simple, exam-oriented study pack with 100% concept coverage and exam prioritisation. Write in simple student-friendly language.
+Output well-structured GitHub-flavoured MARKDOWN (use #/##/### headings, **bold**, bullet and numbered lists, and | tables | where useful) in EXACTLY this order, including every section that applies to the subject:
+1. Chapter Overview  2. Concept Map (as a nested list)  3. Simple Notes (per concept: meaning, exam definition, key points, example, memory trick)  4. Important Definitions (term, exam definition, must-have keywords, common mistake)  5. Formula/Equation Sheet (formula, variables, units, when to use, common mistake)  6. Important Diagrams (name, what it shows, required labels, how to draw, common mistakes)  7. 1-Mark Questions (MCQ/fill/TF/assertion-reason/one-word) with answers+keywords  8. 2-Mark Questions (answer + keywords + 1+1 mark split)  9. 3-Mark Questions (model answer + key points)  10. 5-Mark Questions (full model answer + step marking + diagram needs + common mistakes)  11. MCQs  12. Assertion-Reason  13. Competency-Based Questions  14. HOTS / Critical Thinking (genuinely application-oriented)  15. Case-Based Questions (scenario + 3-4 sub-questions + answers)  16. Previous-Year / Repeated pattern note  17. Board Priority tags (🔥/⭐/🟡/⚪ on key concepts)  18. Top 20 Must-Practice Questions  19. Common Mistakes (wrong → why → correct)  20. Exam Answer-Writing Strategy (per mark level)  21. 15-Minute Quick Revision Sheet  22. One-Day Chapter Plan  23. Self-Test (10×1, 5×2, 3×3, 2×5, 1 case study)  24. Answer Key & Marking Scheme.
+CRITICAL RULES: Never invent previous-year questions. Label any unverifiable exam question as "AI-generated practice question", and for section 16 clearly state "Previous-year repetition cannot be verified from the available source material" unless the user pasted real past papers. Keep answers concept-based, not exact-wording. Use the correct board terminology. Cover the whole chapter — do not skip small concepts.`;
+function vBook(v){
+  v.innerHTML='<div class="card"><h2>📚 Study Pack — AI Complete Book &amp; Board Exam Master</h2>'
+    +'<div class="sub">Enter a chapter and get the full exam-ready study system: notes, definitions, formulas, diagrams, 1/2/3/5-mark questions, MCQ, assertion-reason, HOTS, competency &amp; case-based questions, revision sheet and a self-test.</div>'
+    +'<div class="row"><div><label>Board</label><select id="b_board">'+boardOptions(ME.board||'CBSE')+'<option>Samacheer Kalvi</option><option>Matriculation</option><option>NCERT</option></select></div>'
+    +'<div><label>Class</label><input id="b_class" value="'+esc(ME.class||'')+'" placeholder="Class 10"></div></div>'
+    +'<div class="row"><div><label>Subject</label><input id="b_sub" placeholder="Science"></div>'
+    +'<div><label>Difficulty</label><select id="b_diff"><option>Easy</option><option selected>Moderate</option><option>Hard</option><option>Board-realistic</option></select></div></div>'
+    +'<label>Chapter / Topic</label><input id="b_chap" placeholder="e.g. Life Processes">'
+    +'<label>Paste real previous-year questions (optional — enables verified PYQ analysis)</label><textarea id="b_pyq" placeholder="Paste past-paper questions here to get real repeated-question analysis"></textarea>'
+    +'<button class="btn" id="b_go">Generate complete study pack ↦</button>'
+    +'<button class="btn sec" id="b_print" style="display:none">🖨 Print / Save PDF</button>'
+    +'<div class="status" id="b_s"></div></div><div id="b_out"></div>';
+  $("b_go").onclick=async()=>{
+    const board=$("b_board").value,cls=$("b_class").value.trim(),sub=$("b_sub").value.trim(),chap=$("b_chap").value.trim(),diff=$("b_diff").value,pyq=$("b_pyq").value.trim();
+    if(!cls||!sub||!chap)return setS("b_s","Enter class, subject and chapter.","err");
+    $("b_go").disabled=true;setS("b_s","Building your complete study pack… this takes ~20–40s for full coverage.");
+    try{
+      const usr="Board: "+board+" | Class: "+cls+" | Subject: "+sub+" | Chapter: "+chap+" | Difficulty: "+diff
+        +(pyq?"\n\nReal previous-year questions provided (use ONLY these for section 16 repeated-question analysis):\n"+pyq.slice(0,4000):"\n\nNo real past papers provided — state that previous-year repetition cannot be verified.");
+      const md=await askAI([{role:"system",content:MASTER_SYS},{role:"user",content:usr}],{temperature:0.4,json:false});
+      $("b_out").innerHTML='<div class="card" id="packcard"><div class="studypack">'+mdToHtml(md)+'</div></div>';
+      setS("b_s","✓ Study pack ready for "+chap+" ("+board+" "+cls+").","ok");
+      $("b_print").style.display="";$("b_print").onclick=()=>window.print();
+    }catch(e){setS("b_s","AI error: "+e.message,"err");}
+    $("b_go").disabled=false;
+  };
 }
 
 /* boot */
