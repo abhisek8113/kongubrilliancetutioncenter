@@ -62,13 +62,11 @@ tr:hover td{background:#fafbff}
   <div class="brandbig"><h1>Kongu Brilliance</h1><p>Exam Portal — sign in to continue</p></div>
   <div id="cfgWarn" class="banner" hidden>⚙ Not connected to a database yet. Add your Supabase URL &amp; anon key in the config block at the top of this file (or the hosting env) to enable login and tracking.</div>
   <div class="card">
-    <div class="seg"><button id="segLogin" class="on" onclick="authTab('login')">Log in</button><button id="segSignup" onclick="authTab('signup')">Sign up</button></div>
-    <div id="nameField" hidden><label>Full name</label><input id="auName" placeholder="Your name"></div>
     <label>Email</label><input id="auEmail" type="email" placeholder="you@example.com">
     <label>Password</label><input id="auPass" type="password" placeholder="••••••••">
     <button class="btn nav" id="auGo" style="width:100%">Log in</button>
     <div class="status" id="auStatus"></div>
-    <p class="muted" style="margin-top:12px">New students sign up as “student” by default. An admin assigns evaluator/admin roles.</p>
+    <p class="muted" style="margin-top:12px">Accounts are created by your school admin. If you don't have a login, ask your admin to add you.</p>
   </div>
 </div>
 
@@ -105,26 +103,15 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 let ME=null; // {id, full_name, role, board, class}
 
-/* ================== AUTH ================== */
-let authMode="login";
-function authTab(m){authMode=m;$("segLogin").classList.toggle("on",m==="login");$("segSignup").classList.toggle("on",m==="signup");
-  $("nameField").hidden=m!=="signup";$("auGo").textContent=m==="login"?"Log in":"Create account";}
+/* ================== AUTH (login only — accounts are admin-created) ================== */
 function setS(id,m,c){const e=$(id);e.textContent=m;e.className="status "+(c||"");}
-
 $("auGo").onclick=async()=>{
   if(!HAS_DB){setS("auStatus","Database not configured — see the banner above.","err");return;}
   const email=$("auEmail").value.trim(),pass=$("auPass").value;
   if(!email||!pass)return setS("auStatus","Enter email and password.","err");
   $("auGo").disabled=true;
-  try{
-    if(authMode==="signup"){
-      const {error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:$("auName").value.trim()}}});
-      if(error)throw error; setS("auStatus","Account created. If email confirmation is on, check your inbox, then log in.","ok");
-    }else{
-      const {error}=await sb.auth.signInWithPassword({email,password:pass});
-      if(error)throw error;
-    }
-  }catch(e){setS("auStatus",e.message||String(e),"err");}
+  try{ const {error}=await sb.auth.signInWithPassword({email,password:pass}); if(error)throw error; }
+  catch(e){setS("auStatus",e.message||String(e),"err");}
   $("auGo").disabled=false;
 };
 async function logout(){ if(sb) await sb.auth.signOut(); ME=null; location.reload(); }
@@ -388,7 +375,15 @@ async function vUsers(v){
   if(!HAS_DB){v.innerHTML='<div class="card muted">Connect the database.</div>';return;}
   const {data:users}=await sb.from("profiles").select("*").order("created_at");
   const evaluators=(users||[]).filter(u=>u.role==="evaluator"),students=(users||[]).filter(u=>u.role==="student");
-  let h='<div class="card"><h2>Users &amp; roles</h2><div class="sub">Change a role, or assign students to an evaluator.</div>'
+  let h='<div class="card"><h2>➕ Create a new account</h2><div class="sub">You control who gets access. New users log in with the email &amp; temporary password you set here.</div>'
+    +'<div class="row"><div><label>Full name</label><input id="nu_name" placeholder="Student / teacher name"></div>'
+    +'<div><label>Email</label><input id="nu_email" type="email" placeholder="name@example.com"></div></div>'
+    +'<div class="row"><div><label>Role</label><select id="nu_role"><option value="student">Student</option><option value="evaluator">Evaluator</option><option value="admin">Admin</option></select></div>'
+    +'<div><label>Temp password</label><input id="nu_pass" placeholder="min 6 chars"></div></div>'
+    +'<div class="row"><div><label>Board (optional)</label><select id="nu_board"><option value=""></option>'+boardOptions('')+'</select></div>'
+    +'<div><label>Class (optional)</label><input id="nu_class" placeholder="Class 9"></div></div>'
+    +'<button class="btn" id="nu_go">Create account</button><div class="status" id="nu_s"></div></div>';
+  h+='<div class="card"><h2>Users &amp; roles</h2><div class="sub">Change a role, or assign students to an evaluator.</div>'
     +'<table><tr><th>Name</th><th>Email/ID</th><th>Role</th></tr>'+(users||[]).map(u=>'<tr><td>'+esc(u.full_name||'')+'</td><td class="muted">'+esc(u.id).slice(0,8)+'…</td><td><select onchange="setRole(\''+u.id+'\',this.value)">'+["student","evaluator","admin"].map(r=>'<option'+(r===u.role?" selected":"")+'>'+r+'</option>').join("")+'</select></td></tr>').join("")+'</table></div>';
   h+='<div class="card"><h2>Assign students to an evaluator</h2><label>Evaluator</label><select id="asgEval">'+evaluators.map(e=>'<option value="'+e.id+'">'+esc(e.full_name||e.id)+'</option>').join("")+'</select>'
     +'<label>Student</label><select id="asgStudent">'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name||s.id)+'</option>').join("")+'</select>'
@@ -396,6 +391,18 @@ async function vUsers(v){
   v.innerHTML=h;
   $("asgBtn").onclick=async()=>{const e=$("asgEval").value,s=$("asgStudent").value;if(!e||!s)return;
     const {error}=await sb.from("assignments").upsert({evaluator_id:e,student_id:s});setS("asgS",error?error.message:"Assigned.",error?"err":"ok");};
+  $("nu_go").onclick=async()=>{
+    const email=$("nu_email").value.trim(),pass=$("nu_pass").value,name=$("nu_name").value.trim(),role=$("nu_role").value;
+    if(!email||pass.length<6)return setS("nu_s","Enter an email and a password of at least 6 characters.","err");
+    $("nu_go").disabled=true;setS("nu_s","Creating account…");
+    try{const {data:{session}}=await sb.auth.getSession();
+      const r=await fetch('/api/admin-create-user',{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({access_token:session.access_token,email,password:pass,full_name:name,role,board:$("nu_board").value,class:$("nu_class").value.trim()})});
+      const j=await r.json();if(!r.ok)throw new Error(j.error||("error "+r.status));
+      setS("nu_s","✓ "+role+" account created for "+email+". Share the email + temp password with them.","ok");
+      $("nu_email").value="";$("nu_pass").value="";$("nu_name").value="";
+      setTimeout(()=>vUsers($("views")),1200);
+    }catch(e){setS("nu_s",e.message,"err");}$("nu_go").disabled=false;};
 }
 window.setRole=async(id,role)=>{ await sb.from("profiles").update({role}).eq("id",id); };
 /* ---- ADMIN: analytics ---- */
