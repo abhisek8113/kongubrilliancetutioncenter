@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Portal — Kongu Brilliance</title>
+<meta name="description" content="Kongu Brilliance Exam Portal — role-based question paper generator, board-aware answer evaluator, and student performance tracking with adaptive practice. Admin, evaluator and student logins.">
+<style>
+:root{--navy:#1a237e;--indigo:#3f51b5;--indigo2:#5c6bc0;--gold:#ffd700;--line:#c5cae9;
+  --bg:#f4f5fa;--soft:#e8eaf6;--fill:#f5f6fc;--good:#1f8a5b;--warn:#b8791a;--bad:#c2413c;--ink:#222}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;color:var(--ink);line-height:1.6;background:var(--bg)}
+a{color:var(--indigo)}
+.top{background:var(--navy);color:#fff;padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.15em}.top .sp{flex:1}
+.top .who{font-size:.85em;color:#c5cae9}.top .role{background:var(--gold);color:var(--navy);border-radius:20px;padding:2px 10px;font-size:.72em;font-weight:bold;margin-left:6px;text-transform:uppercase}
+.top button{border:1px solid #7986cb;background:transparent;color:#fff;border-radius:7px;padding:6px 12px;font-weight:bold;cursor:pointer;font-size:.82em}
+.tabbar{background:#fff;border-bottom:1px solid var(--line);display:flex;gap:2px;padding:0 12px;overflow-x:auto}
+.tabbar button{border:none;background:none;padding:14px 16px;font-weight:bold;color:#777;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;font-size:.9em}
+.tabbar button[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--gold)}
+.wrap{max-width:1100px;margin:22px auto;padding:0 18px}
+.card{background:#fff;border-radius:12px;border-top:4px solid var(--indigo);box-shadow:0 2px 12px rgba(26,35,126,.08);padding:20px;margin-bottom:18px}
+.card h2{margin:0 0 4px;color:var(--navy);font-size:1.15em}.card .sub{color:#666;font-size:.85em;margin:0 0 14px}
+label{display:block;font-size:.7em;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:var(--indigo2);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--fill);font-size:14px;font-family:inherit}
+textarea{min-height:60px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:120px}
+.btn{margin-top:12px;padding:11px 18px;border:none;border-radius:9px;background:var(--gold);color:var(--navy);font-weight:bold;font-size:14px;cursor:pointer}
+.btn:hover{background:#ffdb3a}.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--indigo);border:1px solid var(--line)}
+.btn.nav{background:var(--navy);color:#fff}
+.status{font-size:.83em;margin-top:8px;min-height:16px;color:#555}.status.err{color:var(--bad)}.status.ok{color:var(--good)}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72em;font-weight:bold;background:var(--soft);color:var(--indigo);border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:.88em}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #eef}th{color:var(--navy);font-size:.8em;text-transform:uppercase;letter-spacing:.04em}
+tr:hover td{background:#fafbff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:.83em}
+.bar .lab{flex:none;width:130px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{flex:1;height:9px;background:#eee;border-radius:5px;overflow:hidden}.bar .f{height:100%;border-radius:5px}
+.spark{display:flex;align-items:flex-end;gap:3px;height:60px}
+.spark span{flex:1;background:var(--indigo);border-radius:2px 2px 0 0;min-height:2px}
+.dial{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:bold;font-size:17px}
+.qcard{border:1px solid #e6e8f3;border-radius:9px;padding:12px 14px;margin-bottom:10px;background:#fbfbfe}
+.qcard .qh{font-weight:bold;color:var(--navy);font-size:.9em;margin-bottom:6px}
+.rk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;color:#fff;font-size:11px;font-weight:bold;margin-right:6px}
+.rk-good{background:var(--good)}.rk-warn{background:var(--warn)}.rk-bad{background:var(--bad)}
+.model{margin-top:7px;padding:8px 10px;background:#e2f4ea;border:1px solid var(--good);border-radius:7px;font-size:.83em}
+.muted{color:#888;font-size:.85em}
+/* auth */
+.authwrap{max-width:400px;margin:8vh auto;padding:0 18px}
+.brandbig{text-align:center;margin-bottom:18px}.brandbig h1{color:var(--navy);margin:0}.brandbig p{color:#666;margin:4px 0 0}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1;padding:9px;border:1px solid var(--line);background:var(--fill);border-radius:8px;font-weight:bold;color:var(--indigo);cursor:pointer}
+.seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.banner{background:#fff8e1;border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:.82em;color:#7a5c00;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div id="authScreen" class="authwrap">
+  <div class="brandbig"><h1>Kongu Brilliance</h1><p>Exam Portal — sign in to continue</p></div>
+  <div id="cfgWarn" class="banner" hidden>⚙ Not connected to a database yet. Add your Supabase URL &amp; anon key in the config block at the top of this file (or the hosting env) to enable login and tracking.</div>
+  <div class="card">
+    <div class="seg"><button id="segLogin" class="on" onclick="authTab('login')">Log in</button><button id="segSignup" onclick="authTab('signup')">Sign up</button></div>
+    <div id="nameField" hidden><label>Full name</label><input id="auName" placeholder="Your name"></div>
+    <label>Email</label><input id="auEmail" type="email" placeholder="you@example.com">
+    <label>Password</label><input id="auPass" type="password" placeholder="••••••••">
+    <button class="btn nav" id="auGo" style="width:100%">Log in</button>
+    <div class="status" id="auStatus"></div>
+    <p class="muted" style="margin-top:12px">New students sign up as “student” by default. An admin assigns evaluator/admin roles.</p>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="appShell" hidden>
+  <div class="top">
+    <h1>Kongu Brilliance · Exam Portal</h1>
+    <div class="sp"></div>
+    <span class="who" id="whoName"></span><span class="role" id="whoRole"></span>
+    <button onclick="logout()">Log out</button>
+  </div>
+  <div class="tabbar" id="tabbar"></div>
+  <div class="wrap" id="views"></div>
+</div>
+
+<!-- Supabase JS v2 (works on the live Vercel site; preview in chat may block it) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ================== CONFIG — fill these in ================== */
+const CFG = window.KB_CONFIG || {
+  SUPABASE_URL:  "https://jpngmqyidbuzbzqbsyhp.supabase.co",
+  SUPABASE_ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbmdtcXlpZGJ1emJ6cWJzeWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NTk4MDcsImV4cCI6MjA5MjMzNTgwN30.Ol1NDfCM-BNEuI-MTpvl0bHrTPHxwzRuqJ9LTU6d8SA",
+};
+const HAS_DB = !!(window.supabase && CFG.SUPABASE_URL && !CFG.SUPABASE_URL.startsWith("PASTE"));
+const sb = HAS_DB ? window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON) : null;
+
+/* board-aware marking rules */
+const BOARDS = {
+  "CBSE":        {shortWords:30, longWords:80,  keyWeight:0.70, stepMarks:true },
+  "ICSE":        {shortWords:40, longWords:120, keyWeight:0.75, stepMarks:true },
+  "State Board": {shortWords:25, longWords:70,  keyWeight:0.65, stepMarks:false},
+};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+let ME=null; // {id, full_name, role, board, class}
+
+/* ================== AUTH ================== */
+let authMode="login";
+function authTab(m){authMode=m;$("segLogin").classList.toggle("on",m==="login");$("segSignup").classList.toggle("on",m==="signup");
+  $("nameField").hidden=m!=="signup";$("auGo").textContent=m==="login"?"Log in":"Create account";}
+function setS(id,m,c){const e=$(id);e.textContent=m;e.className="status "+(c||"");}
+
+$("auGo").onclick=async()=>{
+  if(!HAS_DB){setS("auStatus","Database not configured — see the banner above.","err");return;}
+  const email=$("auEmail").value.trim(),pass=$("auPass").value;
+  if(!email||!pass)return setS("auStatus","Enter email and password.","err");
+  $("auGo").disabled=true;
+  try{
+    if(authMode==="signup"){
+      const {error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:$("auName").value.trim()}}});
+      if(error)throw error; setS("auStatus","Account created. If email confirmation is on, check your inbox, then log in.","ok");
+    }else{
+      const {error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+    }
+  }catch(e){setS("auStatus",e.message||String(e),"err");}
+  $("auGo").disabled=false;
+};
+async function logout(){ if(sb) await sb.auth.signOut(); ME=null; location.reload(); }
+
+async function boot(){
+  if(!HAS_DB){$("cfgWarn").hidden=false;return;}
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) await onLogin(session.user);
+  sb.auth.onAuthStateChange((_e,s)=>{ if(s&&!ME) onLogin(s.user); });
+}
+async function onLogin(user){
+  // load or create profile
+  let {data:prof}=await sb.from("profiles").select("*").eq("id",user.id).single();
+  if(!prof){ await sb.from("profiles").insert({id:user.id,full_name:user.email}); ({data:prof}=await sb.from("profiles").select("*").eq("id",user.id).single()); }
+  ME={...prof,email:user.email};
+  $("authScreen").hidden=true;$("appShell").hidden=false;
+  $("whoName").textContent=ME.full_name||ME.email;$("whoRole").textContent=ME.role;
+  buildTabs();
+}
+
+/* ================== ROLE-BASED TABS ================== */
+const TABS={
+  student:  [["practice","📝 Practice"],["adaptive","🎯 Targeted practice"],["tutor","🧑‍🏫 Ask a doubt"],["me","📊 My performance"]],
+  evaluator:[["grade","✓ Grade answers"],["students","👥 My students"],["copilot","🛠 Copilot"]],
+  admin:    [["generate","📝 Generate"],["grade","✓ Grade"],["tutor","🧑‍🏫 Tutor"],["copilot","🛠 Copilot"],["users","👤 Users"],["analytics","📈 Analytics"]],
+};
+let curTab=null;
+function buildTabs(){
+  const tabs=TABS[ME.role]||TABS.student;const bar=$("tabbar");bar.innerHTML="";
+  tabs.forEach(([k,l])=>{const b=document.createElement("button");b.innerHTML=l;b.onclick=()=>showTab(k);b.dataset.k=k;bar.appendChild(b);});
+  showTab(tabs[0][0]);
+}
+function showTab(k){curTab=k;[...$("tabbar").children].forEach(b=>b.setAttribute("aria-selected",b.dataset.k===k));
+  const v=$("views");v.innerHTML='<div class="card"><div class="muted">Loading…</div></div>';
+  ({practice:vPractice,adaptive:vAdaptive,me:vMe,grade:vGrade,students:vStudents,generate:vGenerate,users:vUsers,analytics:vAnalytics,tutor:vTutor,copilot:vCopilot}[k])(v);}
+
+/* ================== SHARED: generator + evaluator engines ================== */
+async function askAI(messages,{temperature=0.4,json=true}={}){
+  const r=await fetch('/api/llm',{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,temperature,json})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||("AI "+r.status));return j.text;}
+const parseJSON=t=>{t=String(t).replace(/```json|```/g,"").trim();const a=t.indexOf("{"),b=t.lastIndexOf("}");return JSON.parse(a>=0?t.slice(a,b+1):t);};
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const kw=s=>{const stop=new Set("the a an of to in on and or is are was were be by for with as that this it its from at which such into can will has have had not you your they their our we".split(" "));
+  return [...new Set(String(s).replace(/[^a-zA-Z\- ]/g," ").split(" ").filter(x=>x.length>4&&!stop.has(x.toLowerCase())))].sort((a,b)=>b.length-a.length);};
+
+async function generatePaper(cfg){
+  // AI first, offline fallback
+  try{
+    const usr=`Create an exam paper. Subject:${cfg.subject}. Class:${cfg.class}. Board:${cfg.board}. Difficulty:${cfg.difficulty}. `
+      +`Sections: ${cfg.types.map(t=>t.n+" "+t.t).join(", ")}. `
+      +(cfg.weakTopics&&cfg.weakTopics.length?`Focus especially on these weak topics the student keeps getting wrong: ${cfg.weakTopics.join(", ")}. `:``)
+      +(cfg.src?`Base questions on:\n"""${cfg.src.slice(0,6000)}"""`:`Use the ${cfg.board} curriculum.`)
+      +` Return JSON {"secs":[{"t":"mcq|fill|tf|short|long","items":[{"q":"","opts":["a) .."],"ans":"","key":["kw"],"topic":"","model":"","marks":1}]}]}. opts only for mcq. topic=the concept tested. marks: mcq/fill/tf=1 short=3 long=5.`;
+    let data=parseJSON(await askAI([{role:"system",content:"Experienced Indian exam-paper setter. STRICT JSON only."},{role:"user",content:usr}],{temperature:0.5}));
+    // EXAMINER QC — a second, independent AI challenges each question and fixes issues
+    if(cfg.qc!==false){ try{
+      const qcUsr=`You are a strict ${cfg.board} examiner doing quality control. Review this paper JSON and FIX any problems: ambiguous wording, questions off-syllabus for ${cfg.class}, wrong answer keys, duplicate questions, wrong marks, or answers that don't match the question. Keep the same structure and counts. Return the corrected JSON only.\n`+JSON.stringify(data).slice(0,9000);
+      const fixed=parseJSON(await askAI([{role:"system",content:"Exam QC. Return corrected STRICT JSON only."},{role:"user",content:qcUsr}],{temperature:0.2}));
+      if(fixed&&fixed.secs&&fixed.secs.length) data=fixed;
+      data._qc="verified";
+    }catch(_){ data._qc="unverified"; } }
+    return {...cfg,...data,engine:"ai"};
+  }catch(e){ return offlinePaper(cfg); }
+}
+function offlinePaper(cfg){
+  const sents=(cfg.src||"").replace(/\s+/g," ").split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>40&&s.length<220);
+  const bank=[...new Set(sents.flatMap(kw))];let pool=shuffle(sents),pi=0;const take=()=>sents.length?pool[(pi++)%pool.length]:null;
+  const distract=(a,k)=>{let c=bank.filter(x=>x.toLowerCase()!==String(a).toLowerCase());c=shuffle(c).slice(0,k);while(c.length<k)c.push(["process","factor","property","reaction"][c.length]);return c;};
+  const secs=cfg.types.map(({t,n})=>{const items=[];for(let i=0;i<n;i++){const s=take();const k=s?kw(s)[0]||"":"";
+    if(!s){items.push({q:"["+cfg.subject+" — add question]",ans:"",key:[],topic:cfg.subject,marks:t==="long"?5:t==="short"?3:1});continue;}
+    if(t==="mcq")items.push({q:"Fill the blank: "+(k?s.replace(new RegExp("\\b"+k+"\\b","i"),"_____"):s),opts:shuffle([k,...distract(k,3)]).map((o,j)=>String.fromCharCode(97+j)+") "+o),ans:k,key:[k],topic:k,marks:1});
+    else if(t==="fill")items.push({q:k?s.replace(new RegExp("\\b"+k+"\\b","i"),"______"):s,ans:k,key:[k],topic:k,marks:1});
+    else if(t==="tf"){const mk=k&&Math.random()<.45;items.push(mk?{q:s.replace(new RegExp("\\b"+k+"\\b","i"),distract(k,1)[0]),ans:"False",key:["False"],topic:k,marks:1}:{q:s,ans:"True",key:["True"],topic:k,marks:1});}
+    else if(t==="short")items.push({q:k?"Explain / define: "+k+".":"Answer briefly a concept of "+cfg.subject+".",ans:s,key:kw(s).slice(0,3),topic:k,model:s,marks:3});
+    else items.push({q:k?"Describe in detail: "+k+", with examples.":"Write a note on a topic of "+cfg.subject+".",ans:s,key:kw(s).slice(0,4),topic:k,model:s,marks:5});
+  }return {t,items};});
+  return {...cfg,secs,engine:"offline"};
+}
+
+/* board-aware evaluation */
+async function evaluatePaper(paper,answers,board){
+  const rule=BOARDS[board]||BOARDS["CBSE"];
+  const flat=[];paper.secs.forEach(sec=>sec.items.forEach(it=>flat.push({...it,type:sec.t})));
+  // try AI grading
+  try{
+    const qa=flat.map((it,i)=>({q:it.q,expected:it.model||it.ans,key:it.key||[],marks:it.marks||1,student:answers[i]||""}));
+    const usr=`Grade like a strict ${board} teacher (short answers ~${rule.shortWords} words, long ~${rule.longWords} words, key points weighted ${Math.round(rule.keyWeight*100)}%). For each: marks(0..max), remarks[{t:good|warn|bad,b,s}], one-line model. Data:${JSON.stringify(qa)} Return JSON {"rows":[{"marks":n,"remarks":[...],"model":""}]} same order.`;
+    const out=parseJSON(await askAI([{role:"system",content:"STRICT JSON only."},{role:"user",content:usr}],{temperature:.2}));
+    const rows=flat.map((it,i)=>{const g=(out.rows&&out.rows[i])||{marks:0,remarks:[],model:it.ans};const mk=it.marks||1;const m=Math.max(0,Math.min(mk,g.marks||0));
+      return {q:it.q,topic:it.topic||(it.key&&it.key[0])||it.type,ans:answers[i]||"",mk,marks:m,pct:Math.round(m/mk*100),remarks:g.remarks||[],model:g.model||it.ans,type:it.type,ans_key:it.ans};});
+    return finalize(rows,"ai");
+  }catch(e){ return offlineEval(flat,answers,rule); }
+}
+function offlineEval(flat,answers,rule){
+  const rows=flat.map((it,i)=>{const ans=(answers[i]||"").trim(),mk=it.marks||1,key=(it.key&&it.key.length?it.key:[it.ans]).filter(Boolean);
+    const topic=it.topic||(key[0])||it.type;
+    if(!ans)return {q:it.q,topic,ans,mk,marks:0,pct:0,remarks:[{t:"bad",b:"No answer",s:"Blank."}],model:it.model||it.ans,type:it.type,ans_key:it.ans};
+    const low=" "+ans.toLowerCase()+" ";
+    if((it.opts&&it.opts.length)||it.type==="tf"){const ok=low.includes(String(it.ans).toLowerCase())||ans.toLowerCase().trim()===String(it.ans).toLowerCase();
+      return {q:it.q,topic,ans,mk,marks:ok?mk:0,pct:ok?100:0,remarks:[ok?{t:"good",b:"Correct",s:""}:{t:"bad",b:"Incorrect",s:'Answer: "'+it.ans+'".'}],model:it.ans,type:it.type,ans_key:it.ans};}
+    const hit=key.filter(k=>low.includes(String(k).toLowerCase().slice(0,14))),miss=key.filter(k=>!hit.includes(k));
+    let marks=Math.round(hit.length/Math.max(key.length,1)*mk*rule.keyWeight/0.7*10)/10;marks=Math.min(mk,marks);
+    const remarks=[];hit.forEach(k=>remarks.push({t:"good",b:"Key point",s:'"'+k+'"'}));miss.forEach(k=>remarks.push({t:"bad",b:"Missing",s:'"'+k+'"'}));
+    const words=ans.split(/\s+/).filter(Boolean).length,want=it.type==="long"?rule.longWords:rule.shortWords;let pen=0;
+    if(words<want*0.5){remarks.push({t:"warn",b:"Too short",s:words+" words; aim ~"+want+"."});pen+=0.1;}
+    marks=Math.max(0,Math.round((marks-pen*mk)*10)/10);
+    return {q:it.q,topic,ans,mk,marks,pct:Math.round(marks/mk*100),remarks,model:it.model||it.ans,type:it.type,ans_key:it.ans};});
+  return finalize(rows,"offline");
+}
+function finalize(rows,engine){const got=rows.reduce((s,r)=>s+r.marks,0),tot=rows.reduce((s,r)=>s+r.mk,0);
+  return {rows,got:Math.round(got*10)/10,tot,pct:tot?Math.round(got/tot*100):0,engine};}
+
+/* persist an evaluation + mistakes to DB */
+async function saveEvaluation({paper,report,studentId,board,gradedBy}){
+  if(!HAS_DB)return;
+  const {data:ev}=await sb.from("evaluations").insert({
+    student_id:studentId,evaluator_id:(gradedBy==="evaluator"||gradedBy==="admin")?ME.id:null,
+    graded_by:gradedBy==="self"?"self":(gradedBy==="ai"?"ai":"evaluator"),
+    board,subject:paper.subject,class:paper.class,score:report.got,total:report.tot,pct:report.pct,report
+  }).select().single();
+  const wrong=report.rows.filter(r=>r.pct<50);
+  if(ev&&wrong.length){ await sb.from("mistakes").insert(wrong.map(r=>({
+    student_id:studentId,evaluation_id:ev.id,subject:paper.subject,topic:r.topic||paper.subject,
+    question:r.q,expected:r.ans_key||r.model,given:r.ans })));}
+  return ev;
+}
+async function myWeakTopics(studentId,subject){
+  if(!HAS_DB)return [];
+  let q=sb.from("weak_topics").select("*").eq("student_id",studentId).order("misses",{ascending:false}).limit(8);
+  if(subject)q=q.eq("subject",subject);
+  const {data}=await q;return (data||[]);
+}
+
+/* ================== VIEWS ================== */
+const boardOptions=b=>Object.keys(BOARDS).map(x=>`<option${x===b?" selected":""}>${x}</option>`).join("");
+const defaultTypes=()=>[{t:"mcq",n:5},{t:"fill",n:3},{t:"tf",n:3},{t:"short",n:3},{t:"long",n:1}];
+
+function paperFormHTML(pre){return `
+  <div class="row">
+    <div><label>Subject</label><input id="g_subject" value="${esc(pre.subject||'')}" placeholder="Science"></div>
+    <div><label>Class</label><input id="g_class" value="${esc(pre.class||ME.class||'')}" placeholder="Class 9"></div>
+  </div>
+  <div class="row">
+    <div><label>Board</label><select id="g_board">${boardOptions(pre.board||ME.board||'CBSE')}</select></div>
+    <div><label>Difficulty</label><select id="g_diff"><option>Easy</option><option selected>Moderate</option><option>Hard</option></select></div>
+  </div>
+  <label>Source material (optional — paste a chapter for content-based questions)</label>
+  <textarea id="g_src" placeholder="Paste notes…"></textarea>`;}
+function readPaperForm(extra){return {subject:$("g_subject").value.trim(),class:$("g_class").value.trim(),
+  board:$("g_board").value,difficulty:$("g_diff").value,src:$("g_src").value.trim(),types:defaultTypes(),...extra};}
+
+let ACTIVE=null; // {paper, answers}
+function renderTake(paper,into){
+  const flat=[];paper.secs.forEach(s=>s.items.forEach(it=>flat.push({...it,type:s.t})));paper._flat=flat;
+  let h='<div class="card"><h2>'+esc(paper.subject)+' — '+esc(paper.class)+' <span class="pill">'+esc(paper.board)+'</span> <span class="pill">'+(paper.engine==="ai"?"AI":"offline")+'</span></h2><div class="sub">Answer every question, then submit for grading.</div>';
+  flat.forEach((it,i)=>{h+='<div class="qcard"><div class="qh">Q'+(i+1)+'. '+esc(it.q)+' <span style="color:#c99a2e">['+(it.marks||1)+'m]</span></div>';
+    if(it.opts&&it.opts.length)h+='<select data-a="'+i+'"><option value="">— choose —</option>'+it.opts.map(o=>'<option value="'+esc(o.replace(/^[a-e]\)\s*/,''))+'">'+esc(o)+'</option>').join('')+'</select>';
+    else if(it.type==="tf")h+='<select data-a="'+i+'"><option value="">—</option><option>True</option><option>False</option></select>';
+    else h+='<textarea data-a="'+i+'" placeholder="Your answer…"></textarea>';h+='</div>';});
+  h+='<button class="btn" id="submitBtn">Submit &amp; grade ✓</button><div class="status" id="subStatus"></div></div>';
+  into.innerHTML=h;
+  $("submitBtn").onclick=async()=>{const answers=flat.map((_,i)=>{const el=into.querySelector('[data-a="'+i+'"]');return el?el.value.trim():"";});
+    $("submitBtn").disabled=true;setS("subStatus","Grading ("+paper.board+" scheme)…");
+    try{const report=await evaluatePaper(paper,answers,paper.board);
+      await saveEvaluation({paper,report,studentId:ME.id,board:paper.board,gradedBy:"self"});
+      renderReport(report,into,paper);
+    }catch(e){setS("subStatus",e.message,"err");$("submitBtn").disabled=false;}};
+}
+function renderReport(rep,into,paper){
+  const col=rep.pct>=90?"var(--good)":rep.pct>=40?"var(--warn)":"var(--bad)";
+  const byTopic={};rep.rows.forEach(r=>{(byTopic[r.topic]=byTopic[r.topic]||{g:0,t:0}).g+=r.marks;byTopic[r.topic].t+=r.mk;});
+  const weak=Object.keys(byTopic).filter(k=>byTopic[k].t&&byTopic[k].g/byTopic[k].t<0.5);
+  let h='<div class="card"><h2>Result</h2><div style="display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap">'
+    +'<div class="dial" style="background:'+col+'">'+rep.got+'/'+rep.tot+'</div><div><b style="font-size:1.1em;color:'+col+'">'+rep.pct+'%</b><div class="muted">'+rep.rows.length+' questions · '+esc(paper.board)+' scheme · '+(rep.engine==="ai"?"AI-graded":"auto-graded")+'</div></div></div>';
+  if(weak.length)h+='<div class="banner">🎯 Weak topics saved to your history: <b>'+weak.map(esc).join(", ")+'</b>. Try “Targeted practice”.</div>';
+  const ico={good:"✓",warn:"!",bad:"✕"};
+  rep.rows.forEach((r,i)=>{const rc=r.pct>=90?"var(--good)":r.pct>=40?"var(--warn)":"var(--bad)";
+    h+='<div class="qcard"><div class="qh">Q'+(i+1)+'. '+esc(r.q).slice(0,90)+' <span style="float:right;color:'+rc+'">'+r.marks+'/'+r.mk+'</span></div>';
+    (r.remarks||[]).forEach(rm=>h+='<div style="font-size:.85em"><span class="rk rk-'+rm.t+'">'+(ico[rm.t]||'•')+'</span><b>'+esc(rm.b)+'</b> '+esc(rm.s)+'</div>');
+    if(r.model)h+='<div class="model"><b>Model:</b> '+esc(r.model)+'</div>';h+='</div>';});
+  h+='</div>';into.innerHTML=h;
+}
+
+/* ---- STUDENT: practice ---- */
+function vPractice(v){
+  v.innerHTML='<div class="card"><h2>Generate &amp; practise a paper</h2><div class="sub">Pick subject, class and board. The paper is graded to that board’s scheme and saved to your history.</div>'
+    +paperFormHTML({})+'<button class="btn" id="genBtn">Generate paper ↦</button><div class="status" id="gs"></div></div><div id="takeArea"></div>';
+  $("genBtn").onclick=async()=>{const cfg=readPaperForm();if(!cfg.subject||!cfg.class)return setS("gs","Enter subject and class.","err");
+    $("genBtn").disabled=true;setS("gs","Generating…");try{ACTIVE={paper:await generatePaper(cfg)};setS("gs","Ready — answer below.","ok");renderTake(ACTIVE.paper,$("takeArea"));}catch(e){setS("gs",e.message,"err");}$("genBtn").disabled=false;};
+}
+/* ---- STUDENT: adaptive ---- */
+async function vAdaptive(v){
+  const weak=await myWeakTopics(ME.id);
+  v.innerHTML='<div class="card"><h2>🎯 Targeted practice</h2><div class="sub">Built from the topics you’ve been getting wrong, so you improve where it counts.</div>'
+    +(weak.length?'<p>Your current weak topics: '+weak.map(w=>'<span class="pill">'+esc(w.topic)+' ×'+w.misses+'</span>').join(" ")+'</p>':'<p class="muted">No mistakes logged yet — do a practice paper first and your weak topics will appear here.</p>')
+    +paperFormHTML({subject:weak[0]?weak[0].subject:""})+'<button class="btn" id="adBtn">Generate targeted paper ↦</button><div class="status" id="as"></div></div><div id="takeArea"></div>';
+  $("adBtn").onclick=async()=>{const cfg=readPaperForm({weakTopics:weak.map(w=>w.topic)});if(!cfg.subject||!cfg.class)return setS("as","Enter subject and class.","err");
+    $("adBtn").disabled=true;setS("as","Building targeted paper…");try{ACTIVE={paper:await generatePaper(cfg)};setS("as","Ready.","ok");renderTake(ACTIVE.paper,$("takeArea"));}catch(e){setS("as",e.message,"err");}$("adBtn").disabled=false;};
+}
+/* ---- STUDENT/ADMIN: my performance ---- */
+async function vMe(v){ await performanceView(v,ME.id,ME.full_name||ME.email); }
+async function performanceView(v,studentId,name){
+  if(!HAS_DB){v.innerHTML='<div class="card muted">Connect the database to see performance.</div>';return;}
+  const {data:evals}=await sb.from("evaluations").select("*").eq("student_id",studentId).order("created_at",{ascending:true});
+  const weak=await myWeakTopics(studentId);
+  const avg=evals&&evals.length?Math.round(evals.reduce((s,e)=>s+e.pct,0)/evals.length):0;
+  let h='<div class="card"><h2>'+esc(name)+' — performance</h2>';
+  if(!evals||!evals.length){h+='<p class="muted">No graded papers yet.</p></div>';v.innerHTML=h;return;}
+  h+='<div class="grid2"><div><div class="muted">Average score</div><div style="font-size:1.8em;font-weight:bold;color:var(--navy)">'+avg+'%</div>'
+    +'<div class="muted" style="margin-top:8px">Score trend</div><div class="spark">'+evals.slice(-20).map(e=>'<span title="'+e.pct+'%" style="height:'+Math.max(4,e.pct)+'%"></span>').join("")+'</div></div>'
+    +'<div><div class="muted">Weak topics</div>'+(weak.length?weak.map(w=>'<div class="bar"><span class="lab">'+esc(w.topic)+'</span><span class="track"><span class="f" style="width:'+Math.min(100,w.misses*20)+'%;background:var(--bad)"></span></span><span>×'+w.misses+'</span></div>').join(""):'<p class="muted">None 🎉</p>')+'</div></div>';
+  h+='<div class="muted" style="margin:16px 0 6px">Recent papers</div><table><tr><th>Date</th><th>Subject</th><th>Board</th><th>Score</th></tr>'
+    +evals.slice().reverse().slice(0,12).map(e=>'<tr><td>'+new Date(e.created_at).toLocaleDateString()+'</td><td>'+esc(e.subject||'')+'</td><td>'+esc(e.board||'')+'</td><td><b>'+e.pct+'%</b> ('+e.score+'/'+e.total+')</td></tr>').join("")+'</table></div>';
+  v.innerHTML=h;
+}
+
+/* ---- EVALUATOR/ADMIN: grade ---- */
+function vGrade(v){
+  v.innerHTML='<div class="card"><h2>Grade an answer sheet</h2><div class="sub">Generate/paste a paper, enter the student’s answers, grade to the board scheme, and save it to that student’s record.</div>'
+    +'<label>Student</label><select id="gr_student"><option value="">— loading —</option></select>'
+    +paperFormHTML({})+'<button class="btn sec" id="gr_gen">Generate a paper to grade against</button><div class="status" id="grs"></div></div><div id="gradeArea"></div>';
+  loadGradableStudents();
+  $("gr_gen").onclick=async()=>{const cfg=readPaperForm();if(!cfg.subject||!cfg.class)return setS("grs","Enter subject and class.","err");
+    $("gr_gen").disabled=true;setS("grs","Generating…");try{const paper=await generatePaper(cfg);setS("grs","Enter the student's answers below.","ok");renderGradeForm(paper);}catch(e){setS("grs",e.message,"err");}$("gr_gen").disabled=false;};
+}
+async function loadGradableStudents(){
+  if(!HAS_DB)return;let students=[];
+  if(ME.role==="admin"){const {data}=await sb.from("profiles").select("id,full_name,role").eq("role","student");students=data||[];}
+  else{const {data}=await sb.from("assignments").select("student_id, profiles!assignments_student_id_fkey(id,full_name)").eq("evaluator_id",ME.id);
+    students=(data||[]).map(a=>a.profiles).filter(Boolean);}
+  const sel=$("gr_student");if(sel)sel.innerHTML='<option value="">— select student —</option>'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name||s.id)+'</option>').join("");
+}
+function renderGradeForm(paper){
+  const flat=[];paper.secs.forEach(s=>s.items.forEach(it=>flat.push({...it,type:s.t})));paper._flat=flat;
+  let h='<div class="card"><h2>Enter answers — '+esc(paper.subject)+' ('+esc(paper.board)+')</h2>';
+  flat.forEach((it,i)=>{h+='<div class="qcard"><div class="qh">Q'+(i+1)+'. '+esc(it.q)+' ['+(it.marks||1)+'m]</div><textarea data-g="'+i+'" placeholder="Student answer…"></textarea></div>';});
+  h+='<button class="btn" id="grade2">Grade &amp; save ✓</button><div class="status" id="grs2"></div></div><div id="gradeResult"></div>';
+  $("gradeArea").innerHTML=h;
+  $("grade2").onclick=async()=>{const sid=$("gr_student").value;if(!sid)return setS("grs2","Pick a student.","err");
+    const answers=flat.map((_,i)=>{const el=document.querySelector('[data-g="'+i+'"]');return el?el.value.trim():"";});
+    $("grade2").disabled=true;setS("grs2","Grading…");try{const report=await evaluatePaper(paper,answers,paper.board);
+      await saveEvaluation({paper,report,studentId:sid,board:paper.board,gradedBy:ME.role==="admin"?"admin":"evaluator"});
+      setS("grs2","Saved to student’s record.","ok");renderReport(report,$("gradeResult"),paper);
+    }catch(e){setS("grs2",e.message,"err");}$("grade2").disabled=false;};
+}
+/* ---- EVALUATOR: my students ---- */
+async function vStudents(v){
+  if(!HAS_DB){v.innerHTML='<div class="card muted">Connect the database.</div>';return;}
+  const {data}=await sb.from("assignments").select("student_id, profiles!assignments_student_id_fkey(id,full_name,class,board)").eq("evaluator_id",ME.id);
+  const studs=(data||[]).map(a=>a.profiles).filter(Boolean);
+  let h='<div class="card"><h2>My students</h2>';
+  if(!studs.length){h+='<p class="muted">No students assigned yet — ask the admin to assign you.</p></div>';v.innerHTML=h;return;}
+  h+='<table><tr><th>Name</th><th>Class</th><th>Board</th><th></th></tr>'+studs.map(s=>'<tr><td>'+esc(s.full_name||'')+'</td><td>'+esc(s.class||'')+'</td><td>'+esc(s.board||'')+'</td><td><button class="btn sec" style="margin:0;padding:5px 10px" onclick="openStudentPerf(\''+s.id+'\',\''+esc(s.full_name||'').replace(/'/g,"")+'\')">View</button></td></tr>').join("")+'</table></div><div id="perfArea"></div>';
+  v.innerHTML=h;
+}
+window.openStudentPerf=(id,name)=>performanceView($("perfArea"),id,name);
+/* ---- ADMIN: generate (same as practice but shareable) ---- */
+function vGenerate(v){ vPractice(v); }
+/* ---- ADMIN: users & roles ---- */
+async function vUsers(v){
+  if(!HAS_DB){v.innerHTML='<div class="card muted">Connect the database.</div>';return;}
+  const {data:users}=await sb.from("profiles").select("*").order("created_at");
+  const evaluators=(users||[]).filter(u=>u.role==="evaluator"),students=(users||[]).filter(u=>u.role==="student");
+  let h='<div class="card"><h2>Users &amp; roles</h2><div class="sub">Change a role, or assign students to an evaluator.</div>'
+    +'<table><tr><th>Name</th><th>Email/ID</th><th>Role</th></tr>'+(users||[]).map(u=>'<tr><td>'+esc(u.full_name||'')+'</td><td class="muted">'+esc(u.id).slice(0,8)+'…</td><td><select onchange="setRole(\''+u.id+'\',this.value)">'+["student","evaluator","admin"].map(r=>'<option'+(r===u.role?" selected":"")+'>'+r+'</option>').join("")+'</select></td></tr>').join("")+'</table></div>';
+  h+='<div class="card"><h2>Assign students to an evaluator</h2><label>Evaluator</label><select id="asgEval">'+evaluators.map(e=>'<option value="'+e.id+'">'+esc(e.full_name||e.id)+'</option>').join("")+'</select>'
+    +'<label>Student</label><select id="asgStudent">'+students.map(s=>'<option value="'+s.id+'">'+esc(s.full_name||s.id)+'</option>').join("")+'</select>'
+    +'<button class="btn" id="asgBtn">Assign</button><div class="status" id="asgS"></div></div>';
+  v.innerHTML=h;
+  $("asgBtn").onclick=async()=>{const e=$("asgEval").value,s=$("asgStudent").value;if(!e||!s)return;
+    const {error}=await sb.from("assignments").upsert({evaluator_id:e,student_id:s});setS("asgS",error?error.message:"Assigned.",error?"err":"ok");};
+}
+window.setRole=async(id,role)=>{ await sb.from("profiles").update({role}).eq("id",id); };
+/* ---- ADMIN: analytics ---- */
+async function vAnalytics(v){
+  if(!HAS_DB){v.innerHTML='<div class="card muted">Connect the database.</div>';return;}
+  const {data:evals}=await sb.from("evaluations").select("pct,subject,board,created_at,student_id");
+  const {data:mist}=await sb.from("mistakes").select("topic,subject");
+  const avg=evals&&evals.length?Math.round(evals.reduce((s,e)=>s+e.pct,0)/evals.length):0;
+  const topicCount={};(mist||[]).forEach(m=>topicCount[m.topic]=(topicCount[m.topic]||0)+1);
+  const top=Object.entries(topicCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const maxc=top.length?top[0][1]:1;
+  let h='<div class="card"><h2>Class analytics</h2><div class="grid2">'
+    +'<div><div class="muted">Papers graded</div><div style="font-size:1.8em;font-weight:bold;color:var(--navy)">'+((evals||[]).length)+'</div>'
+    +'<div class="muted" style="margin-top:6px">Overall average</div><div style="font-size:1.4em;font-weight:bold;color:var(--indigo)">'+avg+'%</div></div>'
+    +'<div><div class="muted">Most common mistakes (class-wide)</div>'+(top.length?top.map(([t,c])=>'<div class="bar"><span class="lab">'+esc(t)+'</span><span class="track"><span class="f" style="width:'+Math.round(c/maxc*100)+'%;background:var(--bad)"></span></span><span>'+c+'</span></div>').join(""):'<p class="muted">No data yet.</p>')+'</div></div></div>';
+  // per-student table
+  const {data:profs}=await sb.from("profiles").select("id,full_name,role").eq("role","student");
+  const byStu={};(evals||[]).forEach(e=>{(byStu[e.student_id]=byStu[e.student_id]||[]).push(e.pct);});
+  h+='<div class="muted" style="margin:16px 0 6px">Students</div><table><tr><th>Student</th><th>Papers</th><th>Average</th><th></th></tr>'
+    +(profs||[]).map(p=>{const a=byStu[p.id]||[];const av=a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):0;
+      return '<tr><td>'+esc(p.full_name||'')+'</td><td>'+a.length+'</td><td><b>'+av+'%</b></td><td><button class="btn sec" style="margin:0;padding:5px 10px" onclick="openStudentPerf(\''+p.id+'\',\''+esc(p.full_name||'').replace(/'/g,"")+'\')">View</button></td></tr>';}).join("")+'</table></div><div id="perfArea"></div>';
+  v.innerHTML=h;
+}
+
+/* ---- SOCRATIC AI TUTOR + WHITEBOARD ---- */
+let TUTOR=[]; // conversation
+function vTutor(v){
+  v.innerHTML=`<div class="card"><h2>🧑‍🏫 Ask a doubt — your personal AI teacher</h2>
+    <div class="sub">It won't just hand you the answer — it teaches step by step, draws on the board, and checks if you understood.</div>
+    <div class="grid2">
+      <div>
+        <label>The board</label>
+        <div id="board" style="border:1px solid var(--line);border-radius:10px;background:#fffef7;min-height:260px;padding:14px;font-family:Georgia,serif;font-size:.95em;overflow:auto"></div>
+        <canvas id="draw" width="480" height="150" style="border:1px dashed var(--line);border-radius:8px;margin-top:8px;width:100%;background:#fff;touch-action:none"></canvas>
+        <div><button class="btn sec" style="margin-top:6px;padding:5px 10px" id="clearDraw">Clear my drawing</button></div>
+      </div>
+      <div>
+        <div class="row"><div><label>Subject</label><input id="t_sub" placeholder="Maths" value="${esc(ME.class?'':'')}"></div>
+          <div><label>Board</label><select id="t_board">${boardOptions(ME.board||'CBSE')}</select></div></div>
+        <label>Your doubt / question</label>
+        <textarea id="t_q" placeholder="e.g. I don't understand Pythagoras theorem"></textarea>
+        <button class="btn" id="t_ask">Ask the teacher ↦</button>
+        <div id="tlog" style="margin-top:12px;max-height:280px;overflow:auto"></div>
+        <div class="status" id="ts"></div>
+      </div>
+    </div></div>`;
+  TUTOR=[];setupDraw();
+  $("t_ask").onclick=async()=>{const q=$("t_q").value.trim();if(!q)return;
+    const sub=$("t_sub").value.trim(),board=$("t_board").value;
+    logTurn("You",q);$("t_q").value="";$("t_ask").disabled=true;setS("ts","Teacher is thinking…");
+    try{
+      const sys=`You are an expert, patient ${board} school teacher for ${sub||"this subject"}. Teach with the Socratic method: do NOT dump the full answer. Give ONE small step or hint, then ask the student a checking question and wait. Use simple language. When useful, put a short step-by-step explanation or a labelled diagram description in a "board" field. Return JSON {"say":"what you tell the student (1-3 sentences, end with a question)","board":"optional step-by-step / diagram text for the whiteboard","mastered":false}.`;
+      TUTOR.push({role:"user",content:q});
+      const out=parseJSON(await askAI([{role:"system",content:sys},...TUTOR.slice(-8)],{temperature:0.5}));
+      TUTOR.push({role:"assistant",content:out.say||""});
+      if(out.board)$("board").innerHTML='<b style="color:var(--navy)">Teacher\'s board</b><pre style="white-space:pre-wrap;font-family:Georgia,serif;margin:6px 0 0">'+esc(out.board)+'</pre>';
+      logTurn("Teacher",out.say||"Let's continue.");setS("ts","","ok");
+    }catch(e){setS("ts","AI unavailable ("+e.message+"). Add a Groq/Gemini key in Vercel to enable the tutor.","err");}
+    $("t_ask").disabled=false;};
+}
+function logTurn(who,txt){const l=$("tlog");if(!l)return;const d=document.createElement("div");
+  d.style.cssText="margin:6px 0;padding:8px 10px;border-radius:8px;font-size:.9em;background:"+(who==="You"?"#eef":"#e2f4ea");
+  d.innerHTML='<b>'+who+':</b> '+esc(txt);l.appendChild(d);l.scrollTop=l.scrollHeight;}
+function setupDraw(){const c=$("draw");if(!c)return;const ctx=c.getContext("2d");let d=false,px,py;
+  const pos=e=>{const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return [(t.clientX-r.left)*c.width/r.width,(t.clientY-r.top)*c.height/r.height];};
+  const down=e=>{d=true;[px,py]=pos(e);e.preventDefault();};
+  const move=e=>{if(!d)return;const [x,y]=pos(e);ctx.strokeStyle="#1a237e";ctx.lineWidth=2;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(x,y);ctx.stroke();[px,py]=[x,y];e.preventDefault();};
+  const up=()=>d=false;
+  c.addEventListener("mousedown",down);c.addEventListener("mousemove",move);window.addEventListener("mouseup",up);
+  c.addEventListener("touchstart",down);c.addEventListener("touchmove",move);c.addEventListener("touchend",up);
+  $("clearDraw").onclick=()=>ctx.clearRect(0,0,c.width,c.height);}
+
+/* ---- TEACHER COPILOT ---- */
+function vCopilot(v){
+  v.innerHTML=`<div class="card"><h2>🛠 Teacher Copilot</h2><div class="sub">Generate lesson plans, worksheets, remedial lessons and parent reports in seconds.</div>
+    <div class="row"><div><label>Task</label><select id="c_task">
+      <option value="lesson">Lesson plan</option><option value="worksheet">Worksheet</option>
+      <option value="remedial">Remedial lesson (for a weak topic)</option><option value="parent">Parent report</option>
+      <option value="revision">Revision plan</option></select></div>
+      <div><label>Board</label><select id="c_board">${boardOptions('CBSE')}</select></div></div>
+    <div class="row"><div><label>Subject</label><input id="c_sub" placeholder="Science"></div>
+      <div><label>Class</label><input id="c_class" placeholder="Class 9"></div></div>
+    <label>Topic / details (for parent report: paste the student's weak topics)</label>
+    <textarea id="c_topic" placeholder="e.g. Trigonometric applications"></textarea>
+    <button class="btn" id="c_go">Generate ↦</button><div class="status" id="cs"></div>
+    <div id="c_out" style="margin-top:14px"></div></div>`;
+  $("c_go").onclick=async()=>{const task=$("c_task").value,board=$("c_board").value,sub=$("c_sub").value.trim(),cls=$("c_class").value.trim(),topic=$("c_topic").value.trim();
+    $("c_go").disabled=true;setS("cs","Generating…");
+    const prompts={
+      lesson:`Write a ${board} lesson plan for ${sub} ${cls} on "${topic}": objectives, prerequisite check, step-by-step teaching flow, board work, examples, common mistakes to pre-empt, quick formative check, and homework.`,
+      worksheet:`Create a ${board} ${sub} ${cls} worksheet on "${topic}": 5 easy, 5 medium, 3 HOTS questions with an answer key at the end.`,
+      remedial:`Design a 15-minute remedial micro-lesson for ${sub} ${cls} students weak in "${topic}": the likely root-cause misconception, a re-teaching sequence, 3 scaffolded practice questions, and a 2-question mastery check.`,
+      parent:`Write a warm, clear parent report for a ${cls} student in ${sub}. Weak areas / notes: "${topic}". Say what the child understands well, what needs work, a simple daily practice recommendation (minutes + questions), and encouragement. No jargon.`,
+      revision:`Create a 7-day revision plan for ${board} ${sub} ${cls} focused on "${topic}": daily focus, practice count, and a self-check each day.`};
+    try{const txt=await askAI([{role:"system",content:"You are an experienced Indian school teacher. Write clear, well-structured plain text (use headings and bullet points)."},{role:"user",content:prompts[task]}],{temperature:0.5,json:false});
+      $("c_out").innerHTML='<div class="card" style="border-top-color:var(--gold)"><pre style="white-space:pre-wrap;font-family:Arial;font-size:.9em;margin:0">'+esc(txt)+'</pre></div>';setS("cs","Done.","ok");
+    }catch(e){setS("cs","AI unavailable ("+e.message+").","err");}$("c_go").disabled=false;};
+}
+
+/* boot */
+boot();
+</script>
+</body>
+</html>
