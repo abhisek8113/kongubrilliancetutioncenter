@@ -6,82 +6,111 @@
 <title>Exam Portal — Kongu Brilliance</title>
 <meta name="description" content="Kongu Brilliance Exam Portal — role-based question paper generator, board-aware answer evaluator, and student performance tracking with adaptive practice. Admin, evaluator and student logins.">
 <style>
-:root{--navy:#1a237e;--indigo:#3f51b5;--indigo2:#5c6bc0;--gold:#ffd700;--line:#c5cae9;
-  --bg:#f4f5fa;--soft:#e8eaf6;--fill:#f5f6fc;--good:#1f8a5b;--warn:#b8791a;--bad:#c2413c;--ink:#222}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
+:root{--gold:#F5C842;--gold2:#FFE566;--amber:#e6a817;
+  --bg:#0a0b12;--panel:rgba(255,255,255,.045);--panel2:rgba(255,255,255,.075);
+  --line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.17);
+  --ink:#eef0f6;--muted:#9aa0b4;--good:#34d399;--warn:#fbbf24;--bad:#f87171;--shadow:0 12px 44px rgba(0,0,0,.5)}
 *{box-sizing:border-box}[hidden]{display:none!important}
-body{font-family:Arial,Helvetica,sans-serif;margin:0;color:var(--ink);line-height:1.6;background:var(--bg)}
-a{color:var(--indigo)}
-.top{background:var(--navy);color:#fff;padding:12px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.top h1{margin:0;font-size:1.15em}.top .sp{flex:1}
-.top .who{font-size:.85em;color:#c5cae9}.top .role{background:var(--gold);color:var(--navy);border-radius:20px;padding:2px 10px;font-size:.72em;font-weight:bold;margin-left:6px;text-transform:uppercase}
-.top button{border:1px solid #7986cb;background:transparent;color:#fff;border-radius:7px;padding:6px 12px;font-weight:bold;cursor:pointer;font-size:.82em}
-.tabbar{background:#fff;border-bottom:1px solid var(--line);display:flex;gap:2px;padding:0 12px;overflow-x:auto}
-.tabbar button{border:none;background:none;padding:14px 16px;font-weight:bold;color:#777;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;font-size:.9em}
-.tabbar button[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--gold)}
-.wrap{max-width:1100px;margin:22px auto;padding:0 18px}
-.card{background:#fff;border-radius:12px;border-top:4px solid var(--indigo);box-shadow:0 2px 12px rgba(26,35,126,.08);padding:20px;margin-bottom:18px}
-.card h2{margin:0 0 4px;color:var(--navy);font-size:1.15em}.card .sub{color:#666;font-size:.85em;margin:0 0 14px}
-label{display:block;font-size:.7em;font-weight:bold;letter-spacing:.05em;text-transform:uppercase;color:var(--indigo2);margin:10px 0 4px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--fill);font-size:14px;font-family:inherit}
-textarea{min-height:60px;resize:vertical}
-.row{display:flex;gap:10px;flex-wrap:wrap}.row>div{flex:1;min-width:120px}
-.btn{margin-top:12px;padding:11px 18px;border:none;border-radius:9px;background:var(--gold);color:var(--navy);font-weight:bold;font-size:14px;cursor:pointer}
-.btn:hover{background:#ffdb3a}.btn:disabled{opacity:.6;cursor:not-allowed}
-.btn.sec{background:#fff;color:var(--indigo);border:1px solid var(--line)}
-.btn.nav{background:var(--navy);color:#fff}
-.status{font-size:.83em;margin-top:8px;min-height:16px;color:#555}.status.err{color:var(--bad)}.status.ok{color:var(--good)}
-.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72em;font-weight:bold;background:var(--soft);color:var(--indigo);border:1px solid var(--line)}
-table{width:100%;border-collapse:collapse;font-size:.88em}
-th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #eef}th{color:var(--navy);font-size:.8em;text-transform:uppercase;letter-spacing:.04em}
-tr:hover td{background:#fafbff}
+body{margin:0;font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--ink);line-height:1.6;min-height:100vh;
+  background:radial-gradient(1200px 620px at 82% -12%,rgba(245,200,66,.12),transparent 60%),radial-gradient(900px 520px at -12% 18%,rgba(120,110,255,.10),transparent 55%),var(--bg)}
+a{color:var(--gold)}h1,h2,h3{font-family:'Sora','Inter',sans-serif}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:6px}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:13px 26px;background:rgba(10,11,18,.72);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.top .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--gold2),var(--amber));display:grid;place-items:center;font-size:18px;box-shadow:0 4px 16px rgba(245,200,66,.4)}
+.top h1{margin:0;font-size:1.02em;font-weight:700;letter-spacing:.2px}.top .sp{flex:1}
+.top .who{font-size:.85em;color:var(--muted)}
+.top .role{background:linear-gradient(135deg,var(--gold2),var(--amber));color:#1a1400;border-radius:20px;padding:3px 11px;font-size:.66em;font-weight:800;margin-left:8px;text-transform:uppercase;letter-spacing:.5px}
+.top button{border:1px solid var(--line2);background:transparent;color:var(--ink);border-radius:9px;padding:7px 14px;font-weight:600;cursor:pointer;font-size:.82em;transition:.15s}
+.top button:hover{background:var(--panel2);border-color:var(--gold)}
+.tabbar{display:flex;gap:8px;padding:16px 26px 0;overflow-x:auto;max-width:1180px;margin:0 auto}
+.tabbar button{border:1px solid var(--line);background:var(--panel);padding:10px 16px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:12px;white-space:nowrap;font-size:.87em;transition:.15s}
+.tabbar button:hover{color:var(--ink);border-color:var(--line2)}
+.tabbar button[aria-selected="true"]{color:#1a1400;background:linear-gradient(135deg,var(--gold2),var(--amber));border-color:transparent;box-shadow:0 8px 20px rgba(245,200,66,.28)}
+.wrap{max-width:1180px;margin:20px auto;padding:0 22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:22px;margin-bottom:18px;backdrop-filter:blur(8px)}
+.card h2{margin:0 0 4px;font-size:1.22em;font-weight:700;background:linear-gradient(90deg,#fff,#cfd4e8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card .sub{color:var(--muted);font-size:.87em;margin:0 0 16px;line-height:1.55}
+label{display:block;font-size:.66em;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:12px 0 5px}
+input,select,textarea{width:100%;padding:11px 13px;border:1px solid var(--line2);border-radius:11px;background:rgba(255,255,255,.03);color:var(--ink);font-size:14px;font-family:inherit;transition:.15s}
+input::placeholder,textarea::placeholder{color:#6b7186}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,200,66,.16)}
+select option{background:#12141d;color:var(--ink)}
+textarea{min-height:64px;resize:vertical}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:130px}.two{display:flex;gap:12px}.two>div{flex:1}
+.btn{margin-top:14px;padding:12px 20px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--gold2),var(--amber));color:#1a1400;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(245,200,66,.28);transition:.15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(245,200,66,.42)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line2);box-shadow:none}
+.btn.nav{background:linear-gradient(135deg,var(--gold2),var(--amber));color:#1a1400}
+.status{font-size:.84em;margin-top:10px;min-height:16px;color:var(--muted)}.status.err{color:var(--bad)}.status.ok{color:var(--good)}
+.pill{display:inline-block;padding:4px 11px;border-radius:20px;font-size:.72em;font-weight:700;background:var(--panel2);color:var(--gold);border:1px solid var(--line2)}
+table{width:100%;border-collapse:collapse;font-size:.9em}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-size:.7em;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+tr:hover td{background:rgba(255,255,255,.03)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:760px){.grid2{grid-template-columns:1fr}}
-.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:.83em}
-.bar .lab{flex:none;width:130px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar .track{flex:1;height:9px;background:#eee;border-radius:5px;overflow:hidden}.bar .f{height:100%;border-radius:5px}
+.bar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.84em}
+.bar .lab{flex:none;width:130px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}.bar .f{height:100%;border-radius:5px}
 .spark{display:flex;align-items:flex-end;gap:3px;height:60px}
-.spark span{flex:1;background:var(--indigo);border-radius:2px 2px 0 0;min-height:2px}
-.dial{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:bold;font-size:17px}
-.qcard{border:1px solid #e6e8f3;border-radius:9px;padding:12px 14px;margin-bottom:10px;background:#fbfbfe}
-.qcard .qh{font-weight:bold;color:var(--navy);font-size:.9em;margin-bottom:6px}
-.rk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;color:#fff;font-size:11px;font-weight:bold;margin-right:6px}
+.spark span{flex:1;background:linear-gradient(180deg,var(--gold2),var(--amber));border-radius:3px 3px 0 0;min-height:3px}
+.dial{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;color:#0a0b12;font-weight:800;font-size:18px;box-shadow:0 0 0 6px rgba(255,255,255,.04)}
+.qcard{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;background:rgba(255,255,255,.025)}
+.qcard .qh{font-weight:700;color:var(--ink);font-size:.92em;margin-bottom:8px}
+.rk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;color:#0a0b12;font-size:11px;font-weight:800;margin-right:6px}
 .rk-good{background:var(--good)}.rk-warn{background:var(--warn)}.rk-bad{background:var(--bad)}
-.model{margin-top:7px;padding:8px 10px;background:#e2f4ea;border:1px solid var(--good);border-radius:7px;font-size:.83em}
-.muted{color:#888;font-size:.85em}
-.studypack{font-size:.93em;line-height:1.7}
-.studypack .md-h{color:var(--navy);margin:16px 0 6px;border-bottom:1px solid #eef;padding-bottom:3px}
-.studypack h2.md-h{font-size:1.25em}.studypack h3.md-h{font-size:1.08em;border:none}.studypack h4.md-h{font-size:.98em;border:none;color:var(--indigo)}
-.studypack ul,.studypack ol{margin:6px 0 6px 4px;padding-left:20px}.studypack li{margin:3px 0}
-.studypack code{background:var(--fill);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
-.studypack hr{border:0;border-top:1px dashed var(--line);margin:14px 0}
-.studypack .mdtbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:.9em}
-.studypack .mdtbl th,.studypack .mdtbl td{border:1px solid var(--line);padding:6px 9px;text-align:left}
-.studypack .mdtbl th{background:var(--soft);color:var(--navy)}
+.model{margin-top:8px;padding:10px 12px;background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.35);border-radius:10px;font-size:.85em}
+.model b{color:var(--good)}
+.muted{color:var(--muted);font-size:.86em}
+.studypack{font-size:.94em;line-height:1.75}
+.studypack .md-h{margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line);color:var(--gold);font-family:'Sora',sans-serif}
+.studypack h2.md-h{font-size:1.32em}.studypack h3.md-h{font-size:1.1em;border:none}.studypack h4.md-h{font-size:1em;border:none;color:var(--gold2)}
+.studypack ul,.studypack ol{margin:6px 0 8px 4px;padding-left:22px}.studypack li{margin:4px 0}
+.studypack code{background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--gold2)}
+.studypack hr{border:0;border-top:1px dashed var(--line2);margin:16px 0}
+.studypack .mdtbl{width:100%;border-collapse:collapse;margin:10px 0;font-size:.9em}
+.studypack .mdtbl th,.studypack .mdtbl td{border:1px solid var(--line2);padding:7px 10px;text-align:left}
+.studypack .mdtbl th{background:rgba(245,200,66,.12);color:var(--gold2)}
 /* auth */
-.authwrap{max-width:400px;margin:8vh auto;padding:0 18px}
-.brandbig{text-align:center;margin-bottom:18px}.brandbig h1{color:var(--navy);margin:0}.brandbig p{color:#666;margin:4px 0 0}
-.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1;padding:9px;border:1px solid var(--line);background:var(--fill);border-radius:8px;font-weight:bold;color:var(--indigo);cursor:pointer}
-.seg button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-.banner{background:#fff8e1;border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:.82em;color:#7a5c00;margin-bottom:14px}
+.authwrap{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:24px}
+.brandbig{text-align:center;margin-bottom:22px}
+.brandbig .flame{width:66px;height:66px;margin:0 auto 14px;border-radius:20px;background:linear-gradient(135deg,var(--gold2),var(--amber));display:grid;place-items:center;font-size:32px;box-shadow:0 12px 36px rgba(245,200,66,.42)}
+.brandbig h1{margin:0;font-size:1.85em;font-weight:800;letter-spacing:.5px}
+.brandbig .tag{color:var(--gold);font-size:.72em;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-top:6px}
+.brandbig p{color:var(--muted);margin:12px 0 0;font-size:.92em}
+.banner{background:rgba(245,200,66,.10);border:1px solid rgba(245,200,66,.35);border-radius:12px;padding:11px 13px;font-size:.82em;color:var(--gold2);margin-bottom:16px}
+.feature-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.feature-row span{font-size:.72em;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:4px 12px;background:var(--panel)}
 </style>
 </head>
 <body>
 
 <!-- ============ AUTH SCREEN ============ -->
 <div id="authScreen" class="authwrap">
-  <div class="brandbig"><h1>Kongu Brilliance</h1><p>Exam Portal — sign in to continue</p></div>
-  <div id="cfgWarn" class="banner" hidden>⚙ Not connected to a database yet. Add your Supabase URL &amp; anon key in the config block at the top of this file (or the hosting env) to enable login and tracking.</div>
-  <div class="card">
-    <label>Email</label><input id="auEmail" type="email" placeholder="you@example.com">
-    <label>Password</label><input id="auPass" type="password" placeholder="••••••••">
-    <button class="btn nav" id="auGo" style="width:100%">Log in</button>
-    <div class="status" id="auStatus"></div>
-    <p class="muted" style="margin-top:12px">Accounts are created by your school admin. If you don't have a login, ask your admin to add you.</p>
+  <div class="brandbig">
+    <div class="flame">🔥</div>
+    <h1>Kongu Brilliance</h1>
+    <div class="tag">AI Exam Portal</div>
+    <p>One AI that sets the exam, grades it, finds each student's gaps, and teaches to mastery.</p>
   </div>
+  <div id="cfgWarn" class="banner" hidden>⚙ Not connected to a database yet.</div>
+  <div class="card">
+    <form id="loginForm" autocomplete="on" onsubmit="event.preventDefault();document.getElementById('auGo').click();">
+      <label>Email</label><input id="auEmail" type="email" autocomplete="username" placeholder="you@school.com">
+      <label>Password</label><input id="auPass" type="password" autocomplete="current-password" placeholder="Your password">
+      <button class="btn nav" id="auGo" type="button" style="width:100%">Sign in →</button>
+    </form>
+    <div class="status" id="auStatus"></div>
+    <p class="muted" style="margin-top:14px;text-align:center">Accounts are created by your school admin.<br>Don't have a login? Ask your admin to add you.</p>
+  </div>
+  <div class="feature-row"><span>📝 Board-aware papers</span><span>✓ AI grading</span><span>📚 Study packs</span><span>🎯 Adaptive practice</span></div>
 </div>
 
 <!-- ============ APP SHELL ============ -->
 <div id="appShell" hidden>
   <div class="top">
+    <div class="logo">🔥</div>
     <h1>Kongu Brilliance · Exam Portal</h1>
     <div class="sp"></div>
     <span class="who" id="whoName"></span><span class="role" id="whoRole"></span>
