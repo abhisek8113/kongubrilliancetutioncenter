@@ -124,9 +124,9 @@ tr:hover td{background:rgba(255,255,255,.03)}
   </div>
   <div id="cfgWarn" class="banner" hidden>⚙ Not connected to a database yet.</div>
   <div class="card">
-    <form id="loginForm" autocomplete="on" onsubmit="event.preventDefault();document.getElementById('auGo').click();">
-      <label>Email</label><input id="auEmail" type="email" autocomplete="username" placeholder="you@school.com">
-      <label>Password</label><input id="auPass" type="password" autocomplete="current-password" placeholder="Your password">
+    <form id="loginForm" autocomplete="off" onsubmit="event.preventDefault();document.getElementById('auGo').click();">
+      <label>Email</label><input id="auEmail" type="email" autocomplete="off" placeholder="you@school.com">
+      <label>Password</label><input id="auPass" type="password" autocomplete="new-password" name="kb-pass" readonly onfocus="this.removeAttribute('readonly')" placeholder="Your password">
       <button class="btn nav" id="auGo" type="button" style="width:100%">Sign in →</button>
     </form>
     <div class="status" id="auStatus"></div>
