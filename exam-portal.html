@@ -110,6 +110,13 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .chatbub.you{background:rgba(120,110,255,.14);border:1px solid rgba(120,110,255,.3);margin-left:auto;border-bottom-right-radius:4px}
 .chatbub.ai{background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.28);border-bottom-left-radius:4px}
 .chatbub .lbl{font-size:.66em;text-transform:uppercase;letter-spacing:.06em;opacity:.7;font-weight:800;margin-bottom:3px}
+/* password show/hide */
+.pwwrap{position:relative}
+.pwwrap input{padding-right:46px}
+.pweye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;
+  font-size:17px;line-height:1;padding:8px;border-radius:8px;opacity:.7;transition:.15s}
+.pweye:hover{opacity:1;background:var(--panel2)}
+.pweye:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 </style>
 </head>
 <body>
@@ -126,7 +133,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
   <div class="card">
     <form id="loginForm" autocomplete="off" onsubmit="event.preventDefault();document.getElementById('auGo').click();">
       <label>Email</label><input id="auEmail" type="email" autocomplete="off" placeholder="you@school.com">
-      <label>Password</label><input id="auPass" type="password" autocomplete="new-password" name="kb-pass" readonly onfocus="this.removeAttribute('readonly')" placeholder="Your password">
+      <label>Password</label>
+      <div class="pwwrap"><input id="auPass" type="password" autocomplete="new-password" name="kb-pass" readonly onfocus="this.removeAttribute('readonly')" placeholder="Your password"><button type="button" class="pweye" id="pwToggle" aria-label="Show password" onclick="var p=document.getElementById('auPass');var s=p.type==='password';p.type=s?'text':'password';this.textContent=s?'🙈':'👁';this.setAttribute('aria-label',s?'Hide password':'Show password');p.focus();">👁</button></div>
       <button class="btn nav" id="auGo" type="button" style="width:100%">Sign in →</button>
     </form>
     <div class="status" id="auStatus"></div>
