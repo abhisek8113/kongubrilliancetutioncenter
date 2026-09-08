@@ -1,913 +1,968 @@
-<title>Kongu Intelligence</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kongu Brilliance — Where Learning Becomes Visible</title>
+<meta name="description" content="Kongu Brilliance, Coimbatore — offline, online, home and engineering tuition. Experienced teaching supported by intelligent technology. See how a student is assessed, learns, corrects mistakes and grows.">
+<meta name="keywords" content="Kongu Brilliance, tuition Coimbatore, offline tuition, online tuition, home tuition, engineering tuition, AI learning, personalized learning, student assessment">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.kongubrilliance.com/experience.html">
+<meta property="og:title" content="Kongu Brilliance — Where Learning Becomes Visible">
+<meta property="og:description" content="Experienced teaching + intelligent technology. Offline, online, home and engineering tuition in Coimbatore.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.kongubrilliance.com/experience.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@600;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
 <style>
-/* ============ TOKENS — single committed dark "intelligence" world ============ */
 :root{
-  --bg:#06070d; --bg2:#0a0c16; --ink:#eef1fb; --muted:#9aa2bd; --faint:#6a7290;
-  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.16);
-  --panel:rgba(255,255,255,.035); --panel2:rgba(255,255,255,.06);
-  --gold:#F5C842; --gold2:#FFE27A; --amber:#e6a417;   /* human / brand */
-  --sig:#5EE6E0; --sig2:#8ff6f0;                       /* machine signal (teal) */
-  --vio:#8B7BFF; --vio2:#b4a9ff;                       /* reasoning (violet) */
-  --good:#3ddc97; --warn:#ffcf5c; --bad:#ff6b7d;
-  --shadow:0 24px 80px rgba(0,0,0,.55);
-  --maxw:1120px;
+  --bg:#06070B; --bg2:#090B11; --panel:#0D1018; --panel2:#11141D;
+  --text:#ECEDF1; --muted:rgba(236,237,241,.56); --dim:rgba(236,237,241,.34);
+  --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.14);
+  --brass:#D9AF63; --brass2:#B98A3E; --ice:#9FC1D1; --ice2:#6E93A6;
+  --ok:#5BB98C; --warn:#D08A5C; --err:#CD6B62;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --disp:'Space Grotesk','Inter',sans-serif;
 }
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font-family:'Inter',system-ui,-apple-system,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased;
-  overflow-x:hidden}
-h1,h2,h3,.dsp{font-family:'Sora','Inter',sans-serif;line-height:1.05;text-wrap:balance}
-a{color:var(--gold)}
-.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
-::selection{background:rgba(94,230,224,.3)}
-::-webkit-scrollbar{width:9px}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:6px}
-:focus-visible{outline:2px solid var(--sig);outline-offset:3px;border-radius:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.65;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,.disp{font-family:var(--disp);letter-spacing:-.02em;line-height:1.06;font-weight:600}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(217,175,99,.28)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+.mono{font-family:var(--mono);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ice2)}
+.brass{color:var(--brass)}
+.lead-brass{background:linear-gradient(120deg,var(--brass),#EBC98A);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:500;font-size:.92rem;border-radius:2px;padding:14px 26px;cursor:pointer;border:1px solid var(--line2);transition:.25s;background:transparent;color:var(--text)}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:var(--brass);color:#1a1305;border-color:var(--brass)}
+.btn-primary:hover{background:#EbC98A;transform:translateY(-2px)}
+.btn-ghost:hover{border-color:var(--brass);color:var(--brass)}
+.hairline{height:1px;background:var(--line);border:0}
 
-/* ============ THE INTELLIGENCE LAYER (fixed canvas) ============ */
-#stage{position:fixed;inset:0;z-index:0;pointer-events:none;display:block}
-#vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
-  background:radial-gradient(120% 80% at 50% -10%,transparent 40%,rgba(6,7,13,.55) 100%),
-             radial-gradient(90% 60% at 50% 120%,rgba(6,7,13,.7),transparent 60%)}
+/* icons */
+.ic{width:22px;height:22px;stroke:currentColor;stroke-width:1.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
-/* ============ SYSTEM BAR ============ */
-.sysbar{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:14px;
-  padding:14px clamp(16px,4vw,34px);
-  background:linear-gradient(180deg,rgba(6,7,13,.82),rgba(6,7,13,0));backdrop-filter:blur(6px)}
-.brand{display:flex;align-items:center;gap:11px;font-family:'Sora';font-weight:700;letter-spacing:.2px;font-size:.98rem}
-.brand .mark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px;
-  background:radial-gradient(circle at 35% 30%,var(--gold2),var(--amber));box-shadow:0 0 22px rgba(245,200,66,.5)}
-.brand small{display:block;font-family:'JetBrains Mono';font-weight:500;font-size:.6rem;letter-spacing:.28em;
-  text-transform:uppercase;color:var(--sig);margin-top:2px}
-.sysbar .sp{flex:1}
-.telemetry{font-family:'JetBrains Mono';font-size:.66rem;letter-spacing:.06em;color:var(--faint);
-  display:flex;align-items:center;gap:8px;max-width:34vw;overflow:hidden;white-space:nowrap}
-.telemetry .dotlive{width:7px;height:7px;border-radius:50%;background:var(--sig);box-shadow:0 0 10px var(--sig);flex:none;animation:blink 2.4s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.sysbtn{border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--ink);border-radius:11px;
-  padding:8px 13px;font-size:.78rem;font-weight:600;cursor:pointer;transition:.16s;font-family:inherit;display:inline-flex;align-items:center;gap:7px}
-.sysbtn:hover{border-color:var(--sig);background:rgba(94,230,224,.08)}
-.sysbtn.mic{background:radial-gradient(circle at 35% 30%,var(--gold2),var(--amber));color:#1a1400;border:none;font-weight:800}
-.sysbtn.mic.on{background:radial-gradient(circle at 35% 30%,var(--sig2),var(--sig));color:#04211f;animation:pulseMic 1.2s infinite}
-@keyframes pulseMic{0%,100%{box-shadow:0 0 0 0 rgba(94,230,224,.5)}50%{box-shadow:0 0 0 10px rgba(94,230,224,0)}}
-@media(max-width:720px){.telemetry{display:none}.brand small{display:none}}
+/* background field */
+#field{position:fixed;inset:0;z-index:0;pointer-events:none}
+#grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%)}
+main,header,footer{position:relative;z-index:2}
 
-/* ============ SCENE SCAFFOLD ============ */
-main{position:relative;z-index:2}
-.scene{position:relative;max-width:var(--maxw);margin:0 auto;padding:clamp(80px,13vh,150px) clamp(20px,5vw,40px)}
-.scene-inner{position:relative}
-.eyebrow{font-family:'JetBrains Mono';font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;
-  color:var(--sig);display:flex;align-items:center;gap:10px;margin:0 0 18px}
-.eyebrow .idx{color:var(--faint)}
-.eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--sig),transparent)}
-h2.big{font-size:clamp(1.9rem,5.2vw,3.5rem);font-weight:800;margin:0 0 14px;letter-spacing:-.02em}
-.lede{font-size:clamp(1.02rem,2.2vw,1.28rem);color:var(--muted);max-width:60ch;margin:0 0 8px}
-.simtag{display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono';font-size:.62rem;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--warn);border:1px solid rgba(255,207,92,.35);background:rgba(255,207,92,.07);
-  border-radius:20px;padding:4px 11px;margin-bottom:16px}
-.reveal{opacity:1;transform:none}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;backdrop-filter:blur(9px)}
+/* phase HUD */
+#hud{position:fixed;left:32px;bottom:28px;z-index:40;font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);opacity:0;transition:opacity .5s;display:flex;align-items:center;gap:12px}
+#hud.show{opacity:1}
+#hud .bar{width:60px;height:1px;background:var(--line2);position:relative;overflow:hidden}
+#hud .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--brass)}
+#hud .ph{color:var(--ice)}
+@media(max-width:820px){#hud{display:none}}
 
-/* ============ HERO / INITIALIZATION ============ */
-#hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;max-width:var(--maxw)}
-#hero .boot{font-family:'JetBrains Mono';font-size:.72rem;letter-spacing:.14em;color:var(--sig);min-height:1.4em;margin-bottom:22px}
-#hero h1{font-size:clamp(2.4rem,7vw,5.2rem);font-weight:800;letter-spacing:-.03em;margin:0 0 8px}
-#hero .kine{display:block;min-height:1.1em;color:var(--gold2)}
-#hero .sub{font-size:clamp(1.05rem,2.4vw,1.4rem);color:var(--muted);max-width:56ch;margin:22px 0 0}
-.scrollcue{margin-top:44px;display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono';font-size:.68rem;
-  letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
-.scrollcue .ln{width:34px;height:1px;background:var(--faint);position:relative;overflow:hidden}
-.scrollcue .ln::after{content:"";position:absolute;inset:0;background:var(--sig);transform:translateX(-100%);animation:cue 2.2s infinite}
-@keyframes cue{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
-.entity-legend{display:flex;flex-wrap:wrap;gap:9px;margin-top:34px}
-.entity-legend span{font-family:'JetBrains Mono';font-size:.66rem;letter-spacing:.08em;color:var(--muted);
-  border:1px solid var(--line);border-radius:20px;padding:5px 12px;background:rgba(255,255,255,.02)}
-.entity-legend span b{color:var(--sig);font-weight:700}
+/* progress */
+#prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--ice2),var(--brass));z-index:120}
 
-/* ============ LEARNING LOOP ============ */
-.loopwrap{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;margin-top:26px}
-@media(max-width:820px){.loopwrap{grid-template-columns:1fr}}
-.loopring{position:relative;aspect-ratio:1;max-width:440px;margin:0 auto;width:100%}
-.loopring .center{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
-.loopring .center b{font-family:'Sora';font-size:1.5rem;color:var(--gold2)}
-.loopring .center small{display:block;font-family:'JetBrains Mono';font-size:.62rem;letter-spacing:.2em;color:var(--faint);text-transform:uppercase;margin-top:4px}
-.loopnode{position:absolute;transform:translate(-50%,-50%);font-family:'JetBrains Mono';font-size:.7rem;
-  letter-spacing:.06em;color:var(--muted);white-space:nowrap;transition:.3s}
-.loopnode.hot{color:var(--sig2);text-shadow:0 0 14px rgba(94,230,224,.6);transform:translate(-50%,-50%) scale(1.15)}
-.loopcaption{font-size:1.02rem;color:var(--muted)}
-.loopcaption b{color:var(--ink)}
+/* nav */
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:74px;display:flex;align-items:center;transition:.35s;border-bottom:1px solid transparent}
+header.solid{background:rgba(6,7,11,.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;width:100%}
+.brandmark{display:flex;align-items:center;gap:12px}
+.brandmark .m{width:30px;height:30px}
+.brandmark .n{font-family:var(--disp);font-weight:600;font-size:1.02rem;letter-spacing:.01em}
+.brandmark .n small{display:block;font-family:var(--mono);font-size:.56rem;letter-spacing:.34em;color:var(--ice2);text-transform:uppercase;margin-top:1px}
+nav.links{display:flex;align-items:center;gap:34px}
+nav.links a{font-family:var(--disp);font-size:.86rem;color:var(--muted);font-weight:400;transition:.2s}
+nav.links a:hover,nav.links a.active{color:var(--text)}
+.burger{display:none;background:none;border:0;color:#fff;cursor:pointer}
+.burger svg{width:26px;height:26px;stroke:#fff;stroke-width:1.5;fill:none}
 
-/* ============ PIPELINE (mistake / evaluator) ============ */
-.pipeline{display:flex;flex-direction:column;gap:0;margin-top:24px}
-.pstep{display:grid;grid-template-columns:34px 1fr;gap:14px;align-items:start;padding:12px 0;position:relative;opacity:.34;transition:.4s}
-.pstep.on{opacity:1}
-.pstep .node{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-family:'JetBrains Mono';
-  font-size:.8rem;font-weight:700;border:1px solid var(--line2);background:var(--bg2);color:var(--faint);position:relative;z-index:2;transition:.4s}
-.pstep.on .node{border-color:var(--sig);color:var(--sig2);box-shadow:0 0 18px rgba(94,230,224,.35)}
-.pstep.err .node{border-color:var(--bad);color:var(--bad);box-shadow:0 0 18px rgba(255,107,125,.4)}
-.pstep.good .node{border-color:var(--good);color:var(--good);box-shadow:0 0 18px rgba(61,220,151,.4)}
-.pstep::before{content:"";position:absolute;left:16px;top:34px;bottom:-12px;width:2px;background:var(--line);z-index:1}
-.pstep:last-child::before{display:none}
-.pstep.on::before{background:linear-gradient(180deg,var(--sig),var(--line))}
-.pstep .lbl{font-family:'JetBrains Mono';font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
-.pstep .val{font-size:1rem;color:var(--ink);margin-top:2px}
-.pstep.err .val{color:var(--bad)}.pstep.good .val{color:var(--good)}
-.memstrip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:22px}
-@media(max-width:640px){.memstrip{grid-template-columns:1fr 1fr}}
-.memstrip .m{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(255,255,255,.02)}
-.memstrip .m .k{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.memstrip .m .v{font-size:.95rem;margin-top:5px;color:var(--ink)}
-.runbtn{margin-top:20px;border:1px solid var(--line2);background:rgba(94,230,224,.08);color:var(--sig2);
-  border-radius:11px;padding:10px 18px;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;transition:.16s}
-.runbtn:hover{border-color:var(--sig);background:rgba(94,230,224,.16)}
+/* HERO */
+#hero{min-height:100vh;display:flex;align-items:center;position:relative;padding-top:74px}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:60px;align-items:center;width:100%}
+.hero-eyebrow{display:flex;align-items:center;gap:14px;margin-bottom:26px;opacity:0}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--brass);box-shadow:0 0 10px var(--brass)}
+#hero h1{font-size:clamp(2.6rem,6vw,5rem);font-weight:600;letter-spacing:-.035em;line-height:1.02}
+#hero h1 .l{display:block;overflow:hidden}
+#hero h1 .l span{display:block;transform:translateY(105%)}
+.hero-sub{color:var(--muted);font-size:clamp(1.02rem,1.6vw,1.2rem);max-width:46ch;margin:28px 0 34px;opacity:0}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap;opacity:0}
+.hero-panel{position:relative;opacity:0}
+.hero-stats{margin-top:40px;display:flex;gap:30px;flex-wrap:wrap;opacity:0}
+.hero-stats .s .mono{display:block;margin-bottom:5px}
+.hero-stats .s b{font-family:var(--disp);font-weight:600;font-size:1.3rem}
+.scrollcue{position:absolute;bottom:26px;left:32px;font-family:var(--mono);font-size:.62rem;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.scrollcue .ln{width:44px;height:1px;background:var(--line2);position:relative;overflow:hidden}
+.scrollcue .ln::after{content:"";position:absolute;inset:0;width:40%;background:var(--brass);animation:sweep 2.4s infinite}
+@keyframes sweep{0%{left:-40%}100%{left:100%}}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:36px}.hero-panel{order:2}}
 
-/* two-column demo */
-.demo2{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:26px;align-items:start}
-@media(max-width:860px){.demo2{grid-template-columns:1fr}}
+/* console mock (hero) */
+.console{background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.6)}
+.console .top{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+.console .top .live{margin-left:auto;color:var(--ice);display:flex;align-items:center;gap:7px}
+.console .top .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ice);box-shadow:0 0 8px var(--ice);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.3}}
+.console .body{padding:22px}
+.metric{margin-bottom:18px}
+.metric .row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;text-transform:uppercase}
+.metric .row b{color:var(--text)}
+.track{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ice2),var(--brass));transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
 
-/* ============ ADAPTIVE LADDER ============ */
-.ladder{display:flex;flex-direction:column-reverse;gap:10px}
-.rung{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:13px 16px;
-  background:rgba(255,255,255,.02);transition:.35s;opacity:.5}
-.rung.here{opacity:1;border-color:var(--gold);background:rgba(245,200,66,.08);box-shadow:0 0 24px rgba(245,200,66,.14)}
-.rung .lv{font-family:'JetBrains Mono';font-size:.66rem;letter-spacing:.12em;color:var(--faint)}
-.rung .desc{flex:1;font-size:.94rem}
-.rung .marker{width:10px;height:10px;border-radius:50%;background:var(--faint);transition:.3s}
-.rung.here .marker{background:var(--gold);box-shadow:0 0 12px var(--gold)}
-.adaptctrl{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
-.adaptctrl button{flex:1;min-width:130px;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--ink);
-  border-radius:11px;padding:11px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:inherit;transition:.16s}
-.adaptctrl button.ok:hover{border-color:var(--good);background:rgba(61,220,151,.1)}
-.adaptctrl button.no:hover{border-color:var(--bad);background:rgba(255,107,125,.1)}
-.adaptmsg{margin-top:14px;min-height:2.6em;font-size:.95rem;color:var(--muted)}
-.adaptmsg b{color:var(--sig2)}
+/* section scaffold */
+.scene{padding:120px 0;position:relative}
+.scene-head{max-width:60ch;margin-bottom:56px}
+.scene-tag{margin-bottom:20px;display:inline-block}
+.scene h2{font-size:clamp(1.9rem,3.8vw,3rem);font-weight:600;letter-spacing:-.03em;margin-bottom:18px}
+.scene h2 em{font-style:normal;color:var(--brass)}
+.scene .desc{color:var(--muted);font-size:1.08rem;max-width:52ch}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+@media(max-width:900px){.two{grid-template-columns:1fr;gap:40px}.scene{padding:80px 0}}
+.reveal{opacity:0;transform:translateY(28px)}
 
-/* ============ PAPER EVALUATOR ============ */
-.paper{position:relative;background:#f7f4ea;color:#20232e;border-radius:14px;padding:22px 22px 26px;overflow:hidden;
-  box-shadow:var(--shadow);font-family:'Caveat',cursive;font-size:1.5rem;min-height:280px}
-.paper .ph{font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#8a8f9e;margin-bottom:14px}
-.paper .q{margin:0 0 4px}
-.paper .a{margin:0 0 18px;color:#2a2f3d}
-.paper .a .x{color:#c0392b}
-.scanline{position:absolute;left:0;right:0;height:44px;top:-60px;
-  background:linear-gradient(180deg,transparent,rgba(94,230,224,.35),transparent);
-  box-shadow:0 0 30px rgba(94,230,224,.5);opacity:0}
-.paper.scanning .scanline{animation:scan 2.1s ease-in-out forwards;opacity:1}
-@keyframes scan{0%{top:-60px}100%{top:100%}}
-.annot{margin-top:20px;display:flex;flex-direction:column;gap:0}
+/* kinetic statement */
+#creed{padding:130px 0;text-align:left}
+#creed .line{font-family:var(--disp);font-weight:600;font-size:clamp(2.2rem,7vw,5.5rem);letter-spacing:-.04em;line-height:1.02;color:var(--dim);transition:color .5s}
+#creed .line.on{color:var(--text)}
+#creed .line em{font-style:normal;color:var(--brass)}
 
-/* ============ KNOWLEDGE GRAPH ============ */
-.kgwrap{display:grid;grid-template-columns:1.1fr .9fr;gap:26px;margin-top:24px;align-items:center}
-@media(max-width:860px){.kgwrap{grid-template-columns:1fr}}
-.kgbox{position:relative;width:100%;aspect-ratio:1.15;min-height:300px}
-.kgbox svg{position:absolute;inset:0;width:100%;height:100%}
-.knode{position:absolute;transform:translate(-50%,-50%);padding:7px 12px;border-radius:20px;font-family:'JetBrains Mono';
-  font-size:.68rem;letter-spacing:.04em;white-space:nowrap;border:1px solid var(--line2);background:var(--bg2);z-index:2}
-.knode.strong{color:var(--good);border-color:rgba(61,220,151,.5);box-shadow:0 0 16px rgba(61,220,151,.2)}
-.knode.weak{color:var(--warn);border-color:rgba(255,207,92,.5);animation:weakpulse 2.2s infinite}
-@keyframes weakpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,207,92,.35)}50%{box-shadow:0 0 0 8px rgba(255,207,92,0)}}
-.twin{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.twin .t{border:1px solid var(--line);border-radius:14px;padding:15px;background:rgba(255,255,255,.02)}
-.twin .t .k{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.twin .t .v{font-family:'Sora';font-size:1.7rem;font-weight:700;color:var(--gold2);margin-top:4px;font-variant-numeric:tabular-nums}
-.twin .t .v small{font-size:.8rem;color:var(--muted);font-weight:400;font-family:'Inter'}
+/* stat / system labels list */
+.sys-list{font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+.sys-list .li{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);color:var(--dim);opacity:.4;transition:.4s}
+.sys-list .li.on{color:var(--text);opacity:1}
+.sys-list .li .k{width:16px;height:16px;flex-shrink:0;position:relative}
+.sys-list .li .k::before{content:"";position:absolute;inset:2px;border:1px solid var(--line2);border-radius:50%}
+.sys-list .li.on .k::before{border-color:var(--ice);box-shadow:0 0 8px var(--ice)}
+.sys-list .li .v{margin-left:auto;color:var(--ice);opacity:0;transition:.3s;text-transform:none;letter-spacing:0}
+.sys-list .li.on .v{opacity:1}
 
-/* ============ TEACHER × AI ============ */
-.txa{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:26px}
-@media(max-width:820px){.txa{grid-template-columns:1fr;text-align:center}}
-.txa .col h3{font-family:'Sora';font-size:1.05rem;margin:0 0 12px}
-.txa .col.human h3{color:var(--gold2)}.txa .col.ai h3{color:var(--sig2)}
-.txa .col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
-.txa .col li{font-size:.92rem;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:rgba(255,255,255,.02)}
-.txa .fuse{font-family:'Sora';font-weight:800;font-size:1.6rem;color:var(--ink)}
-.txa .student{grid-column:1/-1;text-align:center;margin-top:8px;font-family:'JetBrains Mono';font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+/* mistake / status callouts */
+.status-flow{display:flex;flex-direction:column;gap:2px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:.8rem}
+.status-flow .st{display:flex;align-items:center;gap:14px;padding:16px 20px;border:1px solid var(--line);border-left:2px solid var(--line2);background:var(--panel);opacity:0;transform:translateX(-14px)}
+.status-flow .st .tick{color:var(--ice)}
+.status-flow .st.warn{border-left-color:var(--warn);color:var(--warn)}
+.status-flow .st.err{border-left-color:var(--err);color:var(--err)}
+.status-flow .st.ok{border-left-color:var(--ok);color:var(--ok)}
+.status-flow .st.act{border-left-color:var(--brass);color:var(--brass)}
 
-/* ============ PARENT INTELLIGENCE ============ */
-.parent{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;margin-top:24px}
-@media(max-width:760px){.parent{grid-template-columns:1fr}}
-.beforeafter{display:flex;align-items:flex-end;gap:20px}
-.ba{display:flex;flex-direction:column;align-items:center;gap:8px}
-.ba .bar{width:64px;border-radius:10px 10px 0 0;transition:height 1.4s cubic-bezier(.2,.8,.2,1)}
-.ba.before .bar{background:linear-gradient(180deg,#5a6180,#3a4058)}
-.ba.after .bar{background:linear-gradient(180deg,var(--gold2),var(--amber));box-shadow:0 0 24px rgba(245,200,66,.3)}
-.ba .num{font-family:'Sora';font-weight:800;font-size:1.5rem;font-variant-numeric:tabular-nums}
-.ba .cap{font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.why{display:flex;flex-direction:column;gap:11px}
-.why .w{display:flex;gap:11px;align-items:center;font-size:.94rem;color:var(--muted)}
-.why .w .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(94,230,224,.1);color:var(--sig2);flex:none;font-size:.8rem}
-.nextstep{margin-top:16px;border:1px solid rgba(245,200,66,.35);background:rgba(245,200,66,.07);border-radius:12px;padding:13px 15px}
-.nextstep .k{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+/* paper */
+.paper{position:relative;background:#EDEAE1;color:#15161a;border-radius:3px;padding:34px 36px;box-shadow:0 40px 90px rgba(0,0,0,.6);overflow:hidden;font-family:var(--disp)}
+.paper .ph{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;color:#7a776e;text-transform:uppercase;margin-bottom:16px;display:flex;justify-content:space-between}
+.paper .q{font-size:1.05rem;font-weight:600;margin-bottom:14px}
+.paper .work{font-size:1.25rem;line-height:2;color:#20325f}
+.paper .work .flag{position:relative;display:inline-block}
+.paper .work .flag.hl{background:rgba(205,107,98,.22);box-shadow:0 0 0 1px rgba(205,107,98,.5)}
+.paper .cross{color:#c0392b}
+.scan{position:absolute;left:0;right:0;height:90px;top:-100px;background:linear-gradient(to bottom,transparent,rgba(159,193,209,.28),transparent);border-top:1px solid var(--ice);border-bottom:1px solid var(--ice);box-shadow:0 0 40px rgba(159,193,209,.4);opacity:0}
+.paper .brace{position:absolute;font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--ice2);opacity:0}
 
-/* ============ GROWTH GRAPH ============ */
-.growthwrap{margin-top:24px;border:1px solid var(--line);border-radius:18px;padding:20px;background:rgba(255,255,255,.02)}
-.growthwrap svg{width:100%;height:auto;display:block}
-.gpath{fill:none;stroke:var(--gold);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:1400;stroke-dashoffset:1400;transition:stroke-dashoffset 2.6s ease}
-.gpath.draw{stroke-dashoffset:0}
-.glabel{font-family:'JetBrains Mono';font-size:11px;fill:var(--faint)}
-.gmile text{font-family:'JetBrains Mono';font-size:10.5px;fill:var(--muted)}
-.gmile circle{fill:var(--bg);stroke:var(--sig);stroke-width:2}
+/* adaptive path svg */
+.pathbox,.graphbox,.kgbox,.rel-svg{width:100%;overflow:visible}
+.pathbox path{fill:none;stroke-width:2}
+.p-cand{stroke:var(--line2);stroke-dasharray:5 6;opacity:.5;transition:.6s}
+.p-sel{stroke:var(--brass);stroke-dashoffset:0;filter:drop-shadow(0 0 6px rgba(217,175,99,.5))}
+.pathbox .node{fill:var(--panel);stroke:var(--line2)}
+.pathbox .node.on{stroke:var(--brass)}
+.pathbox text{fill:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
 
-/* ============ VOICE ============ */
-#voice .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:24px;align-items:start}
-@media(max-width:860px){#voice .vgrid{grid-template-columns:1fr}}
-.vpanel{border:1px solid var(--line);border-radius:18px;padding:22px;background:rgba(255,255,255,.03)}
-.vorb{width:120px;height:120px;border-radius:50%;margin:6px auto 18px;display:grid;place-items:center;font-size:42px;
-  background:radial-gradient(circle at 35% 30%,var(--sig2),var(--sig) 55%,#0a5f5a 100%);
-  box-shadow:0 0 54px rgba(94,230,224,.5),inset 0 0 26px rgba(255,255,255,.3);transition:.35s}
-.vorb.listening{animation:breathe 1.4s infinite}
-.vorb.speaking{animation:breathe .6s infinite}
-.vorb.thinking{background:radial-gradient(circle at 35% 30%,var(--vio2),var(--vio) 55%,#3a318c 100%);animation:spin 1.1s linear infinite}
-@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.vcap{text-align:center;color:var(--muted);min-height:2.4em;font-size:.95rem}
-.vcontrols{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.chips button{border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--muted);border-radius:20px;
-  padding:8px 13px;font-size:.8rem;cursor:pointer;font-family:inherit;transition:.16s}
-.chips button:hover{border-color:var(--sig);color:var(--ink)}
-.vstages{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-.vstage{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;opacity:.4;transition:.4s;background:rgba(255,255,255,.02)}
-.vstage.on{opacity:1;border-color:var(--sig);background:rgba(94,230,224,.07)}
-.vstage .n{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-family:'JetBrains Mono';font-size:.7rem;
-  border:1px solid var(--line2);color:var(--faint)}
-.vstage.on .n{border-color:var(--sig);color:var(--sig2)}
-.vstage .t b{display:block;font-size:.92rem}
-.vstage .t small{color:var(--faint);font-size:.76rem}
-.vlog{margin-top:16px;max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:8px}
-.bub{padding:9px 13px;border-radius:13px;font-size:.9rem;max-width:92%;width:fit-content}
-.bub.you{margin-left:auto;background:rgba(139,123,255,.14);border:1px solid rgba(139,123,255,.3)}
-.bub.k{background:rgba(94,230,224,.1);border:1px solid rgba(94,230,224,.28)}
-.bub .who{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:3px}
+/* tutor product ui */
+.tutor{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.006))}
+.tutor .bar{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+.tutor .bar .demo{margin-left:auto;color:var(--ice)}
+.tutor .grid{display:grid;grid-template-columns:.9fr 1.1fr;min-height:360px}
+.tutor .col{padding:26px}
+.tutor .col.l{border-right:1px solid var(--line);background:rgba(255,255,255,.012)}
+.tutor .qlabel{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;color:var(--ice2);text-transform:uppercase;margin-bottom:12px}
+.tutor .qtext{font-family:var(--disp);font-size:1.35rem;font-weight:500;line-height:1.3;margin-bottom:26px}
+.tutor .statechip{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:9px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;opacity:.35;transition:.4s}
+.tutor .statechip.on{opacity:1;color:var(--text)}
+.tutor .statechip .d{color:var(--ice)}
+.tutor .step{opacity:0;transform:translateY(14px);margin-bottom:20px}
+.tutor .step .k{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;color:var(--brass);text-transform:uppercase;margin-bottom:7px}
+.tutor .step p{color:var(--muted);font-size:.98rem}
+.tutor .step .eg{margin-top:8px;font-family:var(--mono);font-size:.9rem;color:var(--ice);background:rgba(159,193,209,.06);border:1px solid var(--line);padding:12px 14px;border-radius:4px;letter-spacing:.02em}
+@media(max-width:820px){.tutor .grid{grid-template-columns:1fr}.tutor .col.l{border-right:0;border-bottom:1px solid var(--line)}}
 
-/* ============ FINAL / CTA ============ */
-#final{text-align:center;min-height:92svh;display:flex;flex-direction:column;justify-content:center;align-items:center}
-#final h2{font-size:clamp(2rem,6vw,4rem);font-weight:800;letter-spacing:-.02em;margin:0 0 10px}
-#final .tagline{font-family:'Sora';font-size:clamp(1.1rem,2.6vw,1.5rem);color:var(--gold2);margin:0 0 30px}
-.ctarow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
-.cta{border:none;border-radius:13px;padding:15px 26px;font-weight:800;font-size:.98rem;cursor:pointer;font-family:'Sora';
-  text-decoration:none;display:inline-flex;align-items:center;gap:9px;transition:.16s}
-.cta.primary{background:radial-gradient(circle at 30% 30%,var(--gold2),var(--amber));color:#1a1400;box-shadow:0 12px 34px rgba(245,200,66,.35)}
-.cta.primary:hover{transform:translateY(-2px);box-shadow:0 16px 44px rgba(245,200,66,.5)}
-.cta.ghost{background:rgba(255,255,255,.04);color:var(--ink);border:1px solid var(--line2)}
-.cta.ghost:hover{border-color:var(--sig);background:rgba(94,230,224,.08)}
+/* knowledge graph */
+.kgbox circle{transition:.6s}
+.kgbox .edge{stroke:var(--line2);stroke-width:1.2;fill:none;transition:.6s}
+.kgbox .edge.on{stroke:var(--ice2)}
+.kgbox .kn{fill:var(--panel);stroke:var(--line2);stroke-width:1.5}
+.kgbox .kn.weak{stroke:var(--err)}
+.kgbox .kn.mid{stroke:var(--warn)}
+.kgbox .kn.strong{stroke:var(--ok);fill:rgba(91,185,140,.08)}
+.kgbox text{fill:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.06em}
 
-/* ============ FOOTER ============ */
-footer{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:40px clamp(20px,5vw,40px) 60px;
-  border-top:1px solid var(--line);color:var(--muted);font-size:.86rem}
-footer .frow{display:flex;flex-wrap:wrap;gap:26px 44px;justify-content:space-between}
-footer b{color:var(--ink);font-family:'Sora'}
-footer .k{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
-footer a{color:var(--gold);text-decoration:none}footer a:hover{text-decoration:underline}
-.disclaimer{margin-top:26px;font-size:.78rem;color:var(--faint);line-height:1.65;max-width:80ch}
-.vneed{color:var(--warn);font-family:'JetBrains Mono';font-size:.72rem}
+/* growth */
+.graphbox .axis{stroke:var(--line);stroke-width:1}
+.graphbox .gl{fill:none;stroke:var(--brass);stroke-width:2.5;stroke-linecap:round}
+.graphbox .ga{fill:url(#gfill);opacity:0}
+.graphbox .gd{fill:var(--brass);stroke:var(--bg);stroke-width:2.5;opacity:0}
+.graphbox .glab{fill:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-anchor:middle;opacity:0;text-transform:uppercase}
+.graphbox .gval{fill:var(--text);font-family:var(--disp);font-weight:600;font-size:14px;text-anchor:middle;opacity:0}
+.note{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-top:18px}
 
-/* right-side scene nav */
-.scenenav{position:fixed;right:16px;top:50%;transform:translateY(-50%);z-index:25;display:flex;flex-direction:column;gap:12px}
-@media(max-width:900px){.scenenav{display:none}}
-.scenenav button{width:9px;height:9px;border-radius:50%;border:none;padding:0;cursor:pointer;background:rgba(255,255,255,.22);transition:.2s}
-.scenenav button.on{background:var(--sig);box-shadow:0 0 12px var(--sig);transform:scale(1.35)}
+/* teacher + ai composition */
+.ta{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;border:1px solid var(--line)}
+.ta .side{padding:36px 32px}
+.ta .side h3{font-size:1.3rem;margin-bottom:6px}
+.ta .side .r{font-family:var(--mono);font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ice2);margin-bottom:20px}
+.ta .side ul{list-style:none;display:flex;flex-direction:column;gap:13px}
+.ta .side li{display:flex;gap:12px;color:var(--muted);font-size:.96rem;align-items:flex-start}
+.ta .side li .ic{width:18px;height:18px;color:var(--brass);flex-shrink:0;margin-top:3px}
+.ta .mid{display:grid;place-items:center;padding:0 26px;border-left:1px solid var(--line);border-right:1px solid var(--line);background:rgba(255,255,255,.015)}
+.ta .mid .plus{font-family:var(--disp);font-size:1.6rem;color:var(--brass)}
+.ta-out{border:1px solid var(--brass);border-top:0;padding:28px;text-align:center;background:linear-gradient(180deg,rgba(217,175,99,.06),transparent)}
+.ta-out h3{font-size:clamp(1.3rem,3vw,2rem);font-weight:600}
+@media(max-width:820px){.ta{grid-template-columns:1fr}.ta .mid{border:0;padding:14px}.ta .side{border-bottom:1px solid var(--line)}}
 
-/* reduced motion */
-@media(prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
-  .gpath{stroke-dashoffset:0}
+/* TUITION ecosystem */
+#tuition{position:relative}
+.eco-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:0;border:1px solid var(--line);min-height:520px}
+.eco-nav{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.eco-item{flex:1;padding:26px 30px;border-bottom:1px solid var(--line);cursor:pointer;transition:.35s;position:relative;display:flex;flex-direction:column;justify-content:center}
+.eco-item:last-child{border-bottom:0}
+.eco-item .idx{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:var(--dim)}
+.eco-item h3{font-size:1.35rem;font-weight:500;margin:6px 0 4px;color:var(--muted);transition:.3s}
+.eco-item .sm{font-size:.85rem;color:var(--dim)}
+.eco-item.on{background:linear-gradient(120deg,rgba(217,175,99,.07),transparent)}
+.eco-item.on h3{color:var(--text)}
+.eco-item.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--brass)}
+.eco-stage{position:relative;overflow:hidden}
+.eco-panel{position:absolute;inset:0;padding:44px;display:flex;flex-direction:column;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
+.eco-panel.on{opacity:1;pointer-events:auto}
+.eco-panel .env{height:150px;margin-bottom:26px;border:1px solid var(--line);border-radius:4px;position:relative;overflow:hidden;background:var(--panel)}
+.eco-panel h4{font-size:1.6rem;font-weight:600;margin-bottom:12px}
+.eco-panel .scn{color:var(--muted);font-size:1rem;margin-bottom:20px;max-width:46ch}
+.eco-panel .feats{display:flex;gap:22px;flex-wrap:wrap}
+.eco-panel .feats .f{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ice)}
+.eco-panel .feats .f .ic{width:15px;height:15px}
+.eco-voice{margin-top:22px}
+.voice-btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);padding:11px 18px;border-radius:2px;cursor:pointer;background:transparent;transition:.25s}
+.voice-btn:hover{border-color:var(--ice);color:var(--ice)}
+.voice-btn .ic{width:16px;height:16px}
+@media(max-width:900px){.eco-grid{grid-template-columns:1fr}.eco-nav{flex-direction:row;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto}.eco-item{border-bottom:0;border-right:1px solid var(--line);min-width:150px}.eco-stage{min-height:460px}.eco-panel{position:relative;inset:auto}.eco-panel:not(.on){display:none}}
+
+/* subjects index */
+.subj{border-top:1px solid var(--line)}
+.subj-row{display:grid;grid-template-columns:60px 1fr auto;gap:24px;align-items:center;padding:26px 0;border-bottom:1px solid var(--line);cursor:default;transition:.3s}
+.subj-row:hover{padding-left:14px;background:linear-gradient(90deg,rgba(255,255,255,.02),transparent)}
+.subj-row .n{font-family:var(--mono);font-size:.72rem;color:var(--dim);letter-spacing:.1em}
+.subj-row .t{font-family:var(--disp);font-size:clamp(1.3rem,2.6vw,1.9rem);font-weight:500}
+.subj-row:hover .t{color:var(--brass)}
+.subj-row .tags{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;color:var(--ice2);text-transform:uppercase;text-align:right}
+@media(max-width:640px){.subj-row{grid-template-columns:40px 1fr}.subj-row .tags{display:none}}
+
+/* parent */
+.parent-panel{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.parent-panel .top{padding:16px 22px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:flex}
+.parent-panel .top .who{margin-left:auto;color:var(--ice)}
+.pstat{display:flex;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid var(--line);opacity:0;transform:translateY(10px)}
+.pstat:last-child{border-bottom:0}
+.pstat .badge{font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;padding:5px 10px;border:1px solid var(--line2);border-radius:2px;flex-shrink:0;width:120px;text-align:center}
+.pstat.s .badge{color:var(--ok);border-color:rgba(91,185,140,.4)}
+.pstat.i .badge{color:var(--warn);border-color:rgba(208,138,92,.4)}
+.pstat.n .badge{color:var(--err);border-color:rgba(205,107,98,.4)}
+.pstat .name{font-family:var(--disp);font-weight:500;font-size:1.05rem}
+.pstat .meter{margin-left:auto;width:120px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.pstat .meter i{display:block;height:100%;width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.pstat.s .meter i{background:var(--ok)}.pstat.i .meter i{background:var(--warn)}.pstat.n .meter i{background:var(--err)}
+.next-action{padding:22px;background:linear-gradient(120deg,rgba(217,175,99,.06),transparent);font-family:var(--disp);opacity:0}
+.next-action .k{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--brass);margin-bottom:8px}
+@media(max-width:640px){.pstat .meter{display:none}.pstat .badge{width:96px}}
+
+/* results/testimonials */
+.tcol{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.tcard{border:1px solid var(--line);border-radius:5px;padding:30px;position:relative}
+.tcard .q{font-family:var(--disp);font-size:1.15rem;line-height:1.5;font-weight:400;color:var(--text);margin-bottom:22px}
+.tcard .by{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ice2)}
+.tcard.placeholder{border-style:dashed;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--dim);font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;min-height:160px}
+@media(max-width:640px){.tcol{grid-template-columns:1fr}}
+
+/* faq */
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{padding:24px 0;cursor:pointer;font-family:var(--disp);font-weight:500;font-size:1.1rem;display:flex;justify-content:space-between;align-items:center;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .pm{font-family:var(--mono);color:var(--brass);transition:.3s}
+.faq details[open] summary .pm{transform:rotate(45deg)}
+.faq .a{padding:0 0 24px;color:var(--muted);max-width:70ch}
+
+/* contact */
+#contact{border-top:1px solid var(--line)}
+.contact-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:60px;align-items:center}
+.contact-grid h2{font-size:clamp(2rem,5vw,3.6rem);font-weight:600;letter-spacing:-.03em;margin-bottom:20px}
+.cinfo{display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:.82rem}
+.cinfo a{display:flex;align-items:center;gap:14px;padding:18px 0;border-bottom:1px solid var(--line);color:var(--muted);letter-spacing:.05em;transition:.25s}
+.cinfo a:hover{color:var(--text);padding-left:8px}
+.cinfo a .ic{width:18px;height:18px;color:var(--brass)}
+@media(max-width:820px){.contact-grid{grid-template-columns:1fr;gap:34px}}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:56px 0 34px}
+.fgrid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:40px;margin-bottom:40px}
+.fcol h4{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ice2);margin-bottom:16px}
+.fcol a,.fcol p{color:var(--muted);font-size:.9rem;display:block;margin-bottom:10px;transition:.2s}
+.fcol a:hover{color:var(--text)}
+.fbottom{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;border-top:1px solid var(--line);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+@media(max-width:900px){
+  nav.links{position:fixed;inset:74px 0 auto 0;flex-direction:column;align-items:flex-start;background:rgba(6,7,11,.98);padding:26px 32px;gap:22px;border-bottom:1px solid var(--line);transform:translateY(-160%);transition:.4s}
+  nav.links.open{transform:none}
+  .burger{display:block}
 }
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
+</head>
+<body>
 
-<!-- ================= INTELLIGENCE LAYER ================= -->
-<canvas id="stage" aria-hidden="true"></canvas>
-<div id="vignette" aria-hidden="true"></div>
+<!-- SVG icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"/></g>
+<g id="i-check"><path d="M5 12l4 4 10-11"/></g>
+<g id="i-node"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/></g>
+<g id="i-doc"><path d="M7 3h7l4 4v14H7zM14 3v4h4"/><path d="M9.5 12h5M9.5 15.5h5"/></g>
+<g id="i-monitor"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></g>
+<g id="i-home"><path d="M4 11l8-7 8 7M6 10v9h12v-9"/></g>
+<g id="i-teacher"><circle cx="12" cy="7" r="3"/><path d="M5 20c0-4 3.5-6 7-6s7 2 7 6"/></g>
+<g id="i-cpu"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></g>
+<g id="i-signal"><path d="M4 20V10M9 20V6M14 20v-9M19 20V4"/></g>
+<g id="i-target"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></g>
+<g id="i-graph"><path d="M4 19h16M6 15l4-5 4 3 4-7"/></g>
+<g id="i-play"><path d="M8 5l11 7-11 7z"/></g>
+<g id="i-phone"><path d="M5 4h4l2 5-2 1.5a12 12 0 006 6L18 15l5 2v4a1 1 0 01-1 1A17 17 0 014 6a1 1 0 011-2z"/></g>
+<g id="i-pin"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></g>
+<g id="i-chat"><path d="M4 5h16v11H9l-5 4z"/></g>
+<g id="i-menu"><path d="M4 7h16M4 12h16M4 17h16"/></g>
+</defs></svg>
 
-<!-- ================= SYSTEM BAR ================= -->
-<div class="sysbar">
-  <div class="brand"><span class="mark">🔥</span><span>Kongu Brilliance<small>Kongu Intelligence</small></span></div>
-  <div class="sp"></div>
-  <div class="telemetry"><span class="dotlive"></span><span id="telem">system online · observing scene 01</span></div>
-  <button class="sysbtn" id="soundBtn" aria-pressed="false" title="Sound is off by default">🔇 Sound</button>
-  <button class="sysbtn mic" id="micTop" aria-label="Ask Kongu Intelligence by voice">🎙 Ask&nbsp;K</button>
-</div>
+<div id="prog"></div>
+<canvas id="field" aria-hidden="true"></canvas>
+<div id="grain"></div>
+<div class="vignette"></div>
 
-<div class="scenenav" id="scenenav" aria-hidden="true"></div>
+<div id="hud"><span>Phase</span><span class="ph" id="hud-ph">00</span><span class="bar"><i id="hud-bar"></i></span><span id="hud-name">Begin</span></div>
+
+<header id="hdr">
+  <div class="wrap">
+    <a href="/index.html" class="brandmark">
+      <svg class="m" viewBox="0 0 32 32" fill="none"><rect x="3" y="3" width="26" height="26" rx="3" stroke="#D9AF63" stroke-width="1.5"/><path d="M11 22V10l6 6 6-6v12" stroke="#D9AF63" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="n">Kongu Brilliance<small>Coimbatore</small></span>
+    </a>
+    <nav class="links" id="nav">
+      <a href="#creed" data-sec="creed">Learning</a>
+      <a href="#tuition" data-sec="tuition">Tuition</a>
+      <a href="#tutor" data-sec="tutor">AI</a>
+      <a href="#growth" data-sec="growth">Growth</a>
+      <a href="#contact" data-sec="contact">Contact</a>
+      <a href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20know%20more%20about%20Kongu%20Brilliance" target="_blank" rel="noopener" class="btn btn-primary" style="padding:10px 18px">Talk to us</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24"><use href="#i-menu"/></svg></button>
+  </div>
+</header>
 
 <main>
-
-<!-- SCENE 01 — INITIALIZATION -->
-<section class="scene" id="hero" data-scene="init" data-telem="initializing learning network…">
-  <div class="scene-inner">
-    <div class="boot mono" id="bootline">▍</div>
-    <h1><span class="kine" id="kine">Learning is no longer one-size-fits-all.</span></h1>
-    <h1 style="color:var(--ink)">Kongu Brilliance</h1>
-    <p class="sub">A learning experience that observes, listens, adapts, and teaches to mastery — for Classes&nbsp;1–12 across CBSE, ICSE&nbsp;&amp; State boards in Coimbatore.</p>
-    <div class="entity-legend" id="legend">
-      <span><b>◍</b> Student</span><span><b>◍</b> Teacher</span><span><b>◍</b> AI</span>
-      <span><b>◍</b> Knowledge</span><span><b>◍</b> Assessment</span><span><b>◍</b> Progress</span>
+<!-- ================= HERO ================= -->
+<section id="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="hero-eyebrow" id="h-eye"><span class="dot"></span><span class="mono">Kongu Brilliance — Learning, made visible</span></div>
+      <h1 id="h-title">
+        <span class="l"><span>Where learning</span></span>
+        <span class="l"><span class="lead-brass">becomes visible.</span></span>
+      </h1>
+      <p class="hero-sub" id="h-sub">Experienced teaching, supported by intelligent technology. Watch how a student is assessed, learns, corrects a mistake — and grows.</p>
+      <div class="hero-cta" id="h-cta">
+        <a href="#creed" class="btn btn-primary">Explore the learning experience <svg class="ic"><use href="#i-arrow"/></svg></a>
+        <a href="#contact" class="btn btn-ghost">Talk to Kongu Brilliance</a>
+      </div>
+      <div class="hero-stats" id="h-stats">
+        <div class="s"><span class="mono">Offline · Online</span><b>Home &amp; Engineering</b></div>
+        <div class="s"><span class="mono">Approach</span><b>Teaching + AI</b></div>
+      </div>
     </div>
-    <div class="scrollcue"><span class="ln"></span> scroll to enter the system</div>
-  </div>
-</section>
-
-<!-- SCENE 02 — THE LEARNING LOOP -->
-<section class="scene" id="loop" data-scene="loop" data-telem="tracing the learning loop">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">02</span> the learning loop</div>
-    <h2 class="big">Learning isn't a page. It's a loop.</h2>
-    <p class="lede">Every student moves through the same living cycle — again and again. The goal is never to finish it, but to move through it faster and higher each time.</p>
-    <div class="loopwrap">
-      <div class="loopring" id="loopring"></div>
-      <p class="loopcaption" id="loopcap"><b>Assess.</b> The system watches where a learner actually is.</p>
-    </div>
-  </div>
-</section>
-
-<!-- SCENE 03 — MISTAKE → INTELLIGENCE → IMPROVEMENT -->
-<section class="scene" id="mistake" data-scene="mistake" data-telem="analysing a mistake · error → concept → practice">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">03</span> learning from mistakes</div>
-    <div class="simtag">● interactive demonstration</div>
-    <h2 class="big">A wrong answer is the most useful thing a student gives us.</h2>
-    <p class="lede">Marking it wrong is where most systems stop. Here it's where the work begins — the mistake is traced back to the idea underneath it.</p>
-    <div class="pipeline" id="mistakePipe"></div>
-    <button class="runbtn" id="mistakeRun">▷ Replay the analysis</button>
-    <div class="memstrip" id="mistakeMem">
-      <div class="m"><div class="k">Remembered mistake</div><div class="v">7 × 8 = 54</div></div>
-      <div class="m"><div class="k">What was taught</div><div class="v">7× table, grouping</div></div>
-      <div class="m"><div class="k">New attempt</div><div class="v">7 × 8 = 56 ✓</div></div>
-      <div class="m"><div class="k">Improvement</div><div class="v" style="color:var(--good)">mastered</div></div>
-    </div>
-  </div>
-</section>
-
-<!-- SCENE 04 — ADAPTIVE LEARNING -->
-<section class="scene" id="adaptive" data-scene="adaptive" data-telem="adapting difficulty in real time">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">04</span> adaptive learning</div>
-    <div class="simtag">● you drive this one</div>
-    <h2 class="big">It meets the student where they are — then moves.</h2>
-    <p class="lede">Answer well and it climbs. Struggle and it doesn't punish you — it steps back and re-teaches. Try it: play the student.</p>
-    <div class="demo2">
-      <div class="card">
-        <div class="ladder" id="ladder"></div>
-        <div class="adaptctrl">
-          <button class="ok" id="adOk">✓ Answered correctly</button>
-          <button class="no" id="adNo">✕ I struggled</button>
+    <div class="hero-panel" id="h-panel">
+      <div class="console">
+        <div class="top"><span>Learning signal</span><span>Student · live view</span><span class="live">Active</span></div>
+        <div class="body">
+          <div class="metric"><div class="row"><span>Concept mastery</span><b class="hv" data-v="72">—</b></div><div class="track"><i class="hi" data-w="72"></i></div></div>
+          <div class="metric"><div class="row"><span>Accuracy</span><b class="hv" data-v="64">—</b></div><div class="track"><i class="hi" data-w="64"></i></div></div>
+          <div class="metric"><div class="row"><span>Consistency</span><b class="hv" data-v="81">—</b></div><div class="track"><i class="hi" data-w="81"></i></div></div>
+          <div class="metric" style="margin-bottom:0"><div class="row"><span>Progress</span><b class="hv" data-v="58">—</b></div><div class="track"><i class="hi" data-w="58"></i></div></div>
         </div>
-        <div class="adaptmsg" id="adMsg">You're at <b>Level 2</b>. The system is watching how you respond.</div>
       </div>
-      <div class="card">
-        <div class="eyebrow" style="margin-bottom:12px"><span class="idx">why</span> not just harder</div>
-        <p class="lede" style="font-size:1rem">Difficulty is a lever, not a ladder to survive. When a learner slips, the system's first move is to find the missing idea and rebuild it — then raise the challenge again once it holds.</p>
-        <p class="loopcaption" style="margin-top:14px;font-size:.92rem"><b>Quantum-inspired paths.</b> At each step several routes are possible; the system narrows toward the one that fits this learner. It's a design metaphor for branching decisions — <span class="vneed">not a claim of quantum computing.</span></p>
+    </div>
+  </div>
+  <div class="scrollcue"><span class="ln"></span>Scroll to enter</div>
+</section>
+
+<!-- ================= CREED ================= -->
+<section id="creed" class="wrap">
+  <div class="line">Learn.</div>
+  <div class="line">Understand.</div>
+  <div class="line">Practise.</div>
+  <div class="line">Make a <em>mistake.</em></div>
+  <div class="line">Learn from it.</div>
+  <div class="line lead-brass">Grow.</div>
+</section>
+
+<!-- ============ SCENE 01 · ASSESSMENT ============ -->
+<section class="scene wrap" id="s-assess" data-phase="01" data-name="Assessment">
+  <div class="two">
+    <div class="scene-copy reveal">
+      <span class="mono scene-tag">Scene 01 — A student begins</span>
+      <h2>Every journey starts with an <em>honest picture.</em></h2>
+      <p class="desc">Before we teach a single concept, a short diagnostic finds the real starting point — what's understood, what's shaky, and where to begin.</p>
+    </div>
+    <div class="reveal">
+      <div class="sys-list" id="assess-list">
+        <div class="li"><span class="k"></span><span>Current understanding</span><span class="v">mapped</span></div>
+        <div class="li"><span class="k"></span><span>Concept mastery</span><span class="v">measured</span></div>
+        <div class="li"><span class="k"></span><span>Practice history</span><span class="v">reviewed</span></div>
+        <div class="li"><span class="k"></span><span>Assessment performance</span><span class="v">baselined</span></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SCENE 05 — PAPER EVALUATOR -->
-<section class="scene" id="evaluator" data-scene="evaluator" data-telem="scanning answer sheet · OCR → reasoning → feedback">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">05</span> the paper becomes intelligent</div>
-    <div class="simtag">● simulation of an evaluation pipeline</div>
-    <h2 class="big">A handwritten paper walks in. An analysis walks out.</h2>
-    <p class="lede">The sheet is read, the working is followed step by step, and the exact line where it broke is found — not just the final mark.</p>
-    <div class="demo2">
+<!-- ============ SCENE 02 · LEARNING (teacher+ai+student) ============ -->
+<section class="scene wrap" id="s-learn" data-phase="02" data-name="Learning">
+  <div class="two">
+    <div class="reveal">
+      <svg class="rel-svg" viewBox="0 0 420 300" id="rel-svg">
+        <g id="rel-links"></g>
+        <g id="rel-nodes"></g>
+      </svg>
+    </div>
+    <div class="scene-copy reveal">
+      <span class="mono scene-tag">Scene 02 — The lesson</span>
+      <h2>A teacher explains. Technology <em>quietly assists.</em></h2>
+      <p class="desc">The teacher leads — explaining, mentoring, reading the room. In the background, the system tracks understanding so nothing important slips past unnoticed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 03 · MISTAKE ============ -->
+<section class="scene wrap" id="s-mistake" data-phase="03" data-name="Misconception">
+  <div class="two">
+    <div class="scene-copy reveal">
+      <span class="mono scene-tag">Scene 03 — The mistake</span>
+      <h2>A wrong answer isn't a failure. <em>It's a signal.</em></h2>
+      <p class="desc">Instead of a red cross, the system reads the working, finds the exact step that went wrong, and names the underlying gap — so it can be fixed, not just marked.</p>
+    </div>
+    <div class="reveal">
+      <div class="status-flow" id="mistake-flow">
+        <div class="st warn"><span class="tick">›</span> Misconception detected</div>
+        <div class="st err"><span class="tick">›</span> Concept gap identified — sign handling</div>
+        <div class="st act"><span class="tick">›</span> Recommended intervention prepared</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 04 · AI UNDERSTANDS ============ -->
+<section class="scene wrap" id="s-ai" data-phase="04" data-name="Analysis">
+  <div class="two">
+    <div class="reveal">
+      <div class="sys-list" id="ai-states">
+        <div class="li"><span class="k"></span><span>Analysing response</span><span class="v">done</span></div>
+        <div class="li"><span class="k"></span><span>Identifying concept</span><span class="v">linear equations</span></div>
+        <div class="li"><span class="k"></span><span>Checking previous attempts</span><span class="v">2 similar</span></div>
+        <div class="li"><span class="k"></span><span>Selecting explanation</span><span class="v">chosen</span></div>
+        <div class="li"><span class="k"></span><span>Creating targeted practice</span><span class="v">ready</span></div>
+      </div>
+    </div>
+    <div class="scene-copy reveal">
+      <span class="mono scene-tag">Scene 04 — Understanding the mistake</span>
+      <h2>Intelligence you don't see — but you <em>feel the result.</em></h2>
+      <p class="desc">There's no robot and no chatbot. Just a system that understands where the student is stuck and prepares the right next step for a teacher to deliver.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 05 · ADAPTIVE PATH ============ -->
+<section class="scene wrap" id="s-path" data-phase="05" data-name="Adaptive path">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Scene 05 — The path changes</span>
+    <h2>The learning path <em>re-routes</em> to fit the student.</h2>
+    <p class="desc">Three possible routes forward. Based on how the student is really doing, the system chooses the one most likely to close the gap — adaptive learning you can actually watch happen.</p>
+  </div>
+  <div class="reveal">
+    <svg class="pathbox" viewBox="0 0 1000 260" id="pathbox">
+      <path class="p-cand" id="pc-a" d="M120 130 C 350 40, 650 40, 880 90"/>
+      <path class="p-cand" id="pc-c" d="M120 130 C 350 220, 650 220, 880 170"/>
+      <path class="p-cand p-sel" id="pc-b" d="M120 130 C 350 130, 650 130, 880 130"/>
+      <circle class="node on" cx="120" cy="130" r="9"/>
+      <circle class="node" id="end-a" cx="880" cy="90" r="7"/>
+      <circle class="node" id="end-b" cx="880" cy="130" r="9"/>
+      <circle class="node" id="end-c" cx="880" cy="170" r="7"/>
+      <text x="120" y="160">Now</text>
+      <text x="905" y="93">Path A · advance</text>
+      <text x="905" y="133">Path B · reinforce</text>
+      <text x="905" y="173">Path C · revisit</text>
+    </svg>
+    <p class="note">Selected · Path B — reinforce the weak concept before advancing</p>
+  </div>
+</section>
+
+<!-- ============ SCENE 06 · AI TUTOR ============ -->
+<section class="scene wrap" id="tutor" data-phase="06" data-name="AI tutor">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Scene 06 — Guided practice</span>
+    <h2>When a student is stuck, the explanation <em>changes.</em></h2>
+    <p class="desc">Not a chat window in the corner — a focused learning surface that adapts its explanation, shows a worked example, then checks understanding.</p>
+  </div>
+  <div class="tutor reveal" id="tutor-ui">
+    <div class="bar"><span>AI Tutor</span><span class="demo">Interactive demonstration</span></div>
+    <div class="grid">
+      <div class="col l">
+        <div class="qlabel">Student</div>
+        <div class="qtext">"I keep getting linear equations wrong when there's a sign to move."</div>
+        <div id="tutor-states">
+          <div class="statechip"><span>Input received</span><span class="d">·</span></div>
+          <div class="statechip"><span>Concept identified</span><span class="d">·</span></div>
+          <div class="statechip"><span>Explanation adapted</span><span class="d">·</span></div>
+          <div class="statechip"><span>Practice prepared</span><span class="d">·</span></div>
+        </div>
+      </div>
+      <div class="col r" id="tutor-steps">
+        <div class="step" data-s="0"><div class="k">Explanation</div><p>Whatever you add or subtract on one side, do the same on the other. The "=" is a balance — keep it level.</p></div>
+        <div class="step" data-s="1"><div class="k">Worked example</div><p>Solve 2x + 5 = 15.</p><div class="eg">2x + 5 = 15 → 2x = 15 − 5 → 2x = 10 → x = 5</div></div>
+        <div class="step" data-s="2"><div class="k">Your turn</div><p>Now try: 3x + 4 = 19.</p></div>
+        <div class="step" data-s="3"><div class="k">Feedback</div><p>Correct — x = 5. You subtracted before dividing. That's the balancing method working.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCENE 07 · PAPER EVALUATION ============ -->
+<section class="scene wrap" id="s-paper" data-phase="07" data-name="Paper evaluation">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Scene 07 — From paper to insight</span>
+    <h2>A written answer, <em>read and understood.</em></h2>
+    <p class="desc">A handwritten answer enters the evaluation environment. The system reads the working, marks it, finds the exact error, and turns it into targeted practice.</p>
+  </div>
+  <div class="two">
+    <div class="reveal">
       <div class="paper" id="paper">
-        <div class="ph">Answer sheet · Class 8 · Mathematics</div>
-        <p class="q">Q. Solve&nbsp; 2x + 5 = 15</p>
-        <p class="a">x = <span class="x">4</span></p>
-        <p class="q">Q. Solve&nbsp; 3x = 21</p>
-        <p class="a">x = 7 ✓</p>
-        <div class="scanline"></div>
-      </div>
-      <div>
-        <div class="pipeline" id="evalPipe"></div>
-        <button class="runbtn" id="evalRun">▷ Re-scan the sheet</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SCENE 06 — KNOWLEDGE GRAPH / DIGITAL TWIN -->
-<section class="scene" id="graph" data-scene="graph" data-telem="rendering learning memory · knowledge graph">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">06</span> learning memory</div>
-    <div class="simtag">● illustrative learning profile — example data, not a real student</div>
-    <h2 class="big">Every learner has a shape. The system remembers it.</h2>
-    <p class="lede">Not surveillance — a map of ideas. Strong concepts settle and hold; weak ones stay lit until they're mastered. As the student grows, the map reorganises.</p>
-    <div class="kgwrap">
-      <div class="kgbox" id="kgbox">
-        <svg id="kglines" aria-hidden="true"></svg>
-      </div>
-      <div>
-        <div class="twin">
-          <div class="t"><div class="k">Knowledge</div><div class="v"><span data-count="78">0</span><small>/100</small></div></div>
-          <div class="t"><div class="k">Confidence</div><div class="v"><span data-count="64">0</span><small>/100</small></div></div>
-          <div class="t"><div class="k">Accuracy</div><div class="v"><span data-count="81">0</span><small>%</small></div></div>
-          <div class="t"><div class="k">Mastered</div><div class="v"><span data-count="12">0</span><small>concepts</small></div></div>
+        <div class="scan" id="scan"></div>
+        <div class="ph"><span>Mathematics · Linear equations</span><span>Q4 · 5 marks</span></div>
+        <div class="q">Solve: 2x + 5 = 15</div>
+        <div class="work">
+          Step 1&nbsp; 2x = 15 <span class="flag" id="flag-step">+ 5</span><br>
+          Step 2&nbsp; 2x = 20<br>
+          x = <span class="cross">10</span>
         </div>
-        <p class="loopcaption" style="margin-top:16px;font-size:.92rem"><b>Predicted next best step.</b> Fractions keep surfacing under algebra errors — the system suggests revisiting fractions before advancing. <span class="vneed">Shown as a pattern-detection demo; real prediction requires live student data.</span></p>
+        <div class="brace" id="brace" style="right:28px;bottom:70px">← error here</div>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="status-flow" id="paper-flow">
+        <div class="st"><span class="tick">›</span> Document detected</div>
+        <div class="st"><span class="tick">›</span> Question identified — Q4</div>
+        <div class="st"><span class="tick">›</span> Answer region located</div>
+        <div class="st err"><span class="tick">›</span> Error — Step 1 (added instead of subtracted)</div>
+        <div class="st warn"><span class="tick">›</span> Concept gap — transposing across "="</div>
+        <div class="st act"><span class="tick">›</span> Targeted practice generated</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SCENE 07 — TEACHER × AI -->
-<section class="scene" id="teacher" data-scene="teacher" data-telem="human intelligence × artificial intelligence">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">07</span> human × artificial</div>
-    <h2 class="big">The AI never replaces the teacher. It hands them time.</h2>
-    <p class="lede">Machines are good at the tireless work — noticing every mistake, generating endless practice, grading instantly. Teachers are good at the things that actually change a child.</p>
-    <div class="txa">
-      <div class="col human">
-        <h3>The teacher brings</h3>
-        <ul><li>Judgement &amp; experience</li><li>Motivation &amp; mentorship</li><li>Emotional understanding</li><li>Strategy for this child</li></ul>
-      </div>
-      <div class="fuse">×</div>
-      <div class="col ai">
-        <h3>The system brings</h3>
-        <ul><li>Analysis of every answer</li><li>Endless targeted practice</li><li>Instant feedback</li><li>Pattern detection at scale</li></ul>
-      </div>
-      <div class="student">↳ both, working around one student</div>
+<!-- ============ SCENE 08 · RETRY / SCENE 10 KNOWLEDGE GRAPH ============ -->
+<section class="scene wrap" id="s-graph" data-phase="08" data-name="Knowledge graph">
+  <div class="two">
+    <div class="scene-copy reveal">
+      <span class="mono scene-tag">Scene 08 — The student tries again</span>
+      <h2>The weak concept <em>becomes strong.</em></h2>
+      <p class="desc">The student retries the targeted question and gets it right. On the knowledge map, a fragile connection stabilises — and everything built on top of it becomes steadier too.</p>
     </div>
-  </div>
-</section>
-
-<!-- SCENE 08 — PARENT INTELLIGENCE -->
-<section class="scene" id="parent" data-scene="parent" data-telem="parent view · before → after · why">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">08</span> parent intelligence</div>
-    <div class="simtag">● illustrative example — not a real student record</div>
-    <h2 class="big">Parents shouldn't have to decode a report.</h2>
-    <p class="lede">Not "your child improved." Instead: from where, to where, and exactly why — in the time it takes to glance.</p>
-    <div class="parent">
-      <div class="beforeafter" id="beforeafter">
-        <div class="ba before"><div class="num" data-count="42">0</div><div class="bar" data-h="70"></div><div class="cap">term start</div></div>
-        <div class="ba after"><div class="num" data-count="76">0</div><div class="bar" data-h="150"></div><div class="cap">now</div></div>
-      </div>
-      <div>
-        <div class="why">
-          <div class="w"><span class="ic">◈</span> Concept mastery rose across algebra &amp; fractions</div>
-          <div class="w"><span class="ic">◈</span> Practice stayed consistent — 4 sessions / week</div>
-          <div class="w"><span class="ic">◈</span> Targeted revision on the two weakest topics</div>
-        </div>
-        <div class="nextstep"><div class="k">Recommended next step</div>Move to Class-level word problems; keep a weekly fractions refresher.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SCENE 09 — PERFORMANCE GROWTH -->
-<section class="scene" id="growth" data-scene="growth" data-telem="rendering growth · struggle → recovery → mastery">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">09</span> performance growth</div>
-    <div class="simtag">● illustrative growth curve</div>
-    <h2 class="big">Real growth is never a straight line.</h2>
-    <p class="lede">Students struggle, dip, recover, and climb. A living record shows the whole story — including the setbacks that mastery is built on.</p>
-    <div class="growthwrap">
-      <svg id="growthsvg" viewBox="0 0 700 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Illustrative performance-over-time curve with dips and recoveries rising to mastery">
-        <defs>
-          <linearGradient id="garea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="rgba(245,200,66,.28)"/><stop offset="100%" stop-color="rgba(245,200,66,0)"/>
-          </linearGradient>
-        </defs>
-        <!-- gridlines -->
-        <g stroke="rgba(255,255,255,.06)" stroke-width="1">
-          <line x1="46" y1="40" x2="680" y2="40"/><line x1="46" y1="110" x2="680" y2="110"/>
-          <line x1="46" y1="180" x2="680" y2="180"/><line x1="46" y1="250" x2="680" y2="250"/>
-        </g>
-        <text class="glabel" x="8" y="44">100</text><text class="glabel" x="14" y="184">50</text><text class="glabel" x="20" y="254">0</text>
-        <text class="glabel" x="46" y="278">term start</text><text class="glabel" x="600" y="278">now</text>
-        <path id="garea" class="garea" fill="url(#garea)" opacity="0"
-          d="M46,250 L46,225 C120,205 150,160 200,205 C250,245 300,120 360,150 C410,175 440,90 500,110 C560,128 610,55 680,60 L680,250 Z"/>
-        <path id="gpath" class="gpath"
-          d="M46,225 C120,205 150,160 200,205 C250,245 300,120 360,150 C410,175 440,90 500,110 C560,128 610,55 680,60"/>
-        <g class="gmile" id="gmile" opacity="0">
-          <g><circle cx="200" cy="205" r="5"/><text x="200" y="230" text-anchor="middle">first dip</text></g>
-          <g><circle cx="360" cy="150" r="5"/><text x="360" y="135" text-anchor="middle">recovered</text></g>
-          <g><circle cx="680" cy="60" r="5"/><text x="672" y="48" text-anchor="end">mastery</text></g>
-        </g>
+    <div class="reveal">
+      <svg class="kgbox" viewBox="0 0 440 340" id="kgbox">
+        <g id="kg-edges"></g>
+        <g id="kg-nodes"></g>
       </svg>
     </div>
   </div>
 </section>
 
-<!-- SCENE 10 — VOICE / ASK K -->
-<section class="scene" id="voice" data-scene="voice" data-telem="voice interface active · listening for questions">
-  <div class="scene-inner">
-    <div class="eyebrow"><span class="idx">10</span> ask the system</div>
-    <h2 class="big">Don't read about it. Ask it.</h2>
-    <p class="lede">Speak to <b>K</b> — and the world changes while it answers. Ask what happens when a student makes a mistake, and you'll watch the mistake get analysed, not described.</p>
-    <div class="vgrid">
-      <div class="vpanel">
-        <div class="vorb" id="vorb">◍</div>
-        <div class="vcap" id="vcap">Tap the mic and ask a question — or pick one below.</div>
-        <div class="vcontrols">
-          <button class="sysbtn mic" id="micMain">🎙 Speak</button>
-          <button class="sysbtn" id="vstop" style="display:none">🔇 Stop</button>
-        </div>
-        <div class="chips" id="vchips"></div>
-        <div class="vlog" id="vlog"></div>
+<!-- ============ SCENE 09 · GROWTH ============ -->
+<section class="scene wrap" id="growth" data-phase="09" data-name="Growth">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Scene 09 — Progress is a journey</span>
+    <h2>Growth you can <em>see take shape.</em></h2>
+    <p class="desc">Not a single number — a trajectory. Assessment, practice, a setback, an intervention, a retry, and steady improvement toward mastery.</p>
+  </div>
+  <div class="reveal">
+    <svg class="graphbox" viewBox="0 0 960 420" id="graphbox">
+      <defs><linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(217,175,99,.28)"/><stop offset="1" stop-color="rgba(217,175,99,0)"/></linearGradient></defs>
+      <line class="axis" x1="60" y1="360" x2="920" y2="360"/>
+      <line class="axis" x1="60" y1="40" x2="60" y2="360"/>
+      <path class="ga" id="ga"/><path class="gl" id="gl"/>
+      <g id="gpts"></g>
+    </svg>
+    <p class="note">Interactive demonstration · illustrative trajectory, not a specific student's data</p>
+  </div>
+</section>
+
+<!-- ============ SCENE 11 · TEACHER + AI ============ -->
+<section class="scene wrap" id="s-ta" data-phase="10" data-name="Teacher + AI">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Scene 11 — The partnership</span>
+    <h2>Technology doesn't replace the teacher. <em>It gives them reach.</em></h2>
+  </div>
+  <div class="reveal">
+    <div class="ta">
+      <div class="side">
+        <div class="r">The teacher</div>
+        <h3>Human understanding</h3>
+        <ul>
+          <li><svg class="ic"><use href="#i-teacher"/></svg> Mentorship &amp; motivation</li>
+          <li><svg class="ic"><use href="#i-teacher"/></svg> Reading each student</li>
+          <li><svg class="ic"><use href="#i-teacher"/></svg> Guidance and care</li>
+        </ul>
       </div>
-      <div class="vpanel">
-        <div class="eyebrow" style="margin-bottom:14px"><span class="idx">live</span> what K is doing</div>
-        <div class="vstages" id="vstages">
-          <div class="vstage" data-st="0"><div class="n">01</div><div class="t"><b>Understanding the question</b><small>parsing intent — no private reasoning shown</small></div></div>
-          <div class="vstage" data-st="1"><div class="n">02</div><div class="t"><b>Checking learning memory</b><small>prior attempts &amp; mistake patterns</small></div></div>
-          <div class="vstage" data-st="2"><div class="n">03</div><div class="t"><b>Identifying the concept</b><small>which idea this touches</small></div></div>
-          <div class="vstage" data-st="3"><div class="n">04</div><div class="t"><b>Preparing the response</b><small>explanation + targeted practice</small></div></div>
-        </div>
-        <p class="loopcaption" style="margin-top:16px;font-size:.86rem"><span class="vneed">K uses your browser's speech engine for voice. On the live Kongu Brilliance site it answers with the real AI model; in offline previews it falls back to scripted answers.</span> The full AI tutor &amp; evaluator run in the Exam Portal.</p>
+      <div class="mid"><span class="plus">+</span></div>
+      <div class="side">
+        <div class="r">The technology</div>
+        <h3>Intelligent support</h3>
+        <ul>
+          <li><svg class="ic"><use href="#i-signal"/></svg> Analysis &amp; pattern detection</li>
+          <li><svg class="ic"><use href="#i-target"/></svg> Targeted, unlimited practice</li>
+          <li><svg class="ic"><use href="#i-graph"/></svg> Progress tracking around the clock</li>
+        </ul>
+      </div>
+    </div>
+    <div class="ta-out"><h3>Human teaching + intelligent technology = <span class="brass">stronger learning</span></h3></div>
+  </div>
+</section>
+
+<!-- ============ TUITION ECOSYSTEM ============ -->
+<section class="scene wrap" id="tuition" data-phase="11" data-name="Ways to learn">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Four ways to learn</span>
+    <h2>One approach. <em>Four environments.</em></h2>
+    <p class="desc">Offline, online, home and engineering tuition — each a real learning environment, the same standard of teaching and support throughout.</p>
+    <div class="eco-voice"><button class="voice-btn" id="voiceBtn"><svg class="ic"><use href="#i-play"/></svg> Hear the four ways to learn</button></div>
+  </div>
+  <div class="eco-grid reveal">
+    <div class="eco-nav" id="eco-nav">
+      <div class="eco-item on" data-e="offline"><span class="idx">01</span><h3>Offline tuition</h3><span class="sm">In our Coimbatore centre</span></div>
+      <div class="eco-item" data-e="online"><span class="idx">02</span><h3>Online tuition</h3><span class="sm">Live, from anywhere</span></div>
+      <div class="eco-item" data-e="home"><span class="idx">03</span><h3>Home tuition</h3><span class="sm">One-to-one, at home</span></div>
+      <div class="eco-item" data-e="engineering"><span class="idx">04</span><h3>Engineering tuition</h3><span class="sm">Advanced &amp; technical</span></div>
+    </div>
+    <div class="eco-stage" id="eco-stage">
+      <div class="eco-panel on" data-e="offline">
+        <div class="env" data-env="offline"></div>
+        <h4>Offline tuition</h4>
+        <p class="scn">A focused classroom in our Coimbatore centre — a teacher at the board, small-group attention, and regular written assessment that feeds straight back into each student's plan.</p>
+        <div class="feats"><span class="f"><svg class="ic"><use href="#i-teacher"/></svg> In-person teaching</span><span class="f"><svg class="ic"><use href="#i-target"/></svg> Individual attention</span><span class="f"><svg class="ic"><use href="#i-doc"/></svg> Regular assessment</span></div>
+      </div>
+      <div class="eco-panel" data-e="online">
+        <div class="env" data-env="online"></div>
+        <h4>Online tuition</h4>
+        <p class="scn">A live session on screen — the teacher explaining on a shared board, the student asking questions in real time, material and feedback delivered instantly. The full classroom, from anywhere.</p>
+        <div class="feats"><span class="f"><svg class="ic"><use href="#i-monitor"/></svg> Live &amp; interactive</span><span class="f"><svg class="ic"><use href="#i-chat"/></svg> Real-time doubts</span><span class="f"><svg class="ic"><use href="#i-signal"/></svg> Shared material</span></div>
+      </div>
+      <div class="eco-panel" data-e="home">
+        <div class="env" data-env="home"></div>
+        <h4>Home tuition</h4>
+        <p class="scn">A tutor beside the student at their own desk — one-to-one attention, paced entirely to them, with the same assessment and progress tracking as every other mode.</p>
+        <div class="feats"><span class="f"><svg class="ic"><use href="#i-home"/></svg> One-to-one</span><span class="f"><svg class="ic"><use href="#i-target"/></svg> Fully personalised</span><span class="f"><svg class="ic"><use href="#i-graph"/></svg> Progress tracked</span></div>
+      </div>
+      <div class="eco-panel" data-e="engineering">
+        <div class="env" data-env="engineering"></div>
+        <h4>Engineering tuition</h4>
+        <p class="scn">For engineering students and aspirants — rigorous problem-solving in mathematics, core technical subjects and applied concepts, taught with the depth the subject demands.</p>
+        <div class="feats"><span class="f"><svg class="ic"><use href="#i-cpu"/></svg> Technical depth</span><span class="f"><svg class="ic"><use href="#i-signal"/></svg> Applied problem-solving</span><span class="f"><svg class="ic"><use href="#i-graph"/></svg> Exam-focused</span></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SCENE 11 — FINAL / CTA -->
-<section class="scene" id="final" data-scene="final" data-telem="learning ecosystem · fully connected">
-  <div class="scene-inner">
-    <div class="eyebrow" style="justify-content:center"><span class="idx">11</span> the whole system</div>
-    <h2>Learning should understand the learner.</h2>
-    <p class="tagline">Student · Teacher · AI · Assessment · Growth — one connected world.</p>
-    <div class="ctarow">
-      <a class="cta primary" href="tel:+919514524599">📞 Book a consultation</a>
-      <button class="cta ghost" id="talkK">🎙 Talk to K</button>
-      <a class="cta ghost" href="https://wa.me/919514524599" target="_blank" rel="noopener">💬 WhatsApp us</a>
+<!-- ============ SUBJECTS ============ -->
+<section class="scene wrap" id="subjects">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Programs &amp; subjects</span>
+    <h2>Every subject, taught with <em>the same rigour.</em></h2>
+  </div>
+  <div class="subj reveal">
+    <div class="subj-row"><span class="n">01</span><span class="t">Mathematics</span><span class="tags">Algebra · Geometry · Calculus</span></div>
+    <div class="subj-row"><span class="n">02</span><span class="t">Science</span><span class="tags">Physics · Chemistry · Biology</span></div>
+    <div class="subj-row"><span class="n">03</span><span class="t">English &amp; Languages</span><span class="tags">Grammar · Reading · Writing</span></div>
+    <div class="subj-row"><span class="n">04</span><span class="t">Social Science</span><span class="tags">History · Geography · Civics</span></div>
+    <div class="subj-row"><span class="n">05</span><span class="t">Engineering subjects</span><span class="tags">Maths · Core technical</span></div>
+  </div>
+  <p class="note" style="margin-top:22px">Boards &amp; classes supported per the current Kongu Brilliance offering — [confirm exact list].</p>
+</section>
+
+<!-- ============ PARENT EXPERIENCE ============ -->
+<section class="scene wrap" id="s-parent" data-phase="12" data-name="Parent view">
+  <div class="two">
+    <div class="scene-copy reveal">
+      <span class="mono scene-tag">For parents</span>
+      <h2>You always know <em>where things stand.</em></h2>
+      <p class="desc">Not a wall of numbers — a clear picture. What's strong, what's improving, what needs attention, and the one thing to do next.</p>
     </div>
-    <p class="loopcaption" style="margin-top:20px;font-size:.86rem;color:var(--faint)">Ready to see how your child can learn differently?</p>
+    <div class="reveal">
+      <div class="parent-panel" id="parent-panel">
+        <div class="top"><span>Learning status</span><span class="who">This month</span></div>
+        <div class="pstat s"><span class="badge">Strong</span><span class="name">Algebra</span><span class="meter"><i data-w="88"></i></span></div>
+        <div class="pstat i"><span class="badge">Improving</span><span class="name">Fractions</span><span class="meter"><i data-w="64"></i></span></div>
+        <div class="pstat n"><span class="badge">Needs attention</span><span class="name">Geometry</span><span class="meter"><i data-w="41"></i></span></div>
+        <div class="next-action" id="next-action"><div class="k">Next recommended action</div>Two focused sessions on geometry basics this week, then a short re-assessment.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTS / TESTIMONIALS ============ -->
+<section class="scene wrap" id="results">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Results &amp; voices</span>
+    <h2>Progress, in <em>their words.</em></h2>
+    <p class="desc">Real testimonials and results from Kongu Brilliance families go here — nothing fabricated.</p>
+  </div>
+  <div class="tcol reveal">
+    <div class="tcard placeholder">[ Add a verified parent / student testimonial ]</div>
+    <div class="tcard placeholder">[ Add a verified result or outcome ]</div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="scene wrap" id="faq">
+  <div class="scene-head reveal">
+    <span class="mono scene-tag">Questions</span>
+    <h2>Good to <em>know.</em></h2>
+  </div>
+  <div class="faq reveal">
+    <details><summary>Does the technology replace teachers? <span class="pm">+</span></summary><div class="a">No. Teaching is led by experienced teachers. The technology handles analysis, practice and tracking so teachers can spend more time actually teaching each student.</div></details>
+    <details><summary>Which modes of tuition do you offer? <span class="pm">+</span></summary><div class="a">Offline tuition at our Coimbatore centre, live online tuition, one-to-one home tuition, and specialised engineering tuition.</div></details>
+    <details><summary>Which boards and classes are covered? <span class="pm">+</span></summary><div class="a">Kongu Brilliance supports school students across major boards, plus engineering-level subjects. Tell us your class and board and we'll confirm the fit.</div></details>
+    <details><summary>Is the AI evaluation always right? <span class="pm">+</span></summary><div class="a">The AI-assisted evaluation shown here is an interactive demonstration. In practice, technology assists teachers — final judgement always stays with them.</div></details>
+    <details><summary>How do we get started? <span class="pm">+</span></summary><div class="a">Message us on WhatsApp or call. We'll arrange a short conversation, understand your child's needs, and recommend the right mode of tuition.</div></details>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="scene" id="contact" data-phase="13" data-name="Begin">
+  <div class="wrap contact-grid">
+    <div class="reveal">
+      <span class="mono scene-tag">Talk to Kongu Brilliance</span>
+      <h2>Your child's next chapter <span class="brass">starts here.</span></h2>
+      <p class="desc" style="margin-bottom:30px">Tell us your child's class, board and goals. We'll recommend the right mode of tuition and how learning would work for them.</p>
+      <a href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20book%20a%20learning%20consultation" target="_blank" rel="noopener" class="btn btn-primary">Book a consultation on WhatsApp <svg class="ic"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="reveal">
+      <div class="cinfo">
+        <a href="tel:+919514524599"><svg class="ic"><use href="#i-phone"/></svg> +91 95145 24599</a>
+        <a href="tel:+917845915044"><svg class="ic"><use href="#i-phone"/></svg> +91 78459 15044</a>
+        <a href="https://wa.me/919514524599" target="_blank" rel="noopener"><svg class="ic"><use href="#i-chat"/></svg> WhatsApp us</a>
+        <a href="https://maps.app.goo.gl/s3oeWWQDPjFykGqT8" target="_blank" rel="noopener"><svg class="ic"><use href="#i-pin"/></svg> Near NGGO Colony &amp; Mettupalayam Road, Coimbatore</a>
+      </div>
+    </div>
   </div>
 </section>
 </main>
 
 <footer>
-  <div class="frow">
-    <div style="max-width:34ch">
-      <div class="k">Kongu Brilliance Tuition Centre</div>
-      <b>Where Brilliance is Born</b><br>
-      Home, centre &amp; online tuition · Classes 1–12<br>
-      CBSE · ICSE · State · Matric · ISC · IGCSE
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fcol" style="max-width:300px">
+        <div class="brandmark" style="margin-bottom:16px">
+          <svg class="m" viewBox="0 0 32 32" fill="none"><rect x="3" y="3" width="26" height="26" rx="3" stroke="#D9AF63" stroke-width="1.5"/><path d="M11 22V10l6 6 6-6v12" stroke="#D9AF63" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="n" style="font-family:var(--disp);font-weight:600">Kongu Brilliance</span>
+        </div>
+        <p style="color:var(--muted);font-size:.9rem">Offline, online, home &amp; engineering tuition in Coimbatore. Experienced teaching, supported by intelligent technology.</p>
+      </div>
+      <div class="fcol"><h4>Explore</h4><a href="/index.html">Home</a><a href="/how-it-works.html">How AI Works</a><a href="/exam-portal.html">Exam Portal</a><a href="#tuition">Tuition</a></div>
+      <div class="fcol"><h4>Learn with us</h4><a href="#tuition">Offline tuition</a><a href="#tuition">Online tuition</a><a href="#tuition">Home tuition</a><a href="#tuition">Engineering tuition</a></div>
+      <div class="fcol"><h4>Contact</h4><a href="tel:+919514524599">+91 95145 24599</a><a href="tel:+917845915044">+91 78459 15044</a><a href="https://wa.me/919514524599" target="_blank" rel="noopener">WhatsApp</a><a href="https://maps.app.goo.gl/s3oeWWQDPjFykGqT8" target="_blank" rel="noopener">Coimbatore · Map</a></div>
     </div>
-    <div>
-      <div class="k">Visit</div>
-      Nilamukil Complex, Mettupalayam Rd,<br>Opp. Sulochana Pharmacy, Bharathiyar Nagar,<br>K. Vadamadurai, Kurudampalayam,<br>Tamil Nadu – 641017
-    </div>
-    <div>
-      <div class="k">Talk to us</div>
-      <a href="tel:+919514524599">95145 24599</a> · <a href="tel:+917845915044">78459 15044</a><br>
-      <a href="mailto:abhisekmurugesan@gmail.com">abhisekmurugesan@gmail.com</a><br>
-      <a href="https://www.kongubrilliance.com/" target="_blank" rel="noopener">kongubrilliance.com</a>
-    </div>
-    <div style="max-width:26ch">
-      <div class="k">Their words</div>
-      5+ years teaching · founded 2021 · max 12 students / batch · zero registration fee · Centum (100/100) scores in Mathematics.
-    </div>
+    <div class="fbottom"><span>© <span id="yr"></span> Kongu Brilliance, Coimbatore</span><span>Where learning becomes visible</span></div>
   </div>
-  <p class="disclaimer">
-    <b style="color:var(--muted);font-family:inherit">About the demonstrations:</b> The interactive scenes on this page — mistake analysis, adaptive difficulty, paper evaluation, the knowledge graph, before/after and growth figures — are illustrative simulations of how AI-assisted learning works. Numbers shown are examples, not real student records, and no personal data is collected on this page. The voice guide uses your browser's built-in speech engine with scripted answers. Business facts, programmes and contact details are drawn from kongubrilliance.com. Any headline statistics beyond those stated there are marked <span class="vneed">[verified content required]</span> and should be confirmed before publishing.
-  </p>
 </footer>
 
 <script>
-"use strict";
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const RM=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const lerp=(a,b,t)=>a+(b-a)*t;
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const MOB=matchMedia('(max-width:820px)').matches;
 
-/* ============ OPTIONAL SOUND (off by default) ============ */
-let AC=null, SOUND=false;
-function blip(freq=520,dur=.08,type="sine",g=.04){
-  if(!SOUND)return; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-    const o=AC.createOscillator(),ga=AC.createGain(); o.type=type;o.frequency.value=freq;
-    o.connect(ga);ga.connect(AC.destination); ga.gain.setValueAtTime(g,AC.currentTime);
-    ga.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+dur); o.start();o.stop(AC.currentTime+dur);
-  }catch(e){} }
-$("#soundBtn").onclick=function(){ SOUND=!SOUND; this.setAttribute("aria-pressed",SOUND);
-  this.innerHTML=SOUND?"🔊 Sound":"🔇 Sound"; if(SOUND){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();}catch(e){} blip(660,.1);} };
-
-/* ============ INTELLIGENCE LAYER (canvas particle network) ============ */
-const cv=$("#stage"), ctx=cv.getContext("2d");
-let W=0,H=0,DPR=1, mode="init", modeT=0, mouse={x:.5,y:.5,active:false};
-const COL={init:[94,230,224],loop:[245,200,66],mistake:[255,107,125],adaptive:[139,123,255],
-  evaluator:[94,230,224],graph:[61,220,151],teacher:[245,200,66],parent:[245,200,66],
-  growth:[245,200,66],voice:[94,230,224],final:[245,200,66]};
-let curCol=[94,230,224];
-function resize(){ DPR=clamp(window.devicePixelRatio||1,1,2); W=cv.width=innerWidth*DPR; H=cv.height=innerHeight*DPR;
-  cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px"; }
-resize(); addEventListener("resize",resize,{passive:true});
-addEventListener("pointermove",e=>{mouse.x=e.clientX/innerWidth;mouse.y=e.clientY/innerHeight;mouse.active=true;},{passive:true});
-
-const mobile=innerWidth<680;
-const AMBN=RM?46:clamp(Math.round(innerWidth*innerHeight/(mobile?26000:16000)),40,mobile?70:150);
-const parts=[]; for(let i=0;i<AMBN;i++)parts.push({x:Math.random(),y:Math.random(),z:.3+Math.random()*.7,
-  vx:(Math.random()-.5)*.00028,vy:(Math.random()-.5)*.00028,r:Math.random()*1.6+.5});
-// entity anchors (6 named) placed on a ring, plus free wander target
-const ENT=["STUDENT","TEACHER","AI","KNOWLEDGE","ASSESSMENT","PROGRESS"];
-const ents=ENT.map((n,i)=>{const a=-Math.PI/2+i/ENT.length*Math.PI*2;
-  return {n,bx:.5+Math.cos(a)*.30,by:.5+Math.sin(a)*.26,x:Math.random(),y:Math.random(),tx:.5,ty:.5,a};});
-let loopTok=0, mote={a:0,b:1,t:0};
-let scrollF=0; addEventListener("scroll",()=>{scrollF=window.scrollY/Math.max(1,innerHeight);},{passive:true});
-
-function setMode(m){ if(m&&COL[m]){mode=m;} }
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  // cinematic parallax camera — mouse + gentle drift + scroll depth
-  const now=Date.now()/1000;
-  const camx=((mouse.active?(mouse.x-.5):0)*30 + Math.sin(now*.24)*10)*DPR;
-  const camy=((mouse.active?(mouse.y-.5):0)*18 + Math.cos(now*.2)*7 - scrollF*8)*DPR;
-  ctx.save(); ctx.translate(camx,camy);
-  // color easing
-  const tc=COL[mode]||curCol; for(let k=0;k<3;k++)curCol[k]=lerp(curCol[k],tc[k],.05);
-  const [r,g,b]=curCol.map(Math.round);
-  const cx=W*.5, cy=H*.5;
-  // ambient particles
-  for(const p of parts){ if(!RM){p.x+=p.vx*p.z;p.y+=p.vy*p.z; if(p.x<0||p.x>1)p.vx*=-1; if(p.y<0||p.y>1)p.vy*=-1;}
-    const px=p.x*W, py=p.y*H, rad=p.r*p.z*DPR*(mode==="growth"?1.3:1);
-    ctx.beginPath();ctx.arc(px,py,rad,0,7);ctx.fillStyle=`rgba(${r},${g},${b},${.10+p.z*.28})`;ctx.fill();
+/* ---- background data field (2D canvas, restrained) ---- */
+(function(){
+  const c=document.getElementById('field'),x=c.getContext('2d');let W,H,pts=[],warm=0;
+  function size(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;}
+  size();addEventListener('resize',size);
+  const N=RM?0:(MOB?36:80);
+  for(let i=0;i<N;i++)pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12});
+  addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;warm=Math.min(1,scrollY/h);},{passive:true});
+  function draw(){
+    x.clearRect(0,0,W,H);
+    const R=(216-warm*40),G=(180-warm*20),B=(120+warm*30); // ice→brass drift, very low alpha
+    for(let i=0;i<pts.length;i++){const p=pts[i];p.x+=p.vx*devicePixelRatio;p.y+=p.vy*devicePixelRatio;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      for(let j=i+1;j<pts.length;j++){const q=pts[j];const dx=p.x-q.x,dy=p.y-q.y,d=Math.hypot(dx,dy);const md=160*devicePixelRatio;
+        if(d<md){x.strokeStyle=`rgba(${R},${G},${B},${(1-d/md)*.08})`;x.lineWidth=1;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke();}}
+      x.fillStyle=`rgba(${R},${G},${B},.5)`;x.beginPath();x.arc(p.x,p.y,1.1*devicePixelRatio,0,7);x.fill();}
+    requestAnimationFrame(draw);
   }
-  // entity targets by mode
-  ents.forEach((e,i)=>{
-    if(mode==="graph"){ // cluster
-      const a=e.a*1.4; e.tx=.5+Math.cos(a)*.16*(i%2?1:.6); e.ty=.5+Math.sin(a)*.16*(i%2?.7:1);
-    } else if(mode==="final"){ e.tx=.5; e.ty=.5; }
-    else if(mode==="voice"){ e.tx=e.bx*.6+.2; e.ty=e.by*.6+.2; }
-    else { e.tx=e.bx; e.ty=e.by; }
-    e.x=lerp(e.x,e.tx,.04); e.y=lerp(e.y,e.ty,.04);
-  });
-  // links between entities + near ambient
-  ctx.lineWidth=DPR;
-  for(let i=0;i<ents.length;i++){ const A=ents[i];
-    for(let j=i+1;j<ents.length;j++){ const B=ents[j];
-      const d=Math.hypot(A.x-B.x,A.y-B.y); if(d<.42){ ctx.beginPath();
-        ctx.moveTo(A.x*W,A.y*H);ctx.lineTo(B.x*W,B.y*H);
-        ctx.strokeStyle=`rgba(${r},${g},${b},${.22*(1-d/.42)})`;ctx.stroke(); } }
-    // link ambient near entity
-    for(const p of parts){ const d=Math.hypot(A.x-p.x,A.y-p.y); if(d<.14){ ctx.beginPath();
-      ctx.moveTo(A.x*W,A.y*H);ctx.lineTo(p.x*W,p.y*H);
-      ctx.strokeStyle=`rgba(${r},${g},${b},${.14*(1-d/.14)})`;ctx.stroke(); } }
-  }
-  // data mote flowing between two concepts
-  if(!RM){ mote.t+=.012; if(mote.t>=1){ mote.a=(Math.random()*ents.length)|0;
-      do{mote.b=(Math.random()*ents.length)|0;}while(mote.b===mote.a); mote.t=0; }
-    const A=ents[mote.a],B=ents[mote.b], mx=lerp(A.x,B.x,mote.t)*W, my=lerp(A.y,B.y,mote.t)*H;
-    ctx.beginPath();ctx.arc(mx,my,3*DPR,0,7);ctx.fillStyle=`rgba(${r},${g},${b},.95)`;
-    ctx.shadowColor=`rgba(${r},${g},${b},.9)`;ctx.shadowBlur=12*DPR;ctx.fill();ctx.shadowBlur=0; }
-  // entity nodes + labels (glow cores)
-  ents.forEach(e=>{ const px=e.x*W,py=e.y*H;
-    ctx.shadowColor=`rgba(${r},${g},${b},.85)`;ctx.shadowBlur=14*DPR;
-    ctx.beginPath();ctx.arc(px,py,4.4*DPR,0,7);ctx.fillStyle=`rgba(${r},${g},${b},.98)`;ctx.fill();
-    ctx.shadowBlur=0;
-    ctx.beginPath();ctx.arc(px,py,9*DPR,0,7);ctx.strokeStyle=`rgba(${r},${g},${b},.35)`;ctx.lineWidth=DPR;ctx.stroke();
-    if(mode==="init"||mode==="final"||mode==="voice"){ ctx.font=`${9.5*DPR}px 'JetBrains Mono',monospace`;
-      ctx.fillStyle=`rgba(${r},${g},${b},.78)`;ctx.textAlign="center";ctx.fillText(e.n,px,py-15*DPR); }
-  });
-  // loop token travelling the ring
-  if(mode==="loop"&&!RM){ loopTok=(loopTok+.0025)%1; const a=-Math.PI/2+loopTok*Math.PI*2;
-    const tx=cx+Math.cos(a)*.30*W, ty=cy+Math.sin(a)*.26*H;
-    const grd=ctx.createRadialGradient(tx,ty,0,tx,ty,26*DPR);
-    grd.addColorStop(0,`rgba(${r},${g},${b},.9)`);grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
-    ctx.beginPath();ctx.arc(tx,ty,26*DPR,0,7);ctx.fillStyle=grd;ctx.fill(); }
-  // voice / final radial pulse
-  if((mode==="voice"||mode==="final")&&!RM){ const t=(Date.now()%2600)/2600;
-    ctx.beginPath();ctx.arc(cx,cy,t*Math.min(W,H)*.5,0,7);
-    ctx.strokeStyle=`rgba(${r},${g},${b},${.25*(1-t)})`;ctx.lineWidth=2*DPR;ctx.stroke(); }
-  ctx.restore();
-  if(!RM) requestAnimationFrame(draw);
-}
-draw(); if(RM){ /* draw a few static frames so it settles */ for(let i=0;i<40;i++)draw(); }
-
-/* ============ SCENE OBSERVER (camera / telemetry / canvas mode) ============ */
-const scenes=$$("main .scene");
-const telem=$("#telem");
-const nav=$("#scenenav");
-scenes.forEach((s,i)=>{const b=document.createElement("button");b.setAttribute("aria-label","Go to scene "+(i+1));
-  b.onclick=()=>s.scrollIntoView({behavior:RM?"auto":"smooth"});nav.appendChild(b);});
-const navBtns=[...nav.children];
-const seen=new Set();
-const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.isIntersecting&&e.intersectionRatio>.45){
-  const s=e.target, m=s.dataset.scene, idx=scenes.indexOf(s);
-  setMode(m); if(!RM)blip(420+idx*24,.05,"sine",.02);
-  telem.textContent=(s.dataset.telem||"observing")+"  ·  scene "+String(idx+1).padStart(2,"0");
-  navBtns.forEach((b,j)=>b.classList.toggle("on",j===idx));
-  if(!seen.has(m)){ seen.add(m); trigger(m); }
-}});},{threshold:[.45,.7]});
-scenes.forEach(s=>io.observe(s));
-
-/* one-time triggers per scene */
-function trigger(m){
-  if(m==="mistake")runPipeline(MPIPE,$("#mistakePipe"));
-  if(m==="evaluator")runEvaluator();
-  if(m==="graph"){countUp($("#graph"));}
-  if(m==="parent"){countUp($("#parent"));growBars();}
-  if(m==="growth"){$("#gpath").classList.add("draw");setTimeout(()=>{$("#gmile").style.opacity=1;$(".garea").style.opacity=1;},RM?0:900);}
-}
-
-/* ============ HERO — kinetic boot + headline ============ */
-const bootSteps=["◍ initializing learning network","◍ connecting student · teacher · ai","◍ loading knowledge · assessment · progress","◍ system online — adapting to visitor"];
-const kineSteps=["Learning is no longer one-size-fits-all.","Meet a learning system that adapts.","It watches. It listens. It teaches."];
-(function boot(){ const bl=$("#bootline"), ke=$("#kine");
-  if(RM){ bl.textContent=bootSteps[bootSteps.length-1]; ke.textContent=kineSteps[0]; return; }
-  let i=0; (function step(){ if(i<bootSteps.length){ bl.textContent=bootSteps[i]+" ▍"; i++; setTimeout(step,700);} else bl.textContent="◍ system online — adapting to visitor"; })();
-  let k=0; setInterval(()=>{ k=(k+1)%kineSteps.length; ke.style.opacity=0;
-    setTimeout(()=>{ke.textContent=kineSteps[k];ke.style.transition="opacity .5s";ke.style.opacity=1;},260); },3200);
+  if(!RM)draw(); else {c.style.background='radial-gradient(ellipse at 50% 30%,rgba(159,193,209,.06),transparent 60%)';}
 })();
 
-/* ============ LOOP RING ============ */
-(function loopRing(){ const ring=$("#loopring"); if(!ring)return;
-  const steps=["ASSESS","UNDERSTAND","LEARN","PRACTICE","MISTAKE","ANALYZE","ADAPT","RETRY","MASTER","PREDICT","GROW"];
-  const caps={ASSESS:"<b>Assess.</b> The system watches where a learner actually is.",
-    UNDERSTAND:"<b>Understand.</b> It figures out which ideas are shaky.",
-    LEARN:"<b>Learn.</b> The concept is taught the way this student needs.",
-    PRACTICE:"<b>Practice.</b> Fresh questions, pitched to the moment.",
-    MISTAKE:"<b>Mistake.</b> Errors aren't failures — they're signal.",
-    ANALYZE:"<b>Analyze.</b> Each error is traced to its cause.",
-    ADAPT:"<b>Adapt.</b> The path rearranges around the gap.",
-    RETRY:"<b>Retry.</b> The student meets the idea again, differently.",
-    MASTER:"<b>Master.</b> The concept holds under pressure.",
-    PREDICT:"<b>Predict.</b> The next best step surfaces early.",
-    GROW:"<b>Grow.</b> The loop lifts — faster, higher, each pass."};
-  const center=document.createElement("div");center.className="center";center.innerHTML="<b>∞</b><small>the loop</small>";ring.appendChild(center);
-  steps.forEach((s,i)=>{ const a=-Math.PI/2+i/steps.length*Math.PI*2;
-    const el=document.createElement("div");el.className="loopnode";el.textContent=s;
-    el.style.left=(50+Math.cos(a)*44)+"%";el.style.top=(50+Math.sin(a)*44)+"%";el.dataset.i=i;ring.appendChild(el);});
-  const nodes=[...ring.querySelectorAll(".loopnode")], cap=$("#loopcap");
-  let i=0; function tick(){ nodes.forEach(n=>n.classList.remove("hot"));
-    nodes[i].classList.add("hot"); cap.innerHTML=caps[steps[i]]; i=(i+1)%steps.length; }
-  tick(); if(!RM) setInterval(tick,1500);
+/* ---- nav / progress / hud ---- */
+const hdr=document.getElementById('hdr'),prog=document.getElementById('prog'),hud=document.getElementById('hud');
+const burger=document.getElementById('burger'),nav=document.getElementById('nav');
+burger.onclick=()=>nav.classList.toggle('open');
+nav.querySelectorAll('a').forEach(a=>a.onclick=()=>nav.classList.remove('open'));
+document.getElementById('yr').textContent=new Date().getFullYear();
+addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;prog.style.width=(scrollY/h*100)+'%';hdr.classList.toggle('solid',scrollY>50);hud.classList.toggle('show',scrollY>innerHeight*.6);},{passive:true});
+// phase hud + active nav
+const phased=[...document.querySelectorAll('[data-phase]')];
+const hudPh=document.getElementById('hud-ph'),hudName=document.getElementById('hud-name'),hudBar=document.getElementById('hud-bar');
+new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const el=e.target;if(el.dataset.phase){hudPh.textContent=el.dataset.phase;hudName.textContent=el.dataset.name;hudBar.style.width=(+el.dataset.phase/13*100)+'%';}}})},{rootMargin:'-45% 0px -50% 0px'}).observe;
+phased.forEach(el=>new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){hudPh.textContent=el.dataset.phase;hudName.textContent=el.dataset.name;hudBar.style.width=(+el.dataset.phase/13*100)+'%';}}),{rootMargin:'-45% 0px -50% 0px'}).observe(el));
+const secmap={creed:'creed',tuition:'tuition',tutor:'tutor',growth:'growth',contact:'contact'};
+Object.keys(secmap).forEach(id=>{const el=document.getElementById(id);if(el)new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)document.querySelectorAll('nav.links a').forEach(a=>a.classList.toggle('active',a.dataset.sec===id));}),{rootMargin:'-45% 0px -50% 0px'}).observe(el);});
+
+/* ---- reveals ---- */
+function fade(el){if(window.gsap)gsap.to(el,{opacity:1,y:0,duration:.9,ease:'power3.out'});else{el.style.opacity=1;el.style.transform='none';}}
+new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){fade(e.target);o.unobserve(e.target);}}),{threshold:.14}).takeRecords;
+const revObs=new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){fade(e.target);o.unobserve(e.target);}}),{threshold:.14});
+document.querySelectorAll('.reveal').forEach(el=>revObs.observe(el));
+
+/* ---- relationship svg (teacher/ai/student) ---- */
+(function(){
+  const N=[{x:80,y:150,l:'Teacher'},{x:340,y:80,l:'Technology'},{x:340,y:220,l:'Student'}];
+  const L=document.getElementById('rel-links'),Nd=document.getElementById('rel-nodes');
+  [[0,1],[0,2],[1,2]].forEach(([a,b])=>{const ln=document.createElementNS('http://www.w3.org/2000/svg','line');ln.setAttribute('x1',N[a].x);ln.setAttribute('y1',N[a].y);ln.setAttribute('x2',N[b].x);ln.setAttribute('y2',N[b].y);ln.setAttribute('stroke','rgba(159,193,209,.4)');ln.setAttribute('stroke-width','1.2');ln.setAttribute('stroke-dasharray','4 5');L.appendChild(ln);});
+  N.forEach(n=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML=`<circle cx="${n.x}" cy="${n.y}" r="34" fill="#0D1018" stroke="#D9AF63" stroke-width="1.3"/><text x="${n.x}" y="${n.y+4}" text-anchor="middle" fill="#ECEDF1" font-family="'JetBrains Mono',monospace" font-size="11" letter-spacing="1">${n.l}</text>`;Nd.appendChild(g);});
 })();
 
-/* ============ PIPELINE ENGINE ============ */
-const MPIPE=[
-  {lbl:"student answer",val:"7 × 8 = 54",cls:"err"},
-  {lbl:"error detected",val:"incorrect — expected 56",cls:"err"},
-  {lbl:"error type",val:"multiplication slip, not a guess"},
-  {lbl:"possible misconception",val:"skip-counted 7s and lost one step"},
-  {lbl:"concept gap",val:"the 7× table isn't automatic yet"},
-  {lbl:"targeted explanation",val:"7×8 = 7×4 doubled = 28 → 56"},
-  {lbl:"new practice generated",val:"7 × 8 = ?   6 × 7 = ?   7 × 9 = ?"},
-  {lbl:"re-evaluation",val:"56 ✓ · 42 ✓ · 63 ✓",cls:"good"},
-  {lbl:"improvement",val:"7× facts: 40% → mastered",cls:"good"},
-];
-const EPIPE=[
-  {lbl:"scan",val:"reading handwriting (OCR)"},
-  {lbl:"question understood",val:"2x + 5 = 15  →  solve for x"},
-  {lbl:"student working",val:"x = 4"},
-  {lbl:"mathematical check",val:"2(4)+5 = 13 ≠ 15",cls:"err"},
-  {lbl:"error located",val:"subtraction step: 15−5 done as 15−7",cls:"err"},
-  {lbl:"concept",val:"linear equations — inverse operations"},
-  {lbl:"action",val:"targeted practice on isolating x"},
-  {lbl:"re-evaluation",val:"student retries → x = 5 ✓",cls:"good"},
-];
-function buildPipe(steps,host){ host.innerHTML=""; steps.forEach((s,i)=>{ const d=document.createElement("div");
-  d.className="pstep"+(s.cls?" "+s.cls:""); d.dataset.cls=s.cls||"";
-  d.innerHTML=`<div class="node">${i+1}</div><div><div class="lbl">${s.lbl}</div><div class="val">${s.val}</div></div>`;
-  host.appendChild(d); }); return [...host.children]; }
-function runPipeline(steps,host,after){ const els=buildPipe(steps,host); let i=0;
-  if(RM){ els.forEach(e=>e.classList.add("on")); if(after)after(); return; }
-  (function step(){ if(i>=els.length){ if(after)after(); return; }
-    els[i].classList.add("on"); blip(500+i*30,.05,"sine",.025); i++; setTimeout(step,760); })(); }
-$("#mistakeRun").onclick=()=>runPipeline(MPIPE,$("#mistakePipe"));
-buildPipe(MPIPE,$("#mistakePipe")); // visible at rest
-buildPipe(EPIPE,$("#evalPipe"));
-function runEvaluator(){ const p=$("#paper"); if(!RM){p.classList.remove("scanning");void p.offsetWidth;p.classList.add("scanning");}
-  setTimeout(()=>runPipeline(EPIPE,$("#evalPipe")),RM?0:700); }
-$("#evalRun").onclick=runEvaluator;
-
-/* ============ ADAPTIVE LADDER ============ */
-(function adaptive(){ const host=$("#ladder"); const levels=[
-  {lv:"Level 1",desc:"2 × 3 = ?"},{lv:"Level 2",desc:"7 × 8 = ?"},
-  {lv:"Level 3",desc:"12 × 8 = ?"},{lv:"Level 4",desc:"14 × 16 = ? (break it apart)"}];
-  levels.forEach((l,i)=>{const d=document.createElement("div");d.className="rung"+(i===1?" here":"");d.dataset.i=i;
-    d.innerHTML=`<span class="lv">${l.lv}</span><span class="desc">${l.desc}</span><span class="marker"></span>`;host.appendChild(d);});
-  const rungs=[...host.children], msg=$("#adMsg"); let cur=1;
-  function place(){ rungs.forEach((r,i)=>r.classList.toggle("here",i===cur)); }
-  $("#adOk").onclick=()=>{ if(cur<rungs.length-1){cur++;place();msg.innerHTML=`Nice. Difficulty rises to <b>${levels[cur].lv}</b> — you've earned a harder question.`;blip(680,.08);}
-    else msg.innerHTML=`You're holding <b>Level 4</b>. The system marks this concept <b>mastered</b> and moves on.`; };
-  $("#adNo").onclick=()=>{ if(cur>0){cur--;place();msg.innerHTML=`No problem — stepping back to <b>${levels[cur].lv}</b>, and re-teaching the idea before we climb again.`;blip(300,.1,"sine",.03);}
-    else msg.innerHTML=`Back to basics. <b>Let's rebuild this concept</b> from the ground up, then try again.`; };
+/* ---- knowledge graph ---- */
+(function(){
+  const nodes=[{x:220,y:50,l:'Ratios',s:'strong'},{x:110,y:140,l:'Fractions',s:'mid'},{x:330,y:140,l:'Variables',s:'strong'},{x:220,y:210,l:'Equations',s:'weak',id:'kg-weak'},{x:220,y:300,l:'Algebra',s:'mid'}];
+  const edges=[[0,1],[0,2],[1,3],[2,3],[3,4]];
+  const E=document.getElementById('kg-edges'),Nd=document.getElementById('kg-nodes');
+  edges.forEach(([a,b])=>{const ln=document.createElementNS('http://www.w3.org/2000/svg','line');ln.setAttribute('x1',nodes[a].x);ln.setAttribute('y1',nodes[a].y);ln.setAttribute('x2',nodes[b].x);ln.setAttribute('y2',nodes[b].y);ln.setAttribute('class','edge');E.appendChild(ln);});
+  nodes.forEach(n=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.innerHTML=`<circle cx="${n.x}" cy="${n.y}" r="26" class="kn ${n.s}" ${n.id?`id="${n.id}"`:''}/><text x="${n.x}" y="${n.y+4}" text-anchor="middle">${n.l}</text>`;Nd.appendChild(g);});
 })();
 
-/* ============ KNOWLEDGE GRAPH ============ */
-(function kg(){ const box=$("#kgbox"), svg=$("#kglines");
-  const nodes=[{t:"ALGEBRA",x:30,y:26,s:"weak"},{t:"FRACTIONS",x:20,y:64,s:"weak"},
-    {t:"EQUATIONS",x:56,y:44,s:"strong"},{t:"GEOMETRY",x:78,y:26,s:"strong"},
-    {t:"READING",x:74,y:70,s:"strong"},{t:"GRAMMAR",x:46,y:82,s:"strong"}];
-  const links=[[0,2],[1,2],[1,0],[2,3],[2,4],[4,5],[3,4]];
-  const els=nodes.map(n=>{const d=document.createElement("div");d.className="knode "+n.s;d.textContent=n.t;
-    d.style.left=n.x+"%";d.style.top=n.y+"%";box.appendChild(d);return d;});
-  function drawLines(){ svg.innerHTML=""; links.forEach(([a,b])=>{ const na=nodes[a],nb=nodes[b];
-    const l=document.createElementNS("http://www.w3.org/2000/svg","line");
-    l.setAttribute("x1",na.x);l.setAttribute("y1",na.y);l.setAttribute("x2",nb.x);l.setAttribute("y2",nb.y);
-    const weak=na.s==="weak"||nb.s==="weak";
-    l.setAttribute("stroke",weak?"rgba(255,207,92,.5)":"rgba(61,220,151,.4)");
-    l.setAttribute("stroke-width",weak?".7":".5"); svg.appendChild(l); });
-    svg.setAttribute("viewBox","0 0 100 100");svg.setAttribute("preserveAspectRatio","none"); }
-  drawLines();
-})();
+/* ---- boot animations ---- */
+function boot(){
+  if(!window.gsap){setTimeout(boot,60);return;}
+  gsap.registerPlugin(ScrollTrigger);
 
-/* ============ COUNTERS + BARS ============ */
-function countUp(scope){ scope.querySelectorAll("[data-count]").forEach(el=>{ if(el.dataset.done)return;el.dataset.done=1;
-  const to=+el.dataset.count; if(RM){el.textContent=to;return;} let t0=null;
-  (function anim(ts){ t0=t0||ts; const k=clamp((ts-t0)/1100,0,1); el.textContent=Math.round(to*(1-Math.pow(1-k,3)));
-    if(k<1)requestAnimationFrame(anim); })(); }); }
-function growBars(){ $$("#beforeafter .bar").forEach(b=>{ b.style.height=(RM?b.dataset.h:0)+"px";
-  if(!RM)requestAnimationFrame(()=>requestAnimationFrame(()=>b.style.height=b.dataset.h+"px")); }); }
+  /* hero intro */
+  const t=gsap.timeline({defaults:{ease:'power3.out'}});
+  t.to('#h-eye',{opacity:1,duration:.6},.15)
+   .to('#h-title .l span',{y:0,duration:1,stagger:.12,ease:'power4.out'},'-=.2')
+   .to('#h-sub',{opacity:1,duration:.7},'-=.5')
+   .to('#h-cta',{opacity:1,duration:.7},'-=.5')
+   .to('#h-stats',{opacity:1,duration:.7},'-=.55')
+   .to('#h-panel',{opacity:1,duration:.9},'-=.9');
+  ScrollTrigger.create({trigger:'#hero',start:'top top',once:true,onEnter:()=>{
+    document.querySelectorAll('.hi').forEach(i=>i.style.width=i.dataset.w+'%');
+    document.querySelectorAll('.hv').forEach(b=>{const v=+b.dataset.v,o={n:0};gsap.to(o,{n:v,duration:1.4,delay:.6,onUpdate:()=>b.textContent=Math.round(o.n)+'%'});});
+  }});
 
-/* ============ VOICE ENGINE ============ */
-const Speech={ rec:null,listening:false,voice:null,
-  supported:('webkitSpeechRecognition'in window||'SpeechRecognition'in window),
-  canSpeak:('speechSynthesis'in window),
-  pick(){ if(!this.canSpeak)return; const v=speechSynthesis.getVoices()||[];
-    this.voice=v.find(x=>/en-IN/i.test(x.lang))||v.find(x=>/en-GB/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||v[0]||null; },
-  speak(t,{onword,onend}={}){ if(!this.canSpeak||!t){onend&&onend();return;} try{ speechSynthesis.cancel();
-    if(!this.voice)this.pick(); const u=new SpeechSynthesisUtterance(t); if(this.voice)u.voice=this.voice;
-    u.rate=1;u.pitch=1.02;u.lang=(this.voice&&this.voice.lang)||"en-IN";
-    u.onboundary=e=>onword&&onword(e); u.onend=()=>onend&&onend(); u.onerror=()=>onend&&onend(); speechSynthesis.speak(u);
-  }catch(e){onend&&onend();} },
-  stopSpeak(){ try{ if(this.canSpeak)speechSynthesis.cancel(); }catch(e){} },
-  listen({oninterim,onend,onerror}={}){ if(!this.supported){onerror&&onerror("no-api");return;}
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition; let r; try{r=new SR();}catch(e){onerror&&onerror("init");return;}
-    this.rec=r;r.lang="en-IN";r.interimResults=true;r.continuous=false;r.maxAlternatives=1;let fin="";
-    r.onresult=e=>{let it="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:it+=t;}oninterim&&oninterim((fin+it).trim());};
-    r.onerror=e=>{this.listening=false;onerror&&onerror(e.error||"err");};
-    r.onend=()=>{this.listening=false;onend&&onend(fin.trim());};
-    this.listening=true;try{r.start();}catch(e){this.listening=false;onerror&&onerror("start");}},
-  stopListen(){try{this.rec&&this.rec.stop();}catch(e){}this.listening=false;} };
-if(Speech.canSpeak){try{speechSynthesis.onvoiceschanged=()=>Speech.pick();Speech.pick();}catch(e){}}
+  /* creed */
+  document.querySelectorAll('#creed .line').forEach(l=>ScrollTrigger.create({trigger:l,start:'top 78%',end:'bottom 40%',onEnter:()=>l.classList.add('on'),onLeaveBack:()=>l.classList.remove('on')}));
 
-/* intent router — scripted answers that move the world */
-const INTENTS=[
-  {k:["mistake","wrong","error","makes a mistake"],scene:"mistake",
-   say:"When a student makes a mistake, we don't just mark it wrong. Watch — the system finds the type of error, the idea underneath it, teaches that idea, generates fresh practice, and checks again.",
-   run:()=>runPipeline(MPIPE,$("#mistakePipe"))},
-  {k:["evaluat","paper","grade","answer sheet","correct the"],scene:"evaluator",
-   say:"Here's how a paper is evaluated. The sheet is scanned, the working is followed step by step, and the exact line where it broke is found — then targeted practice is created.",
-   run:runEvaluator},
-  {k:["parent","track","progress","my child","report"],scene:"parent",
-   say:"Parents don't read reports here. You see where your child started, where they are now, and exactly why it changed — in a glance.",
-   run:()=>{countUp($("#parent"));growBars();}},
-  {k:["teacher","replace","human"],scene:"teacher",
-   say:"The system never replaces the teacher. It takes the tireless work — spotting every mistake and making endless practice — so the teacher can do what changes a child.",
-   run:()=>{}},
-  {k:["weak","math","struggl","adapt","hard","difficult"],scene:"adaptive",
-   say:"If a student is weak in mathematics, the system doesn't just pile on harder questions. It steps back, rebuilds the missing idea, then raises the challenge again. Try it on the ladder.",
-   run:()=>{}},
-  {k:["learn","how does","child learn","assess","start"],scene:"voice",
-   say:"First, the student is assessed. Then we identify where they need support. Then the learning path adapts around those gaps, and practice is generated to close them.",
-   run:()=>voiceStages()},
-];
-function routeIntent(q){ const s=q.toLowerCase();
-  return INTENTS.find(it=>it.k.some(k=>s.includes(k))) || {scene:"voice",
-    say:"I can show you what happens when a student makes a mistake, how a paper is evaluated, how weak topics are handled, how parents track progress, and how the teacher and AI work together. Ask me one of those.",
-    run:()=>voiceStages()}; }
+  /* generic sys-list sequential */
+  function seqList(sel,trig){const items=document.querySelectorAll(sel+' .li');ScrollTrigger.create({trigger:trig,start:'top 62%',once:true,onEnter:()=>items.forEach((li,i)=>setTimeout(()=>li.classList.add('on'),i*260))});}
+  seqList('#assess-list','#s-assess');
+  seqList('#ai-states','#s-ai');
 
-const vorb=$("#vorb"),vcap=$("#vcap"),vlog=$("#vlog"),vstop=$("#vstop");
-function vbub(who,t){const d=document.createElement("div");d.className="bub "+(who==="you"?"you":"k");
-  d.innerHTML='<div class="who">'+(who==="you"?"You":"K")+'</div>'+t;vlog.appendChild(d);vlog.scrollTop=vlog.scrollHeight;}
-function vsetOrb(s,cap){vorb.className="vorb"+(s?" "+s:"");if(cap!=null)vcap.textContent=cap;}
-function voiceStages(){ const st=$$("#vstages .vstage"); st.forEach(s=>s.classList.remove("on"));
-  if(RM){st.forEach(s=>s.classList.add("on"));return;} let i=0;(function n(){ if(i>=st.length)return; st[i].classList.add("on");blip(520+i*40,.05);i++;setTimeout(n,900);})(); }
-/* K as a real generative guide — calls the Exam Portal AI proxy when the page is
-   served from the Kongu Brilliance site (/api/llm). Falls back to the scripted
-   answer anywhere that endpoint isn't reachable (e.g. this preview / offline). */
-const K_SYS="You are K, the friendly AI learning guide for Kongu Brilliance Tuition Centre in Coimbatore. Answer parents and students in 2 to 4 short, warm, natural SPOKEN sentences — no markdown, no lists, no code, spell out any maths in words. Explain concretely how AI-assisted learning works here: assessing a student, spotting and analysing mistakes, adapting the path, generating targeted practice, evaluating answers, and showing progress to parents. Never invent statistics, exam results, fees, testimonials or claims; if asked a fact you don't know, warmly invite them to book a consultation on 95145 24599. Context you may use: Kongu Brilliance offers home, centre and online tuition for Classes 1 to 12 across CBSE, ICSE, State, Matric, ISC and IGCSE; founded 2021; maximum 12 students per batch; zero registration fee.";
-let K_LIVE=null; // null=unknown, true=generative available, false=scripted only
-async function generativeAnswer(q,fallback){
-  try{
-    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),9000);
-    const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
-      body:JSON.stringify({messages:[{role:'system',content:K_SYS},{role:'user',content:q}],temperature:.55,json:false})});
-    clearTimeout(to); if(!r.ok)throw 0; const j=await r.json();
-    if(j&&j.text&&j.text.trim()){ K_LIVE=true; return j.text.trim(); } throw 0;
-  }catch(e){ K_LIVE=false; return fallback; }
+  /* mistake flow */
+  ScrollTrigger.create({trigger:'#s-mistake',start:'top 60%',once:true,onEnter:()=>document.querySelectorAll('#mistake-flow .st').forEach((s,i)=>gsap.to(s,{opacity:1,x:0,duration:.5,delay:i*.35}))});
+
+  /* adaptive path */
+  ScrollTrigger.create({trigger:'#s-path',start:'top 58%',once:true,onEnter:()=>{
+    gsap.to('#pc-a',{opacity:.18,duration:.8,delay:.6});gsap.to('#pc-c',{opacity:.18,duration:.8,delay:.6});
+    gsap.fromTo('#pc-b',{opacity:.2},{opacity:1,duration:1,delay:.3});
+    setTimeout(()=>document.getElementById('end-b').classList.add('on'),900);
+  }});
+
+  /* tutor scroll-driven */
+  ScrollTrigger.create({trigger:'#tutor-ui',start:'top 60%',once:true,onEnter:()=>{
+    const chips=document.querySelectorAll('#tutor-states .statechip'),steps=document.querySelectorAll('#tutor-steps .step');
+    chips.forEach((c,i)=>setTimeout(()=>c.classList.add('on'),i*380));
+    steps.forEach((s,i)=>gsap.to(s,{opacity:1,y:0,duration:.6,delay:.6+i*.6}));
+  }});
+
+  /* paper */
+  ScrollTrigger.create({trigger:'#s-paper',start:'top 58%',once:true,onEnter:()=>{
+    const scan=document.getElementById('scan');gsap.to(scan,{opacity:1,duration:.2});
+    gsap.fromTo(scan,{top:-100},{top:'100%',duration:1.7,ease:'power1.inOut',onComplete:()=>gsap.to(scan,{opacity:0,duration:.3})});
+    setTimeout(()=>{document.getElementById('flag-step').classList.add('hl');gsap.to('#brace',{opacity:1,duration:.4});},1300);
+    document.querySelectorAll('#paper-flow .st').forEach((s,i)=>gsap.to(s,{opacity:1,x:0,duration:.5,delay:1.6+i*.32}));
+  }});
+
+  /* knowledge graph strengthen */
+  ScrollTrigger.create({trigger:'#s-graph',start:'top 58%',once:true,onEnter:()=>{
+    setTimeout(()=>{const w=document.getElementById('kg-weak');if(w){w.classList.remove('weak');w.classList.add('strong');}
+      document.querySelectorAll('#kg-edges .edge').forEach((e,i)=>setTimeout(()=>e.classList.add('on'),i*160));},700);
+  }});
+
+  /* growth graph */
+  ScrollTrigger.create({trigger:'#growth',start:'top 60%',once:true,onEnter:drawGraph});
+
+  /* parent meters */
+  ScrollTrigger.create({trigger:'#s-parent',start:'top 62%',once:true,onEnter:()=>{
+    document.querySelectorAll('#parent-panel .pstat').forEach((p,i)=>{gsap.to(p,{opacity:1,y:0,duration:.5,delay:i*.2});const m=p.querySelector('.meter i');setTimeout(()=>m.style.width=m.dataset.w+'%',i*200+300);});
+    gsap.to('#next-action',{opacity:1,duration:.6,delay:.9});
+  }});
 }
-async function askK(q){ if(!q)return; vbub("you",q); Speech.stopSpeak();
-  const it=routeIntent(q); vsetOrb("thinking","Understanding your question…"); voiceStages();
-  // the world changes immediately while K formulates the answer
-  const target=$("#"+it.scene); if(target&&it.scene!=="voice") target.scrollIntoView({behavior:RM?"auto":"smooth"});
-  if(it.run) setTimeout(it.run, it.scene!=="voice"?650:250);
-  const text=await generativeAnswer(q,it.say);
-  vbub("k",text); vsetOrb("speaking","K is speaking…"); vstop.style.display=Speech.canSpeak?"":"none";
-  telem.textContent=(K_LIVE?"K · live model":"K · guided demo")+"  ·  responding";
-  Speech.speak(text,{onend:()=>{vsetOrb("","Ask another question, or tap the mic.");vstop.style.display="none";}});
+function drawGraph(){
+  const data=[42,55,49,63,74,88],labels=['Assess','Practise','Setback','Intervene','Retry','Mastery'];
+  const x0=60,x1=920,y0=360,yTop=60,dx=(x1-x0)/(data.length-1);
+  const X=i=>x0+i*dx,Y=v=>y0-(v-30)/(100-30)*(y0-yTop);
+  let d='M '+X(0)+' '+Y(data[0]);for(let i=1;i<data.length;i++){const cx=(X(i-1)+X(i))/2;d+=` C ${cx} ${Y(data[i-1])}, ${cx} ${Y(data[i])}, ${X(i)} ${Y(data[i])}`;}
+  const gl=document.getElementById('gl');gl.setAttribute('d',d);const len=gl.getTotalLength();gl.style.strokeDasharray=len;gl.style.strokeDashoffset=len;
+  gsap.to(gl,{strokeDashoffset:0,duration:2.2,ease:'power2.inOut'});
+  const ga=document.getElementById('ga');ga.setAttribute('d',d+` L ${X(data.length-1)} ${y0} L ${X(0)} ${y0} Z`);gsap.to(ga,{opacity:1,duration:1,delay:1.4});
+  const G=document.getElementById('gpts');
+  data.forEach((v,i)=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',X(i));c.setAttribute('cy',Y(v));c.setAttribute('r',5);c.setAttribute('class','gd');G.appendChild(c);
+    const val=document.createElementNS('http://www.w3.org/2000/svg','text');val.setAttribute('x',X(i));val.setAttribute('y',Y(v)-16);val.setAttribute('class','gval');val.textContent=v+'%';G.appendChild(val);
+    const lab=document.createElementNS('http://www.w3.org/2000/svg','text');lab.setAttribute('x',X(i));lab.setAttribute('y',y0+26);lab.setAttribute('class','glab');lab.textContent=labels[i];G.appendChild(lab);
+    gsap.to(c,{opacity:1,duration:.4,delay:.4+i*.32});gsap.to(val,{opacity:1,duration:.4,delay:.55+i*.32});gsap.to(lab,{opacity:.8,duration:.4,delay:.3+i*.32});});
 }
-function startListen(){ if(!Speech.supported){vsetOrb("","Voice input needs Chrome. Type isn't available here — use the sample questions below.");return;}
-  Speech.stopSpeak(); vsetOrb("listening","Listening… ask your question"); [micTop,micMain].forEach(b=>b&&b.classList.add("on"));
-  Speech.listen({ oninterim:t=>{if(t)vcap.textContent="“"+t+"”";},
-    onend:t=>{[micTop,micMain].forEach(b=>b&&b.classList.remove("on")); if(t)askK(t); else vsetOrb("","Didn't catch that — tap the mic to try again.");},
-    onerror:er=>{[micTop,micMain].forEach(b=>b&&b.classList.remove("on"));
-      vsetOrb("", er==="not-allowed"||er==="service-not-allowed"?"Microphone blocked — allow mic access, or use the sample questions.":"Voice error — use the sample questions below.");} }); }
-const micTop=$("#micTop"),micMain=$("#micMain");
-function goVoiceAndListen(){ $("#voice").scrollIntoView({behavior:RM?"auto":"smooth"}); setTimeout(startListen,RM?0:500); }
-micTop.onclick=goVoiceAndListen;
-micMain.onclick=()=>{ if(Speech.listening){Speech.stopListen();[micTop,micMain].forEach(b=>b.classList.remove("on"));vsetOrb("","Tap the mic to talk.");} else startListen(); };
-vstop.onclick=()=>{Speech.stopSpeak();vstop.style.display="none";vsetOrb("","Stopped. Ask another question.");};
-$("#talkK").onclick=goVoiceAndListen;
-// sample question chips
-const CHIPS=["What happens when a student makes a mistake?","How are papers evaluated?","How do parents track progress?","What if a student is weak in maths?","How do teacher and AI work together?","How does my child learn here?"];
-const vchips=$("#vchips"); CHIPS.forEach(q=>{const b=document.createElement("button");b.textContent=q;b.onclick=()=>askK(q);vchips.appendChild(b);});
+addEventListener('load',boot);
+
+/* ---- tuition ecosystem switch ---- */
+const ecoItems=document.querySelectorAll('.eco-item'),ecoPanels=document.querySelectorAll('.eco-panel');
+let ecoAuto;
+function setEco(key){ecoItems.forEach(i=>i.classList.toggle('on',i.dataset.e===key));ecoPanels.forEach(p=>p.classList.toggle('on',p.dataset.e===key));drawEnv(key);}
+ecoItems.forEach(it=>it.addEventListener('mouseenter',()=>{clearInterval(ecoAuto);setEco(it.dataset.e);}));
+ecoItems.forEach(it=>it.addEventListener('click',()=>{clearInterval(ecoAuto);setEco(it.dataset.e);}));
+const ecoKeys=['offline','online','home','engineering'];let ecoIdx=0;
+if(!RM){new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){ecoAuto=setInterval(()=>{ecoIdx=(ecoIdx+1)%4;setEco(ecoKeys[ecoIdx]);},3800);}else clearInterval(ecoAuto);}),{threshold:.3}).observe(document.getElementById('tuition'));}
+
+/* simple environment line-art per mode (canvas-free, svg injected) */
+function drawEnv(key){
+  const host=document.querySelector(`.eco-panel[data-e="${key}"] .env`);if(!host||host.dataset.done)return;host.dataset.done=1;
+  const A={offline:`<svg viewBox='0 0 400 150' width='100%' height='100%'><g stroke='%23D9AF63' stroke-width='1.2' fill='none' opacity='.9'><rect x='150' y='24' width='100' height='58' rx='2'/><line x1='150' y1='40' x2='250' y2='40'/><circle cx='60' cy='110' r='9'/><circle cx='120' cy='118' r='9'/><circle cx='300' cy='118' r='9'/><circle cx='345' cy='110' r='9'/></g></svg>`,
+    online:`<svg viewBox='0 0 400 150' width='100%' height='100%'><g stroke='%239FC1D1' stroke-width='1.2' fill='none'><rect x='40' y='30' width='150' height='90' rx='3'/><circle cx='115' cy='70' r='16'/><rect x='230' y='40' width='130' height='70' rx='3'/><line x1='230' y1='60' x2='360' y2='60'/></g></svg>`,
+    home:`<svg viewBox='0 0 400 150' width='100%' height='100%'><g stroke='%23D9AF63' stroke-width='1.2' fill='none'><path d='M60 70l40-30 40 30v40H60z'/><circle cx='250' cy='60' r='12'/><circle cx='300' cy='60' r='12'/><rect x='230' y='90' width='90' height='30' rx='2'/></g></svg>`,
+    engineering:`<svg viewBox='0 0 400 150' width='100%' height='100%'><g stroke='%239FC1D1' stroke-width='1.2' fill='none'><rect x='40' y='40' width='90' height='70' rx='2'/><path d='M55 100l20-30 15 15 20-35'/><circle cx='250' cy='75' r='26'/><path d='M250 49v-8M250 109v-8M224 75h-8M284 75h-8'/><path d='M320 50h40M320 70h40M320 90h30'/></g></svg>`};
+  host.innerHTML=decodeURIComponent(A[key]);
+}
+drawEnv('offline');
+
+/* ---- voice narration (Web Speech API, optional) ---- */
+const voiceBtn=document.getElementById('voiceBtn');
+let speaking=false;
+voiceBtn.addEventListener('click',()=>{
+  if(!('speechSynthesis'in window)){alert('Voice narration isn\\'t supported in this browser — the four modes are shown below.');return;}
+  if(speaking){speechSynthesis.cancel();speaking=false;voiceBtn.innerHTML='<svg class="ic"><use href="#i-play"/></svg> Hear the four ways to learn';return;}
+  const lines=[['offline','At Kongu Brilliance, you can learn offline, in our Coimbatore centre, with a teacher and small-group attention.'],['online','You can learn online, in a live interactive session from anywhere.'],['home','You can choose home tuition — one to one, at your own desk.'],['engineering','Or engineering tuition, for advanced technical problem solving.']];
+  speaking=true;voiceBtn.innerHTML='<svg class="ic"><use href="#i-play"/></svg> Stop narration';let i=0;clearInterval(ecoAuto);
+  function speak(){if(i>=lines.length||!speaking){speaking=false;voiceBtn.innerHTML='<svg class="ic"><use href="#i-play"/></svg> Hear the four ways to learn';return;}
+    setEco(lines[i][0]);const u=new SpeechSynthesisUtterance(lines[i][1]);u.rate=.98;u.pitch=1;u.onend=()=>{i++;speak();};speechSynthesis.speak(u);}
+  speak();
+});
+addEventListener('beforeunload',()=>{if('speechSynthesis'in window)speechSynthesis.cancel();});
 </script>
+</body>
+</html>
