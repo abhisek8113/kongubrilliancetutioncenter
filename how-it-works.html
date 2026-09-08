@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Our AI Works — Kongu Brilliance</title>
+<meta name="description" content="See how Kongu Brilliance's AI sets exams, grades them, finds each student's gaps and teaches to mastery — plus how our classes are run, step by step.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#03050F; --ink2:#07091A; --ink3:#0D1028;
+  --gold:#F5C842; --gold2:#E8A020; --gold3:#C47A10;
+  --teal:#00E5A0; --coral:#FF5757; --indigo:#6366F1;
+  --white:#FFFFFF; --off:#F0EDE4;
+  --muted:rgba(255,255,255,0.72); --faint:rgba(255,255,255,0.05);
+  --border:rgba(255,255,255,0.12);
+  --r:20px; --nav:70px;
+  --grad:linear-gradient(135deg,var(--gold),var(--gold2));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--ink);color:var(--white);line-height:1.6;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.disp{font-family:'Sora','Inter',sans-serif;letter-spacing:-.02em;line-height:1.1}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+.gold{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'Sora';font-weight:600;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);background:rgba(245,200,66,.09);border:1px solid rgba(245,200,66,.22);padding:7px 14px;border-radius:100px}
+.bg-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
+.orb.a{width:520px;height:520px;background:radial-gradient(circle,rgba(245,200,66,.30),transparent 70%);top:-160px;right:-120px}
+.orb.b{width:480px;height:480px;background:radial-gradient(circle,rgba(99,102,241,.28),transparent 70%);top:40%;left:-160px}
+.orb.c{width:460px;height:460px;background:radial-gradient(circle,rgba(0,229,160,.20),transparent 70%);bottom:-160px;right:10%}
+header{position:sticky;top:0;z-index:50;height:var(--nav);display:flex;align-items:center;background:rgba(3,5,15,.72);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;width:100%}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Sora';font-weight:800;font-size:1.12rem}
+.logo .mark{width:38px;height:38px;border-radius:11px;background:var(--grad);display:grid;place-items:center;font-size:20px;box-shadow:0 6px 20px rgba(245,200,66,.35)}
+nav.links{display:flex;align-items:center;gap:30px}
+nav.links a{font-size:.92rem;color:var(--muted);font-weight:500;transition:.2s}
+nav.links a:hover,nav.links a.active{color:var(--white)}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:'Sora';font-weight:700;border-radius:12px;padding:12px 22px;transition:.2s;cursor:pointer;border:none;font-size:.95rem}
+.btn-primary{background:var(--grad);color:#1a1400;box-shadow:0 8px 24px rgba(245,200,66,.32)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(245,200,66,.45)}
+.btn-ghost{background:var(--faint);color:var(--white);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
+.nav-cta{padding:10px 18px}
+.burger{display:none;background:none;border:0;color:#fff;font-size:1.5rem;cursor:pointer}
+.hero{padding:84px 0 70px;text-align:center;position:relative}
+.hero h1{font-size:clamp(2.3rem,5.4vw,4rem);font-weight:800;margin:22px auto 20px;max-width:16ch}
+.hero p.lead{font-size:clamp(1.05rem,2vw,1.28rem);color:var(--muted);max-width:60ch;margin:0 auto 34px}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.chips{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:52px}
+.chip{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:14px 18px;font-size:.9rem;font-weight:500}
+.chip b{font-family:'Sora';font-size:1.35rem;display:block;line-height:1}
+.chip .ic{font-size:1.4rem}
+section{padding:74px 0;position:relative}
+.sec-head{text-align:center;max-width:60ch;margin:0 auto 52px}
+.sec-head h2{font-size:clamp(1.9rem,3.6vw,2.7rem);font-weight:800;margin:16px 0 14px}
+.sec-head p{color:var(--muted);font-size:1.06rem}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.step{flex:1;min-width:210px;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;position:relative;transition:.3s}
+.step:hover{transform:translateY(-6px);border-color:rgba(245,200,66,.4);box-shadow:0 20px 44px rgba(0,0,0,.5)}
+.step .num{width:44px;height:44px;border-radius:12px;background:var(--grad);color:#1a1400;font-family:'Sora';font-weight:800;font-size:1.15rem;display:grid;place-items:center;margin-bottom:18px}
+.step h3{font-size:1.22rem;margin-bottom:9px}
+.step p{color:var(--muted);font-size:.94rem}
+.step .arrow{position:absolute;right:-13px;top:50%;transform:translateY(-50%);z-index:2;color:var(--gold);font-size:1.4rem;display:grid;place-items:center;width:26px;height:26px;background:var(--ink);border-radius:50%}
+.grid-gap{gap:20px}
+@media(max-width:820px){.step .arrow{display:none}}
+.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.hcard{background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid var(--border);border-radius:var(--r);padding:32px 28px;transition:.3s}
+.hcard:hover{transform:translateY(-6px);box-shadow:0 22px 46px rgba(0,0,0,.5)}
+.hcard .ic{width:56px;height:56px;border-radius:15px;display:grid;place-items:center;font-size:1.7rem;margin-bottom:20px}
+.i-gold{background:rgba(245,200,66,.14);border:1px solid rgba(245,200,66,.3)}
+.i-teal{background:rgba(0,229,160,.13);border:1px solid rgba(0,229,160,.3)}
+.i-indigo{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.32)}
+.hcard h3{font-size:1.3rem;margin-bottom:14px}
+.hcard ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+.hcard li{display:flex;gap:11px;color:var(--muted);font-size:.95rem}
+.hcard li::before{content:"✓";color:var(--teal);font-weight:800;flex-shrink:0}
+.timeline{position:relative;max-width:820px;margin:0 auto;padding-left:8px}
+.timeline::before{content:"";position:absolute;left:26px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--gold),var(--indigo),transparent)}
+.tl-item{position:relative;padding:0 0 34px 76px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:6px;top:0;width:42px;height:42px;border-radius:12px;background:var(--ink3);border:1px solid var(--border);display:grid;place-items:center;font-size:1.25rem;z-index:2}
+.tl-item h3{font-size:1.2rem;margin-bottom:7px}
+.tl-item p{color:var(--muted);font-size:.96rem}
+.tl-tag{font-family:'Sora';font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.band{background:linear-gradient(120deg,rgba(245,200,66,.10),rgba(99,102,241,.10));border:1px solid var(--border);border-radius:26px;padding:44px 30px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;text-align:center}
+.stat b{font-family:'Sora';font-weight:800;font-size:clamp(1.9rem,4vw,2.7rem);display:block;line-height:1}
+.stat span{color:var(--muted);font-size:.92rem;margin-top:6px;display:block}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.feat{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:16px;padding:24px;transition:.25s}
+.feat:hover{background:rgba(255,255,255,.06);transform:translateY(-4px)}
+.feat .ic{font-size:1.6rem;margin-bottom:12px}
+.feat h3{font-size:1.08rem;margin-bottom:7px}
+.feat p{color:var(--muted);font-size:.9rem}
+.faq{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.q{background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.q summary{padding:20px 22px;cursor:pointer;font-family:'Sora';font-weight:600;font-size:1.02rem;display:flex;justify-content:space-between;align-items:center;list-style:none}
+.q summary::-webkit-details-marker{display:none}
+.q summary::after{content:"+";font-size:1.5rem;color:var(--gold);transition:.2s}
+.q[open] summary::after{transform:rotate(45deg)}
+.q .a{padding:0 22px 20px;color:var(--muted);font-size:.96rem}
+.cta{text-align:center;background:linear-gradient(135deg,rgba(245,200,66,.14),rgba(99,102,241,.12));border:1px solid rgba(245,200,66,.25);border-radius:28px;padding:60px 30px}
+.cta h2{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:800;margin-bottom:16px}
+.cta p{color:var(--muted);font-size:1.1rem;max-width:52ch;margin:0 auto 30px}
+footer{border-top:1px solid var(--border);padding:44px 0 34px;margin-top:30px}
+.fcols{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px;margin-bottom:30px}
+.fcols a{color:var(--muted);font-size:.92rem;display:block;margin-bottom:9px;transition:.2s}
+.fcols a:hover{color:var(--white)}
+.fcol h4{font-family:'Sora';font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+.fbottom{text-align:center;color:var(--muted);font-size:.86rem;border-top:1px solid var(--border);padding-top:24px}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+@media(max-width:820px){
+  nav.links{position:fixed;inset:var(--nav) 0 auto 0;flex-direction:column;background:rgba(3,5,15,.97);padding:20px 24px;gap:18px;border-bottom:1px solid var(--border);transform:translateY(-140%);transition:.3s;align-items:flex-start}
+  nav.links.open{transform:none}
+  .burger{display:block}
+  .cards3,.fgrid,.stats{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="bg-orbs"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+<header>
+  <div class="wrap">
+    <a href="/index.html" class="logo"><span class="mark">🔥</span> Kongu Brilliance</a>
+    <nav class="links" id="nav">
+      <a href="/index.html">Home</a>
+      <a href="/how-it-works.html" class="active">How AI Works</a>
+      <a href="/exam-portal.html">Exam Portal</a>
+      <a href="/courses.html">Courses</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/exam-portal.html" class="btn btn-primary nav-cta">Sign in →</a>
+    </nav>
+    <button class="burger" id="burger" aria-label="Menu">☰</button>
+  </div>
+</header>
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow reveal">✦ AI-Powered Learning</span>
+    <h1 class="reveal">The AI that teaches <span class="gold">every student</span> to mastery</h1>
+    <p class="lead reveal">One intelligent system sets the exam, grades it instantly, pinpoints exactly where each student struggles — then teaches until the gap closes. Here's how it all works.</p>
+    <div class="hero-cta reveal">
+      <a href="/exam-portal.html" class="btn btn-primary">Try the Exam Portal →</a>
+      <a href="/contact.html" class="btn btn-ghost">Book a free demo</a>
+    </div>
+    <div class="chips reveal">
+      <div class="chip"><span class="ic">📝</span><div><b>Board-aware</b>papers in seconds</div></div>
+      <div class="chip"><span class="ic">⚡</span><div><b>Instant</b>AI grading</div></div>
+      <div class="chip"><span class="ic">🎯</span><div><b>Adaptive</b>practice</div></div>
+      <div class="chip"><span class="ic">📊</span><div><b>Gap-level</b>analytics</div></div>
+    </div>
+  </div>
+</section>
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">The engine</span>
+      <h2>How the AI works — in <span class="gold">4 steps</span></h2>
+      <p>A closed learning loop: it sets, grades, diagnoses and teaches — then repeats until the student reaches mastery.</p>
+    </div>
+    <div class="flow grid-gap">
+      <div class="step reveal"><div class="num">1</div><h3>Sets the exam</h3><p>Generates board-aligned question papers for the exact class, subject and difficulty — matched to CBSE / State syllabus patterns.</p><span class="arrow">→</span></div>
+      <div class="step reveal"><div class="num">2</div><h3>Grades instantly</h3><p>Evaluates answers the way a board examiner would — checking method, steps and key points, not just the final answer.</p><span class="arrow">→</span></div>
+      <div class="step reveal"><div class="num">3</div><h3>Finds the gaps</h3><p>Maps every mistake to the underlying concept, so you see precisely which topics a student has and hasn't mastered.</p><span class="arrow">→</span></div>
+      <div class="step reveal"><div class="num">4</div><h3>Teaches to mastery</h3><p>Serves targeted explanations and adaptive practice on the weak areas — and re-tests until they're strong.</p></div>
+    </div>
+  </div>
+</section>
+<section id="helps">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">The impact</span>
+      <h2>How it <span class="gold">helps everyone</span></h2>
+      <p>The same AI works quietly behind the scenes for students, teachers and parents alike.</p>
+    </div>
+    <div class="cards3">
+      <div class="hcard reveal">
+        <div class="ic i-gold">🎓</div>
+        <h3>For students</h3>
+        <ul>
+          <li>Practice unlimited exam-style papers anytime</li>
+          <li>Instant feedback — know your mistakes immediately</li>
+          <li>A personal plan that focuses on your weak topics</li>
+          <li>Learn at your own pace, right up to mastery</li>
+        </ul>
+      </div>
+      <div class="hcard reveal">
+        <div class="ic i-teal">👨‍🏫</div>
+        <h3>For teachers</h3>
+        <ul>
+          <li>Generate papers &amp; answer keys in seconds</li>
+          <li>Auto-grade whole classes — no late nights</li>
+          <li>See class-wide gaps to plan the next lesson</li>
+          <li>Spend time teaching, not correcting</li>
+        </ul>
+      </div>
+      <div class="hcard reveal">
+        <div class="ic i-indigo">👪</div>
+        <h3>For parents</h3>
+        <ul>
+          <li>Clear reports on real progress, not just marks</li>
+          <li>Know exactly where your child needs support</li>
+          <li>Transparent, consistent evaluation</li>
+          <li>Confidence that learning is on track</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="procedure">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Step by step</span>
+      <h2>Our <span class="gold">class procedure</span></h2>
+      <p>Every student follows a simple, proven path from first day to mastery.</p>
+    </div>
+    <div class="timeline">
+      <div class="tl-item reveal"><div class="tl-dot">📋</div><span class="tl-tag">Step 1</span><h3>Enrolment &amp; welcome</h3><p>The student joins, gets their portal login, and we understand their class, board and goals.</p></div>
+      <div class="tl-item reveal"><div class="tl-dot">🧪</div><span class="tl-tag">Step 2</span><h3>Diagnostic test</h3><p>A short AI-set test establishes the current level and reveals the starting strengths and gaps.</p></div>
+      <div class="tl-item reveal"><div class="tl-dot">🗺️</div><span class="tl-tag">Step 3</span><h3>Personalised study plan</h3><p>The AI builds a plan targeting weak topics first, with clear weekly milestones.</p></div>
+      <div class="tl-item reveal"><div class="tl-dot">📚</div><span class="tl-tag">Step 4</span><h3>Guided classes</h3><p>Teacher-led lessons backed by AI study packs, worked examples and concept notes.</p></div>
+      <div class="tl-item reveal"><div class="tl-dot">✍️</div><span class="tl-tag">Step 5</span><h3>Practice &amp; tests</h3><p>Regular exam-style papers, graded instantly, with adaptive practice on whatever is still shaky.</p></div>
+      <div class="tl-item reveal"><div class="tl-dot">🏆</div><span class="tl-tag">Step 6</span><h3>Mastery review</h3><p>Progress reviews confirm each topic is mastered before moving on — nothing left behind.</p></div>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="wrap">
+    <div class="band reveal">
+      <div class="stats">
+        <div class="stat"><b class="gold">60s</b><span>To generate a full paper</span></div>
+        <div class="stat"><b class="gold">24×7</b><span>Practice &amp; feedback</span></div>
+        <div class="stat"><b class="gold">100%</b><span>Answers graded consistently</span></div>
+        <div class="stat"><b class="gold">1:1</b><span>Personalised to each student</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">What's inside</span>
+      <h2>Everything, in <span class="gold">one portal</span></h2>
+    </div>
+    <div class="fgrid">
+      <div class="feat reveal"><div class="ic">📝</div><h3>Board-aware papers</h3><p>Question papers matched to your exact syllabus, class and marking scheme.</p></div>
+      <div class="feat reveal"><div class="ic">✅</div><h3>AI grading</h3><p>Step-by-step evaluation with fair, explainable marks.</p></div>
+      <div class="feat reveal"><div class="ic">📚</div><h3>Study packs</h3><p>Concept notes and worked solutions generated on demand.</p></div>
+      <div class="feat reveal"><div class="ic">🎯</div><h3>Adaptive practice</h3><p>Questions that adjust to the student's level automatically.</p></div>
+      <div class="feat reveal"><div class="ic">📊</div><h3>Gap analytics</h3><p>Topic-level dashboards showing exactly what to work on next.</p></div>
+      <div class="feat reveal"><div class="ic">💬</div><h3>Doubt support</h3><p>Clear explanations whenever a concept doesn't click.</p></div>
+    </div>
+  </div>
+</section>
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Good to know</span>
+      <h2>Frequently <span class="gold">asked</span></h2>
+    </div>
+    <div class="faq">
+      <details class="q reveal"><summary>Does the AI replace teachers?</summary><div class="a">No. The AI handles the repetitive work — setting papers, grading and spotting gaps — so our teachers can spend their time actually teaching and mentoring each student.</div></details>
+      <details class="q reveal"><summary>Which boards and classes are supported?</summary><div class="a">Papers and study material are aligned to CBSE and State board syllabi across school classes. Tell us your class and board and we'll tailor it.</div></details>
+      <details class="q reveal"><summary>How is grading fair and consistent?</summary><div class="a">The AI evaluates the method and key steps the same way for every student, every time — removing the variation you get with manual correction.</div></details>
+      <details class="q reveal"><summary>How do I get started?</summary><div class="a">Book a free demo or ask your admin for a login. You'll take a short diagnostic test, and your personalised plan is ready right after.</div></details>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="wrap">
+    <div class="cta reveal">
+      <h2>Ready to learn <span class="gold">smarter?</span></h2>
+      <p>Experience the AI that sets, grades and teaches — and see your gaps close, week by week.</p>
+      <div class="hero-cta">
+        <a href="/exam-portal.html" class="btn btn-primary">Open the Exam Portal →</a>
+        <a href="/contact.html" class="btn btn-ghost">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="wrap">
+    <div class="fcols">
+      <div class="fcol" style="max-width:280px">
+        <a href="/index.html" class="logo" style="margin-bottom:14px"><span class="mark">🔥</span> Kongu Brilliance</a>
+        <p style="color:var(--muted);font-size:.9rem">AI-powered tuition — setting exams, grading them, finding gaps and teaching every student to mastery.</p>
+      </div>
+      <div class="fcol"><h4>Explore</h4><a href="/index.html">Home</a><a href="/how-it-works.html">How AI Works</a><a href="/exam-portal.html">Exam Portal</a><a href="/courses.html">Courses</a></div>
+      <div class="fcol"><h4>Portal</h4><a href="/exam-portal.html">Sign in</a><a href="/questionpapergenerator.html">Paper Generator</a><a href="/contact.html">Contact</a></div>
+    </div>
+    <div class="fbottom">© <span id="yr"></span> Kongu Brilliance. All rights reserved.</div>
+  </div>
+</footer>
+<script>
+  const burger=document.getElementById('burger'),nav=document.getElementById('nav');
+  burger.addEventListener('click',()=>nav.classList.toggle('open'));
+  nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
+  document.getElementById('yr').textContent=new Date().getFullYear();
+  const io=new IntersectionObserver((es)=>{es.forEach((e,i)=>{if(e.isIntersecting){e.target.style.transitionDelay=(Math.min(i,4)*70)+'ms';e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.14});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
