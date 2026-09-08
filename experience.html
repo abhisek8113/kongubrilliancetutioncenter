@@ -930,6 +930,18 @@ function drawGraph(){
 }
 addEventListener('load',boot);
 
+/* ---- failsafe: if GSAP never loads, reveal everything so the page is never blank ---- */
+setTimeout(function(){
+  if(!window.gsap){
+    document.querySelectorAll('.reveal').forEach(el=>{el.style.opacity=1;el.style.transform='none';});
+    document.querySelectorAll('#h-eye,#h-sub,#h-cta,#h-stats,#h-panel').forEach(el=>{if(el)el.style.opacity=1;});
+    document.querySelectorAll('#h-title .l span').forEach(s=>s.style.transform='none');
+    document.querySelectorAll('.hi').forEach(i=>i.style.width=i.dataset.w+'%');
+    document.querySelectorAll('.hv').forEach(b=>b.textContent=b.dataset.v+'%');
+    document.querySelectorAll('.sys-list .li,.status-flow .st,.tutor .step,.eco-panel.on').forEach(el=>{el.style.opacity=1;el.style.transform='none';el.classList.add('on');});
+  }
+},2500);
+
 /* ---- tuition ecosystem switch ---- */
 const ecoItems=document.querySelectorAll('.eco-item'),ecoPanels=document.querySelectorAll('.eco-panel');
 let ecoAuto;
@@ -954,7 +966,7 @@ drawEnv('offline');
 const voiceBtn=document.getElementById('voiceBtn');
 let speaking=false;
 voiceBtn.addEventListener('click',()=>{
-  if(!('speechSynthesis'in window)){alert('Voice narration isn\\'t supported in this browser — the four modes are shown below.');return;}
+  if(!('speechSynthesis'in window)){alert('Voice narration is not supported in this browser — the four modes are shown below.');return;}
   if(speaking){speechSynthesis.cancel();speaking=false;voiceBtn.innerHTML='<svg class="ic"><use href="#i-play"/></svg> Hear the four ways to learn';return;}
   const lines=[['offline','At Kongu Brilliance, you can learn offline, in our Coimbatore centre, with a teacher and small-group attention.'],['online','You can learn online, in a live interactive session from anywhere.'],['home','You can choose home tuition — one to one, at your own desk.'],['engineering','Or engineering tuition, for advanced technical problem solving.']];
   speaking=true;voiceBtn.innerHTML='<svg class="ic"><use href="#i-play"/></svg> Stop narration';let i=0;clearInterval(ecoAuto);
