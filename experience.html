@@ -3,500 +3,720 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kongu Brilliance — Tuition Centre in Coimbatore | Home, Online & Centre Tuition</title>
-<meta name="description" content="Kongu Brilliance Tuition Centre, Coimbatore — home, centre, online and engineering tuition for Classes 1–12 across CBSE, ICSE, State, Matric, ISC & IGCSE. Small batches, experienced teachers. Book a free consultation.">
-<meta name="keywords" content="tuition Coimbatore, home tuition, online tuition, engineering tuition, CBSE tuition, ICSE tuition, state board tuition, Kongu Brilliance">
+<title>Kongu Brilliance — Human Teaching. Intelligent Learning.</title>
+<meta name="description" content="Kongu Brilliance, Coimbatore — home, centre, online & engineering tuition for Classes 1–12. Experienced teachers with an AI learning layer: a live tutor room, paper evaluation, and adaptive practice.">
+<meta name="keywords" content="Kongu Brilliance, tuition Coimbatore, AI tutor, home tuition, online tuition, engineering tuition, CBSE, ICSE, adaptive learning">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://www.kongubrilliance.com/experience.html">
-<meta property="og:title" content="Kongu Brilliance — Tuition Centre in Coimbatore">
-<meta property="og:description" content="Home, centre, online & engineering tuition for Classes 1–12. Small batches, experienced teachers, Coimbatore.">
+<meta property="og:title" content="Kongu Brilliance — Human Teaching. Intelligent Learning.">
+<meta property="og:description" content="A live AI tutor room, paper evaluation and adaptive practice — on top of real teaching. Coimbatore.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.kongubrilliance.com/experience.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
 <style>
 :root{
-  --ink:#16202e; --ink2:#38455a; --muted:#66738a; --line:#e9e6dd; --line2:#e2ddd0;
-  --bg:#ffffff; --cream:#faf7f0; --cream2:#f3eee2;
-  --gold:#e0a020; --gold-d:#c4870f; --gold-soft:#fbf1da;
-  --navy:#132038; --teal:#0e8f7e; --teal-soft:#e3f4f0;
-  --r:16px; --shadow:0 18px 50px rgba(20,32,56,.10); --shadow-sm:0 6px 22px rgba(20,32,56,.07);
+  --bg:#07080d; --bg2:#0b0d15; --panel:rgba(255,255,255,.04); --panel2:rgba(255,255,255,.065);
+  --ink:#eceef5; --muted:#98a0b6; --faint:#6a7290; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.15);
+  --brass:#e0b25c; --brass2:#f2cf87; --ice:#67d6cf; --ice2:#9aeae4; --vio:#8f88f5;
+  --ok:#54c996; --warn:#e2b15a; --bad:#e57a6f;
+  --disp:'Space Grotesk','Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+  --shadow:0 30px 80px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:82px}
-body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.65;-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4,.dsp{font-family:'Poppins',sans-serif;line-height:1.15;font-weight:700;color:var(--navy)}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,.dsp{font-family:var(--disp);letter-spacing:-.02em;line-height:1.06;font-weight:600}
 a{color:inherit;text-decoration:none}
-img{max-width:100%;display:block}
-.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
-.btn{display:inline-flex;align-items:center;gap:9px;font-family:'Poppins';font-weight:600;font-size:.95rem;border-radius:11px;padding:14px 24px;cursor:pointer;border:2px solid transparent;transition:.2s}
-.btn svg{width:18px;height:18px}
-.btn-primary{background:var(--gold);color:#fff}
-.btn-primary:hover{background:var(--gold-d);transform:translateY(-2px);box-shadow:0 10px 24px rgba(224,160,32,.35)}
-.btn-outline{background:#fff;color:var(--navy);border-color:var(--line2)}
-.btn-outline:hover{border-color:var(--gold);color:var(--gold-d)}
-.btn-wa{background:#25D366;color:#fff}
-.btn-wa:hover{background:#1eb955;transform:translateY(-2px)}
-.eyebrow{font-family:'Poppins';font-weight:700;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-d)}
-.ic{width:24px;height:24px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
-.reveal.in{opacity:1;transform:none}
+.wrap{max-width:1200px;margin:0 auto;padding:0 26px}
+.mono{font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ice2)}
+.brass{color:var(--brass)}
+.ic{width:20px;height:20px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:.92rem;border-radius:12px;padding:13px 24px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink);transition:.22s}
+.btn-primary{background:linear-gradient(135deg,var(--brass),var(--brass2));color:#241a06;border-color:transparent}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(224,178,92,.35)}
+.btn-ghost:hover{border-color:var(--ice);color:var(--ice)}
+.btn-ai{background:rgba(103,214,207,.12);border-color:rgba(103,214,207,.4);color:var(--ice2)}
+.btn-ai:hover{background:rgba(103,214,207,.2)}
+.reveal{opacity:0;transform:translateY(26px)}
+.eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--ice2);margin-bottom:18px}
+.eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--ice),transparent)}
 
-/* top bar */
-.topbar{background:var(--navy);color:#dfe6f0;font-size:.82rem}
-.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 24px;flex-wrap:wrap}
-.topbar a{color:#dfe6f0;display:inline-flex;align-items:center;gap:7px}
-.topbar a:hover{color:#fff}
-.topbar .ic{width:15px;height:15px;color:var(--gold)}
-.topbar .l{display:flex;gap:20px;flex-wrap:wrap}
-@media(max-width:680px){.topbar .l{gap:12px}.topbar{font-size:.76rem}}
+/* bg */
+#field{position:fixed;inset:0;z-index:0;pointer-events:none}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 80% at 50% -5%,transparent 45%,rgba(7,8,13,.6) 100%)}
+main,header,footer{position:relative;z-index:2}
 
-/* header */
-header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);transition:.3s}
-header .wrap{display:flex;align-items:center;justify-content:space-between;height:70px}
-.logo{display:flex;align-items:center;gap:11px}
-.logo .m{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--gold),#f0b840);display:grid;place-items:center;box-shadow:0 6px 16px rgba(224,160,32,.3)}
-.logo .m svg{width:24px;height:24px;stroke:#fff;stroke-width:2;fill:none}
-.logo .t{font-family:'Poppins';font-weight:800;font-size:1.12rem;color:var(--navy);line-height:1.1}
-.logo .t small{display:block;font-family:'Inter';font-weight:500;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-nav.links{display:flex;align-items:center;gap:30px}
-nav.links a{font-family:'Poppins';font-weight:500;font-size:.92rem;color:var(--ink2);transition:.2s}
-nav.links a:hover{color:var(--gold-d)}
-.burger{display:none;background:none;border:0;cursor:pointer;color:var(--navy)}
-.burger svg{width:28px;height:28px;stroke:currentColor;stroke-width:2;fill:none}
+/* progress + nav */
+#prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--ice),var(--brass));z-index:130}
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:70px;display:flex;align-items:center;transition:.3s;border-bottom:1px solid transparent}
+header.solid{background:rgba(7,8,13,.82);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;width:100%}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .m{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brass),var(--brass2));display:grid;place-items:center}
+.brand .m svg{width:20px;height:20px;stroke:#241a06;stroke-width:2.2;fill:none}
+.brand .t{font-family:var(--disp);font-weight:700;font-size:1.02rem}
+.brand .t small{display:block;font-family:var(--mono);font-size:.54rem;letter-spacing:.28em;color:var(--faint);text-transform:uppercase}
+nav.links{display:flex;align-items:center;gap:28px}
+nav.links a{font-family:var(--disp);font-size:.88rem;color:var(--muted);transition:.2s}
+nav.links a:hover{color:var(--ink)}
+.burger{display:none;background:none;border:0;color:#fff;cursor:pointer}
+.burger svg{width:26px;height:26px;stroke:#fff;stroke-width:1.6;fill:none}
 
-/* hero */
-.hero{background:linear-gradient(180deg,var(--cream),#fff);position:relative;overflow:hidden}
-.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:70px 0 80px}
-.hero .badge{display:inline-flex;align-items:center;gap:8px;background:var(--gold-soft);color:var(--gold-d);font-family:'Poppins';font-weight:600;font-size:.8rem;padding:8px 15px;border-radius:100px;margin-bottom:22px}
-.hero .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--teal)}
-.hero h1{font-size:clamp(2.2rem,4.6vw,3.5rem);font-weight:800;letter-spacing:-.02em;margin-bottom:18px}
-.hero h1 .u{color:var(--gold-d);position:relative;white-space:nowrap}
-.hero p.sub{font-size:1.14rem;color:var(--ink2);max-width:48ch;margin-bottom:28px}
-.hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:30px}
-.hero-boards{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
-.hero-boards b{font-family:'Poppins';color:var(--navy)}
-.hero-boards .b{background:#fff;border:1px solid var(--line2);border-radius:8px;padding:5px 11px;font-weight:600;color:var(--ink2);font-size:.78rem}
-/* hero visual */
-.hero-visual{position:relative}
-.hero-photo{border-radius:24px;overflow:hidden;box-shadow:var(--shadow);background:linear-gradient(135deg,var(--navy),#1e3357);aspect-ratio:4/3;position:relative;display:grid;place-items:center}
-.hero-photo .ph-note{position:absolute;bottom:12px;left:12px;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);font-family:'Inter'}
-.hero-photo svg{width:60%;opacity:.9}
-.float-card{position:absolute;background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;display:flex;align-items:center;gap:12px}
-.float-card .i{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;flex-shrink:0}
-.float-card .i.g{background:var(--gold-soft);color:var(--gold-d)}
-.float-card .i.t{background:var(--teal-soft);color:var(--teal)}
-.float-card b{font-family:'Poppins';font-size:.95rem;color:var(--navy);display:block;line-height:1.1}
-.float-card small{color:var(--muted);font-size:.75rem}
-.fc1{top:22px;left:-18px}
-.fc2{bottom:26px;right:-16px}
-@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:40px;padding:48px 0 60px}.hero-visual{max-width:480px;margin:0 auto;width:100%}.float-card{display:none}}
+/* scene scaffold */
+.scene{padding:110px 0;position:relative}
+.scene-head{max-width:60ch;margin:0 auto 54px;text-align:center}
+.scene-head h2{font-size:clamp(1.9rem,4.2vw,3rem);margin-bottom:16px}
+.scene-head h2 em{font-style:normal;color:var(--brass)}
+.scene-head p{color:var(--muted);font-size:1.06rem}
+@media(max-width:820px){.scene{padding:76px 0}}
 
-/* stats strip */
-.stats{background:var(--navy);color:#fff}
-.stats .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:36px 24px;text-align:center}
-.stats .s b{font-family:'Poppins';font-weight:800;font-size:1.9rem;display:block;color:#fff}
-.stats .s span{font-size:.86rem;color:#aeb9cc}
-.stats .s .g{color:var(--gold)}
-@media(max-width:680px){.stats .wrap{grid-template-columns:1fr 1fr;gap:26px}}
+/* HERO / search */
+#hero{min-height:100vh;display:flex;align-items:center;padding-top:70px}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;width:100%}
+#hero h1{font-size:clamp(2.4rem,5.6vw,4.4rem);font-weight:600;letter-spacing:-.035em;margin:18px 0 20px}
+#hero h1 .g{background:linear-gradient(120deg,var(--brass),var(--brass2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{color:var(--muted);font-size:1.15rem;max-width:46ch;margin-bottom:30px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:40px}.hero-vis{order:2}}
+/* search visual */
+.searchbox{background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.searchbar{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:11px;padding:13px 16px;font-family:var(--mono);font-size:.9rem;color:var(--ink)}
+.searchbar .cur{width:2px;height:16px;background:var(--ice);animation:cur 1s steps(1) infinite}
+@keyframes cur{50%{opacity:0}}
+.sresults{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.sres{display:flex;gap:12px;padding:13px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.02);opacity:0;transform:translateY(10px)}
+.sres.top{border-color:var(--brass);background:rgba(224,178,92,.07)}
+.sres .rank{font-family:var(--mono);font-size:.72rem;color:var(--faint);flex-shrink:0}
+.sres .rt{font-family:var(--disp);font-weight:600;font-size:.98rem}
+.sres .rt small{display:block;font-family:'Inter';font-weight:400;color:var(--muted);font-size:.8rem}
+.sres .badge{margin-left:auto;font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);align-self:center}
+.sig-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.sig-chips span{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:5px 11px;opacity:0}
 
-/* section base */
-.sec{padding:84px 0}
-.sec.cream{background:var(--cream)}
-.sec-head{text-align:center;max-width:60ch;margin:0 auto 52px}
-.sec-head h2{font-size:clamp(1.8rem,3.6vw,2.6rem);margin:12px 0 14px}
-.sec-head p{color:var(--ink2);font-size:1.05rem}
+/* generic panel */
+.panel{background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:18px}
 
-/* programs */
-.prog-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
-.prog{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:32px;transition:.28s;position:relative;overflow:hidden}
-.prog:hover{box-shadow:var(--shadow);transform:translateY(-4px);border-color:var(--gold)}
-.prog .top{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-.prog .i{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;flex-shrink:0;background:var(--gold-soft);color:var(--gold-d)}
-.prog:nth-child(2) .i{background:var(--teal-soft);color:var(--teal)}
-.prog:nth-child(3) .i{background:#eef1fb;color:#4b5bd6}
-.prog:nth-child(4) .i{background:#fdeeea;color:#d5623f}
-.prog h3{font-size:1.3rem}
-.prog .tagline{font-size:.8rem;color:var(--muted);font-family:'Poppins';font-weight:500}
-.prog p{color:var(--ink2);font-size:.96rem;margin-bottom:16px}
-.prog ul{list-style:none;display:flex;flex-direction:column;gap:9px}
-.prog li{display:flex;gap:10px;font-size:.9rem;color:var(--ink2)}
-.prog li svg{width:17px;height:17px;color:var(--teal);flex-shrink:0;margin-top:3px}
-@media(max-width:760px){.prog-grid{grid-template-columns:1fr}}
+/* four worlds */
+.worlds{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.world{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.02);transition:.3s}
+.world:hover{border-color:var(--brass);transform:translateY(-4px);box-shadow:var(--shadow)}
+.world .env{height:170px;position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:radial-gradient(circle at 50% 40%,rgba(103,214,207,.06),transparent 60%)}
+.world .env svg{position:absolute;inset:0;width:100%;height:100%}
+.world .body{padding:26px}
+.world .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ice2);margin-bottom:8px}
+.world h3{font-size:1.4rem;margin-bottom:10px}
+.world p{color:var(--muted);font-size:.95rem;margin-bottom:14px}
+.world .scn{font-size:.86rem;color:var(--faint);border-left:2px solid var(--line2);padding-left:12px;font-style:italic}
+@media(max-width:760px){.worlds{grid-template-columns:1fr}}
 
-/* subjects */
-.subj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.subj{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;transition:.25s}
-.subj:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:var(--shadow-sm)}
-.subj .i{width:50px;height:50px;border-radius:12px;background:var(--cream2);display:grid;place-items:center;margin:0 auto 14px;color:var(--gold-d)}
-.subj h4{font-size:1.02rem;margin-bottom:5px}
-.subj p{font-size:.82rem;color:var(--muted)}
-@media(max-width:860px){.subj-grid{grid-template-columns:1fr 1fr}}
+/* 24h clock */
+.clock-wrap{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+.clock{position:relative;aspect-ratio:1;max-width:400px;margin:0 auto;width:100%}
+.clock svg{width:100%;height:100%}
+.qa{display:flex;flex-direction:column;gap:14px}
+.qa .q{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:rgba(255,255,255,.02);opacity:0;transform:translateX(16px)}
+.qa .q .time{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--brass);margin-bottom:6px}
+.qa .q .txt{font-size:.95rem}
+.qa .q .ans{color:var(--muted);font-size:.86rem;margin-top:6px;display:flex;gap:8px}
+.qa .q .ans::before{content:"→";color:var(--ice)}
+@media(max-width:820px){.clock-wrap{grid-template-columns:1fr;gap:30px}}
 
-/* how it works */
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;counter-reset:st}
-.step{position:relative;padding-top:12px}
-.step .n{width:48px;height:48px;border-radius:12px;background:var(--navy);color:var(--gold);font-family:'Poppins';font-weight:800;font-size:1.2rem;display:grid;place-items:center;margin-bottom:16px}
-.step h4{font-size:1.1rem;margin-bottom:8px}
-.step p{color:var(--ink2);font-size:.92rem}
-@media(max-width:820px){.steps{grid-template-columns:1fr 1fr;gap:30px}}
-@media(max-width:480px){.steps{grid-template-columns:1fr}}
+/* ===== AI TUTOR ROOM ===== */
+#room{padding:70px 0}
+.room{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));box-shadow:var(--shadow)}
+.room-bar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.room-bar .live{color:var(--ice);display:flex;align-items:center;gap:7px}
+.room-bar .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ice);box-shadow:0 0 8px var(--ice);animation:bl 1.6s infinite}
+@keyframes bl{50%{opacity:.3}}
+.room-bar .demo{margin-left:auto;color:var(--warn)}
+.room-grid{display:grid;grid-template-columns:270px 1fr 240px;min-height:440px}
+@media(max-width:960px){.room-grid{grid-template-columns:1fr}.room-side.right{display:none}}
+/* tutor presence */
+.room-side{padding:22px;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.room-side.right{border-right:0;border-left:1px solid var(--line)}
+.presence{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:10px 0 18px}
+.orb{width:120px;height:120px;border-radius:50%;position:relative;display:grid;place-items:center;
+  background:radial-gradient(circle at 38% 32%,rgba(103,214,207,.35),rgba(103,214,207,.06) 60%,transparent);
+  border:1px solid rgba(103,214,207,.35)}
+.orb::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(103,214,207,.25);opacity:0}
+.orb.listening::before{opacity:1;animation:ring 1.4s infinite}
+.orb.speaking::before{opacity:1;animation:ring .7s infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.3);opacity:0}}
+.orb.thinking{background:radial-gradient(circle at 38% 32%,rgba(143,136,245,.4),transparent 60%);border-color:rgba(143,136,245,.4)}
+.wave{display:flex;align-items:center;gap:3px;height:34px}
+.wave i{width:3px;height:8px;background:var(--ice);border-radius:2px;transition:height .12s}
+.presence .nm{font-family:var(--disp);font-weight:600;font-size:1.02rem}
+.presence .rl{font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.state-list{margin-top:auto;display:flex;flex-direction:column;gap:0}
+.state-list .st{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:8px 0;border-top:1px solid var(--line);opacity:.4;transition:.3s;display:flex;align-items:center;gap:9px}
+.state-list .st.on{opacity:1;color:var(--ice2)}
+.state-list .st .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+/* whiteboard */
+.board-col{display:flex;flex-direction:column;min-width:0}
+.board{flex:1;background:#0a0d16;position:relative;overflow:hidden;min-height:300px}
+.board .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:26px 26px}
+.board .content{position:relative;padding:26px 30px;font-family:var(--mono);font-size:1.15rem;color:#dfe6ec;display:flex;flex-direction:column;gap:12px}
+.board .bl{opacity:0;transform:translateY(6px)}
+.board .bl.title{font-family:var(--disp);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ice2)}
+.board .bl .hl{background:rgba(224,178,92,.22);box-shadow:0 0 0 1px rgba(224,178,92,.5);border-radius:3px;padding:0 3px}
+.board .bl .good{color:var(--ok)}
+.board .cap{position:absolute;left:0;right:0;bottom:0;padding:14px 20px;background:linear-gradient(180deg,transparent,rgba(7,8,13,.9));font-family:'Inter';font-size:.92rem;color:#eef1f6;min-height:56px}
+.board .cap .who{font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ice2);margin-right:8px}
+.board-controls{border-top:1px solid var(--line);padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:rgba(255,255,255,.015)}
+.ctrl{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);background:transparent;border-radius:8px;padding:9px 12px;cursor:pointer;transition:.18s}
+.ctrl:hover{border-color:var(--ice);color:var(--ice2)}
+.ctrl.mic{background:linear-gradient(135deg,var(--brass),var(--brass2));color:#241a06;border-color:transparent}
+.ctrl.mic.on{background:linear-gradient(135deg,var(--ice),var(--ice2));color:#04241f;animation:micp 1.2s infinite}
+@keyframes micp{50%{box-shadow:0 0 0 6px rgba(103,214,207,.18)}}
+.ctrl .ic{width:15px;height:15px}
+.ctrl.spacer{margin-left:auto;border:0;cursor:default}
+.ctrl.spacer:hover{color:var(--muted)}
+/* right context */
+.ctx h4{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
+.ctx .cx{display:flex;justify-content:space-between;font-size:.85rem;padding:9px 0;border-bottom:1px solid var(--line);color:var(--muted)}
+.ctx .cx b{color:var(--ink);font-family:var(--disp);font-weight:500}
+.ctx .qbox{margin-top:16px;border:1px solid rgba(224,178,92,.3);background:rgba(224,178,92,.06);border-radius:11px;padding:14px;display:none}
+.ctx .qbox.on{display:block}
+.ctx .qbox .k{font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.ctx .qbox .ans-in{margin-top:10px;display:flex;gap:6px}
+.ctx .qbox input{flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:.85rem}
+.ctx .qbox button{border:0;border-radius:8px;background:var(--brass);color:#241a06;font-weight:700;padding:0 12px;cursor:pointer}
+.hint{font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;color:var(--faint);margin-top:14px;line-height:1.7}
 
-/* why us */
-.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.why{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px}
-.why .i{width:52px;height:52px;border-radius:13px;background:var(--gold-soft);color:var(--gold-d);display:grid;place-items:center;margin-bottom:16px}
-.why h4{font-size:1.14rem;margin-bottom:9px}
-.why p{color:var(--ink2);font-size:.93rem}
-@media(max-width:820px){.why-grid{grid-template-columns:1fr}}
+/* paper eval */
+.paper{position:relative;background:#efece3;color:#1b1d24;border-radius:12px;padding:24px 26px;box-shadow:var(--shadow);overflow:hidden;font-family:var(--disp)}
+.paper .h{font-family:var(--mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:#8a8676;margin-bottom:14px;display:flex;justify-content:space-between}
+.paper .q{font-size:1rem;font-weight:600;margin-bottom:6px}
+.paper .a{font-size:1.3rem;color:#26407a;margin-bottom:16px}
+.paper .a .x{color:#c0392b}
+.paper .a .flag{border-radius:3px;padding:0 3px}
+.paper .a .flag.hl{background:rgba(229,122,111,.25);box-shadow:0 0 0 1px rgba(229,122,111,.6)}
+.scan{position:absolute;left:0;right:0;height:70px;top:-80px;background:linear-gradient(180deg,transparent,rgba(103,214,207,.3),transparent);border-top:1px solid var(--ice);border-bottom:1px solid var(--ice);box-shadow:0 0 30px rgba(103,214,207,.4);opacity:0}
+.flow{display:flex;flex-direction:column;gap:2px}
+.flow .st{display:flex;gap:12px;align-items:center;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:12px 14px;border:1px solid var(--line);border-left:2px solid var(--line2);background:rgba(255,255,255,.02);opacity:0;transform:translateX(-12px)}
+.flow .st.err{border-left-color:var(--bad);color:var(--bad)}
+.flow .st.warn{border-left-color:var(--warn);color:var(--warn)}
+.flow .st.act{border-left-color:var(--brass);color:var(--brass)}
+.flow .st.ok{border-left-color:var(--ok);color:var(--ok)}
+.paper-link{margin-top:20px;text-align:center}
 
-/* testimonials */
-.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-.tcard{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:28px;display:flex;flex-direction:column}
-.tcard .stars{color:var(--gold);letter-spacing:3px;margin-bottom:14px;font-size:1rem}
-.tcard p{color:var(--ink2);font-style:italic;margin-bottom:18px;flex:1}
-.tcard .by{display:flex;align-items:center;gap:12px}
-.tcard .av{width:42px;height:42px;border-radius:50%;background:var(--navy);color:var(--gold);font-family:'Poppins';font-weight:700;display:grid;place-items:center}
-.tcard .by b{font-family:'Poppins';font-size:.95rem;color:var(--navy)}
-.tcard .by small{color:var(--muted);font-size:.8rem;display:block}
-.tnote{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}
-@media(max-width:860px){.tgrid{grid-template-columns:1fr}}
+/* knowledge graph */
+.kg{position:relative;aspect-ratio:1.2;max-width:520px;margin:0 auto;width:100%}
+.kg svg{position:absolute;inset:0;width:100%;height:100%}
+.kn{position:absolute;transform:translate(-50%,-50%);font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;padding:7px 12px;border-radius:20px;border:1px solid var(--line2);background:var(--bg2);white-space:nowrap}
+.kn.strong{color:var(--ok);border-color:rgba(84,201,150,.5)}
+.kn.weak{color:var(--warn);border-color:rgba(226,177,90,.5);animation:wk 2.2s infinite}
+@keyframes wk{50%{box-shadow:0 0 0 6px rgba(226,177,90,0)}0%,100%{box-shadow:0 0 0 0 rgba(226,177,90,.3)}}
 
-/* cta band */
-.ctaband{background:linear-gradient(135deg,var(--navy),#1d3252);color:#fff;border-radius:24px;padding:52px 44px;text-align:center;position:relative;overflow:hidden}
-.ctaband h2{color:#fff;font-size:clamp(1.6rem,3.4vw,2.3rem);margin-bottom:12px}
-.ctaband p{color:#c6d0e0;margin-bottom:26px;max-width:50ch;margin-left:auto;margin-right:auto}
-.ctaband .row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-.ctaband .btn-outline{background:transparent;color:#fff;border-color:rgba(255,255,255,.3)}
-.ctaband .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+/* growth */
+.growth{border:1px solid var(--line);border-radius:18px;padding:28px;background:rgba(255,255,255,.02)}
+.growth svg{width:100%;height:auto;overflow:visible}
+.gl{fill:none;stroke:var(--brass);stroke-width:2.5;stroke-linecap:round}
+.ga{fill:url(#gf);opacity:0}
+.gd{fill:var(--brass);stroke:var(--bg);stroke-width:2.5;opacity:0}
+.gt{fill:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px;text-anchor:middle;opacity:0}
+.gc{fill:var(--faint);font-family:var(--mono);font-size:10px;text-anchor:middle;opacity:0;text-transform:uppercase}
+.note{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;text-align:center;margin-top:16px}
 
-/* contact */
-.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
-.cinfo .item{display:flex;gap:16px;margin-bottom:24px}
-.cinfo .item .i{width:48px;height:48px;border-radius:12px;background:var(--gold-soft);color:var(--gold-d);display:grid;place-items:center;flex-shrink:0}
-.cinfo .item h4{font-size:1rem;margin-bottom:4px}
-.cinfo .item a,.cinfo .item p{color:var(--ink2);font-size:.94rem}
-.cinfo .item a:hover{color:var(--gold-d)}
-.cform{background:var(--cream);border:1px solid var(--line);border-radius:var(--r);padding:30px}
-.cform h3{font-size:1.3rem;margin-bottom:6px}
-.cform .sub{color:var(--muted);font-size:.9rem;margin-bottom:20px}
-.cform label{display:block;font-family:'Poppins';font-weight:500;font-size:.82rem;color:var(--ink2);margin-bottom:6px}
-.cform .field{margin-bottom:16px}
-.cform input,.cform select,.cform textarea{width:100%;border:1px solid var(--line2);border-radius:10px;padding:12px 14px;font-family:'Inter';font-size:.94rem;background:#fff;color:var(--ink)}
-.cform input:focus,.cform select:focus,.cform textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(224,160,32,.14)}
-.cform .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.cform button{width:100%;justify-content:center}
-@media(max-width:860px){.contact-grid{grid-template-columns:1fr;gap:34px}.cform .row2{grid-template-columns:1fr}}
+/* teacher/ai/parent system */
+.sys{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.sys .c{padding:28px;border-right:1px solid var(--line)}
+.sys .c:last-child{border-right:0}
+.sys .c .k{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ice2);margin-bottom:10px}
+.sys .c h3{font-size:1.2rem;margin-bottom:12px}
+.sys .c ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+.sys .c li{color:var(--muted);font-size:.9rem;display:flex;gap:9px}
+.sys .c li::before{content:"›";color:var(--brass)}
+@media(max-width:820px){.sys{grid-template-columns:1fr}.sys .c{border-right:0;border-bottom:1px solid var(--line)}}
+
+/* career */
+.career{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding-bottom:8px}
+.cstep{flex:1;min-width:150px;padding:24px 20px;border-right:1px solid var(--line);position:relative}
+.cstep:last-child{border-right:0}
+.cstep .n{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--faint);margin-bottom:10px}
+.cstep h4{font-size:1.05rem;margin-bottom:6px}
+.cstep p{color:var(--muted);font-size:.84rem}
+.cstep.last h4{color:var(--brass)}
+
+/* final */
+#final{text-align:center;padding:120px 0}
+#final h2{font-size:clamp(2rem,5vw,3.6rem);margin-bottom:14px}
+#final .tag{font-family:var(--disp);color:var(--brass);font-size:clamp(1.1rem,2.4vw,1.4rem);margin-bottom:30px}
+.ctarow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 
 /* footer */
-footer{background:var(--navy);color:#c6d0e0;padding:56px 0 28px}
-.fgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:36px;margin-bottom:36px}
-footer h4{color:#fff;font-family:'Poppins';font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}
-footer a,footer p{color:#a9b4c7;font-size:.9rem;display:block;margin-bottom:10px}
-footer a:hover{color:var(--gold)}
-footer .logo .t{color:#fff}
-footer .logo .t small{color:#8592a8}
-.fbottom{border-top:1px solid rgba(255,255,255,.12);padding-top:22px;text-align:center;font-size:.82rem;color:#8592a8}
-@media(max-width:860px){.fgrid{grid-template-columns:1fr 1fr;gap:30px}}
-@media(max-width:520px){.fgrid{grid-template-columns:1fr}}
+footer{border-top:1px solid var(--line);padding:52px 0 30px}
+.fg{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr;gap:34px;margin-bottom:34px}
+.fcol h4{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ice2);margin-bottom:14px}
+.fcol a,.fcol p{color:var(--muted);font-size:.88rem;display:block;margin-bottom:9px}
+.fcol a:hover{color:var(--ink)}
+.fbot{border-top:1px solid var(--line);padding-top:22px;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.disc{font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;color:var(--faint);line-height:1.8;margin-top:22px;max-width:90ch;text-transform:none}
+@media(max-width:820px){.fg{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.fg{grid-template-columns:1fr}}
 
-/* floating whatsapp */
-.fab{position:fixed;right:20px;bottom:20px;z-index:90;width:56px;height:56px;border-radius:50%;background:#25D366;display:grid;place-items:center;box-shadow:0 10px 26px rgba(37,211,102,.45);transition:.2s}
-.fab:hover{transform:scale(1.08)}
-.fab svg{width:30px;height:30px;fill:#fff}
+/* floating ask */
+.askfab{position:fixed;right:20px;bottom:20px;z-index:95;display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:.85rem;background:linear-gradient(135deg,var(--ice),var(--ice2));color:#04241f;border:0;border-radius:30px;padding:13px 20px;cursor:pointer;box-shadow:0 12px 30px rgba(103,214,207,.4);transition:.2s}
+.askfab:hover{transform:translateY(-2px)}
+.askfab .ic{width:18px;height:18px;stroke:#04241f}
 
 @media(max-width:900px){
-  nav.links{position:fixed;inset:70px 0 auto 0;flex-direction:column;align-items:flex-start;background:#fff;padding:24px;gap:20px;border-bottom:1px solid var(--line);box-shadow:var(--shadow);transform:translateY(-150%);transition:.35s}
-  nav.links.open{transform:none}
-  .burger{display:block}
+  nav.links{position:fixed;inset:70px 0 auto 0;flex-direction:column;align-items:flex-start;background:rgba(7,8,13,.98);padding:24px 26px;gap:20px;border-bottom:1px solid var(--line);transform:translateY(-160%);transition:.35s}
+  nav.links.open{transform:none}.burger{display:block}
 }
-@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-
-<!-- SVG icons -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-<g id="i-check"><path d="M4 12l5 5L20 6"/></g>
+<g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"/></g>
+<g id="i-mic"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></g>
+<g id="i-search"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></g>
+<g id="i-spark"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></g>
 <g id="i-phone"><path d="M5 4h4l2 5-2 1.5a12 12 0 006 6L18 15l5 2v4a1 1 0 01-1 1A17 17 0 014 6a1 1 0 011-2z"/></g>
 <g id="i-pin"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></g>
-<g id="i-mail"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></g>
-<g id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g>
-<g id="i-home"><path d="M4 11l8-7 8 7M6 10v9h12v-9"/></g>
-<g id="i-monitor"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></g>
-<g id="i-users"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M16 5.5a3 3 0 010 5.8M21 20c0-2.6-1.6-4.2-4-4.8"/></g>
-<g id="i-cpu"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></g>
-<g id="i-book"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M19 3v16"/></g>
-<g id="i-flask"><path d="M9 3h6M10 3v6l-5 9a2 2 0 002 3h10a2 2 0 002-3l-5-9V3"/></g>
-<g id="i-globe"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></g>
-<g id="i-sigma"><path d="M17 5H7l6 7-6 7h10"/></g>
-<g id="i-award"><circle cx="12" cy="9" r="5"/><path d="M9 13l-2 7 5-3 5 3-2-7"/></g>
-<g id="i-target"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></g>
-<g id="i-heart"><path d="M12 20s-7-4.5-9-9a4.5 4.5 0 019-2 4.5 4.5 0 019 2c-2 4.5-9 9-9 9z"/></g>
-<g id="i-rupee"><path d="M7 5h10M7 9h10M15 5c0 4-3 6-8 6l7 8"/></g>
-<g id="i-cal"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></g>
+<g id="i-chat"><path d="M4 5h16v11H9l-5 4z"/></g>
 <g id="i-menu"><path d="M4 7h16M4 12h16M4 17h16"/></g>
-<g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"/></g>
+<g id="i-x"><path d="M6 6l12 12M18 6L6 18"/></g>
 </defs></svg>
 
-<!-- top bar -->
-<div class="topbar"><div class="wrap">
-  <div class="l">
-    <a href="tel:+919514524599"><svg class="ic"><use href="#i-phone"/></svg> +91 95145 24599</a>
-    <a href="https://maps.app.goo.gl/s3oeWWQDPjFykGqT8" target="_blank" rel="noopener"><svg class="ic"><use href="#i-pin"/></svg> Mettupalayam Rd, Coimbatore</a>
-  </div>
-  <div class="l"><span>Home · Centre · Online tuition · Classes 1–12</span></div>
-</div></div>
+<div id="prog"></div>
+<canvas id="field" aria-hidden="true"></canvas>
+<div class="vig"></div>
 
-<!-- header -->
-<header id="hdr">
-  <div class="wrap">
-    <a href="#top" class="logo">
-      <span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <span class="t">Kongu Brilliance<small>Tuition Centre</small></span>
-    </a>
-    <nav class="links" id="nav">
-      <a href="#programs">Programs</a>
-      <a href="#subjects">Subjects</a>
-      <a href="#how">How it works</a>
-      <a href="#why">Why us</a>
-      <a href="#reviews">Reviews</a>
-      <a href="#contact">Contact</a>
-      <a href="#contact" class="btn btn-primary" style="padding:10px 18px">Book free class</a>
-    </nav>
-    <button class="burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24"><use href="#i-menu"/></svg></button>
-  </div>
-</header>
+<header id="hdr"><div class="wrap">
+  <a href="/index.html" class="brand"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Coimbatore</small></span></a>
+  <nav class="links" id="nav">
+    <a href="#worlds">Learning</a><a href="#room">AI Tutor</a><a href="#evaluate">Evaluation</a><a href="#growth">Growth</a><a href="#contact">Contact</a>
+    <a href="#room" class="btn btn-primary" style="padding:10px 18px" id="startBtn">Start a session</a>
+  </nav>
+  <button class="burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24"><use href="#i-menu"/></svg></button>
+</div></header>
 
-<span id="top"></span>
-<!-- HERO -->
-<section class="hero">
-  <div class="wrap hero-grid">
-    <div class="hero-copy">
-      <span class="badge"><span class="dot"></span> Coimbatore · Where Brilliance is Born</span>
-      <h1>Personalised tuition that helps your child <span class="u">truly understand.</span></h1>
-      <p class="sub">Home, centre and online tuition for Classes 1–12 across CBSE, ICSE, State, Matric, ISC & IGCSE — plus engineering tuition. Small batches, experienced teachers, real results.</p>
-      <div class="hero-cta">
-        <a href="#contact" class="btn btn-primary">Book a free consultation <svg class="ic"><use href="#i-arrow"/></svg></a>
-        <a href="tel:+919514524599" class="btn btn-outline"><svg class="ic"><use href="#i-phone"/></svg> Call now</a>
-      </div>
-      <div class="hero-boards">
-        <b>Boards:</b>
-        <span class="b">CBSE</span><span class="b">ICSE</span><span class="b">State</span><span class="b">Matric</span><span class="b">ISC</span><span class="b">IGCSE</span>
-      </div>
-    </div>
-    <div class="hero-visual">
-      <div class="hero-photo">
-        <svg viewBox="0 0 200 150" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="30" y="30" width="140" height="80" rx="6"/><path d="M30 46h140"/>
-          <path d="M55 70h40M55 84h60"/><circle cx="150" cy="82" r="12"/><path d="M145 82l4 4 7-8"/>
-          <path d="M70 110v14M130 110v14M55 124h90"/>
-        </svg>
-        <span class="ph-note">Replace with a real classroom photo</span>
-      </div>
-      <div class="float-card fc1"><span class="i g"><svg class="ic"><use href="#i-users"/></svg></span><div><b>Max 12 / batch</b><small>Individual attention</small></div></div>
-      <div class="float-card fc2"><span class="i t"><svg class="ic"><use href="#i-award"/></svg></span><div><b>Centum scorers</b><small>100/100 in Maths</small></div></div>
+<main>
+<!-- HERO: SEARCH → DISCOVERY -->
+<section id="hero"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">Where learning becomes visible</div>
+    <h1>It starts with a student, <span class="g">looking for help.</span></h1>
+    <p class="hero-sub">Kongu Brilliance, Coimbatore — home, centre, online &amp; engineering tuition for Classes 1–12, with experienced teachers and an AI learning layer that never sleeps.</p>
+    <div class="hero-cta">
+      <a href="#room" class="btn btn-primary">Start an AI learning session <svg class="ic"><use href="#i-arrow"/></svg></a>
+      <a href="#contact" class="btn btn-ghost">Talk to us</a>
     </div>
   </div>
-</section>
-
-<!-- STATS -->
-<section class="stats">
-  <div class="wrap">
-    <div class="s"><b class="g">2021</b><span>Established</span></div>
-    <div class="s"><b class="g">1–12</b><span>Classes covered</span></div>
-    <div class="s"><b class="g">12</b><span>Max students / batch</span></div>
-    <div class="s"><b class="g">₹0</b><span>Registration fee</span></div>
-  </div>
-</section>
-
-<!-- PROGRAMS -->
-<section class="sec" id="programs">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">Our programs</span>
-      <h2>Four ways to learn — one standard of teaching</h2>
-      <p>Choose the setting that suits your child. The teachers, care and results stay the same.</p>
-    </div>
-    <div class="prog-grid">
-      <div class="prog reveal">
-        <div class="top"><span class="i"><svg class="ic"><use href="#i-users"/></svg></span><div><h3>Offline tuition</h3><span class="tagline">At our Coimbatore centre</span></div></div>
-        <p>Focused small-group classes at our centre, with a teacher at the board and regular written tests.</p>
-        <ul><li><svg><use href="#i-check"/></svg> In-person teaching, small batches</li><li><svg><use href="#i-check"/></svg> Regular assessments & revision</li><li><svg><use href="#i-check"/></svg> Individual doubt-clearing</li></ul>
+  <div class="hero-vis">
+    <div class="searchbox">
+      <div class="searchbar"><svg class="ic" style="color:var(--faint)"><use href="#i-search"/></svg><span id="stype"></span><span class="cur"></span></div>
+      <div class="sresults" id="sresults">
+        <div class="sres"><span class="rank">01</span><div class="rt">Coaching listings<small>Generic directory results</small></div></div>
+        <div class="sres top"><span class="rank">02</span><div class="rt">Kongu Brilliance Tuition Centre<small>Home · Centre · Online · Engineering · Classes 1–12</small></div><span class="badge">Best match</span></div>
+        <div class="sres"><span class="rank">03</span><div class="rt">Other tuition centres<small>Coimbatore</small></div></div>
       </div>
-      <div class="prog reveal">
-        <div class="top"><span class="i"><svg class="ic"><use href="#i-monitor"/></svg></span><div><h3>Online tuition</h3><span class="tagline">Live, from anywhere</span></div></div>
-        <p>Live interactive sessions on a shared board — the full classroom experience from home.</p>
-        <ul><li><svg><use href="#i-check"/></svg> Live & interactive classes</li><li><svg><use href="#i-check"/></svg> Real-time doubt solving</li><li><svg><use href="#i-check"/></svg> Shared notes & materials</li></ul>
-      </div>
-      <div class="prog reveal">
-        <div class="top"><span class="i"><svg class="ic"><use href="#i-home"/></svg></span><div><h3>Home tuition</h3><span class="tagline">One-to-one, at home</span></div></div>
-        <p>A tutor at your child's own desk — completely personalised pace and attention.</p>
-        <ul><li><svg><use href="#i-check"/></svg> Dedicated one-to-one tutor</li><li><svg><use href="#i-check"/></svg> Fully personalised plan</li><li><svg><use href="#i-check"/></svg> Progress updates for parents</li></ul>
-      </div>
-      <div class="prog reveal">
-        <div class="top"><span class="i"><svg class="ic"><use href="#i-cpu"/></svg></span><div><h3>Engineering tuition</h3><span class="tagline">Advanced & technical</span></div></div>
-        <p>Rigorous coaching in mathematics and core technical subjects for engineering students and aspirants.</p>
-        <ul><li><svg><use href="#i-check"/></svg> Technical depth & problem-solving</li><li><svg><use href="#i-check"/></svg> Exam-focused preparation</li><li><svg><use href="#i-check"/></svg> Concept-first teaching</li></ul>
+      <div class="sig-chips" id="sigchips">
+        <span>CBSE</span><span>ICSE</span><span>State</span><span>Coimbatore</span><span>Maths</span><span>Small batches</span><span>AI-assisted</span>
       </div>
     </div>
   </div>
-</section>
+</div></section>
 
-<!-- SUBJECTS -->
-<section class="sec cream" id="subjects">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">Subjects we cover</span>
-      <h2>Every core subject, taught with care</h2>
+<!-- HUMAN + AI -->
+<section class="scene" id="human"><div class="wrap">
+  <div class="scene-head reveal">
+    <div class="eyebrow" style="justify-content:center">Human at the heart</div>
+    <h2>Real teachers. <em>An intelligent layer around them.</em></h2>
+    <p>Experienced tutors explain, mentor and correct. Technology quietly analyses learning patterns, generates practice and evaluates work — so teachers can spend their time teaching.</p>
+  </div>
+  <div class="sys reveal">
+    <div class="c"><div class="k">The student</div><h3>At the centre</h3><ul><li>Learns at their own pace</li><li>Asks doubts any time</li><li>Sees their own progress</li></ul></div>
+    <div class="c"><div class="k">The teacher</div><h3>Leads the learning</h3><ul><li>Explains &amp; mentors</li><li>Reads each student</li><li>Decides the strategy</li></ul></div>
+    <div class="c"><div class="k">The AI layer</div><h3>Assists tirelessly</h3><ul><li>Analyses every answer</li><li>Generates targeted practice</li><li>Flags recurring mistakes</li></ul></div>
+  </div>
+</div></section>
+
+<!-- FOUR WORLDS -->
+<section class="scene" id="worlds"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Four ways to learn</div><h2>One standard of teaching, <em>four environments.</em></h2></div>
+  <div class="worlds">
+    <div class="world reveal"><div class="env" data-env="offline"></div><div class="body"><div class="k">Offline · at our centre</div><h3>Offline tuition</h3><p>Focused small-group classes with a teacher at the board and regular written tests.</p><div class="scn">A student raises a doubt; the teacher responds while the system notes the concept.</div></div></div>
+    <div class="world reveal"><div class="env" data-env="online"></div><div class="body"><div class="k">Online · live from anywhere</div><h3>Online tuition</h3><p>Live interactive sessions on a shared board — the full classroom, from home.</p><div class="scn">Video, whiteboard, live captions and chat — questions answered in real time.</div></div></div>
+    <div class="world reveal"><div class="env" data-env="home"></div><div class="body"><div class="k">Home · one-to-one</div><h3>Home tuition</h3><p>A tutor at your child's own desk, completely personalised in pace and attention.</p><div class="scn">Individual teaching while performance is tracked quietly in the background.</div></div></div>
+    <div class="world reveal"><div class="env" data-env="engineering"></div><div class="body"><div class="k">Engineering · advanced</div><h3>Engineering tuition</h3><p>Rigorous coaching in mathematics and core technical subjects for engineering students.</p><div class="scn">Problem-solving, technical concepts and exam-focused preparation.</div></div></div>
+  </div>
+</div></section>
+
+<!-- 24 HOUR -->
+<section class="scene" id="always"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Around the clock</div><h2>Learning doesn't stop when <em>class ends.</em></h2><p>Revise, ask a doubt, or practise at any hour — the AI layer picks up from where the lesson left off.</p></div>
+  <div class="clock-wrap">
+    <div class="clock reveal">
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="82" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <circle id="clockArc" cx="100" cy="100" r="82" fill="none" stroke="url(#cg)" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+        <defs><linearGradient id="cg"><stop offset="0" stop-color="#67d6cf"/><stop offset="1" stop-color="#e0b25c"/></linearGradient></defs>
+        <text x="100" y="96" text-anchor="middle" fill="#eceef5" font-family="Space Grotesk" font-weight="600" font-size="20">24 hrs</text>
+        <text x="100" y="116" text-anchor="middle" fill="#6a7290" font-family="JetBrains Mono" font-size="8" letter-spacing="2">ALWAYS ON</text>
+        <circle id="clockDot" cx="100" cy="18" r="4" fill="#e0b25c"/>
+      </svg>
     </div>
-    <div class="subj-grid">
-      <div class="subj reveal"><span class="i"><svg class="ic"><use href="#i-sigma"/></svg></span><h4>Mathematics</h4><p>Algebra, geometry, calculus</p></div>
-      <div class="subj reveal"><span class="i"><svg class="ic"><use href="#i-flask"/></svg></span><h4>Science</h4><p>Physics, chemistry, biology</p></div>
-      <div class="subj reveal"><span class="i"><svg class="ic"><use href="#i-book"/></svg></span><h4>English & Languages</h4><p>Grammar, reading, writing</p></div>
-      <div class="subj reveal"><span class="i"><svg class="ic"><use href="#i-globe"/></svg></span><h4>Social Science</h4><p>History, geography, civics</p></div>
+    <div class="qa" id="qa">
+      <div class="q"><div class="time">8:15 PM</div><div class="txt">“Explain today's algebra topic again.”</div><div class="ans">Re-teaches the concept with a fresh example.</div></div>
+      <div class="q"><div class="time">11:42 PM</div><div class="txt">“Give me 3 practice questions on fractions.”</div><div class="ans">Generates targeted practice at the right level.</div></div>
+      <div class="q"><div class="time">6:17 AM</div><div class="txt">“Quick revision before my test.”</div><div class="ans">Summarises weak areas from earlier attempts.</div></div>
     </div>
   </div>
-</section>
+</div></section>
 
-<!-- HOW IT WORKS -->
-<section class="sec" id="how">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">How it works</span>
-      <h2>Getting started is simple</h2>
-    </div>
-    <div class="steps">
-      <div class="step reveal"><div class="n">1</div><h4>Free consultation</h4><p>Tell us your child's class, board and goals. We understand where they are.</p></div>
-      <div class="step reveal"><div class="n">2</div><h4>Choose your mode</h4><p>Offline, online, home or engineering tuition — whatever fits your family.</p></div>
-      <div class="step reveal"><div class="n">3</div><h4>Personalised teaching</h4><p>Small batches, regular tests, and focused attention on weak areas.</p></div>
-      <div class="step reveal"><div class="n">4</div><h4>See the growth</h4><p>Regular feedback to parents and steady, visible improvement.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- WHY US -->
-<section class="sec cream" id="why">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">Why Kongu Brilliance</span>
-      <h2>Teaching parents trust</h2>
-    </div>
-    <div class="why-grid">
-      <div class="why reveal"><span class="i"><svg class="ic"><use href="#i-users"/></svg></span><h4>Small batches</h4><p>A maximum of 12 students per batch means every child gets real attention.</p></div>
-      <div class="why reveal"><span class="i"><svg class="ic"><use href="#i-award"/></svg></span><h4>Proven results</h4><p>Students have scored centum (100/100) in Mathematics — clarity that shows in marks.</p></div>
-      <div class="why reveal"><span class="i"><svg class="ic"><use href="#i-target"/></svg></span><h4>Concept-first teaching</h4><p>We build genuine understanding, not rote learning, so knowledge lasts.</p></div>
-      <div class="why reveal"><span class="i"><svg class="ic"><use href="#i-heart"/></svg></span><h4>Caring mentors</h4><p>Experienced teachers who motivate, guide and know each student personally.</p></div>
-      <div class="why reveal"><span class="i"><svg class="ic"><use href="#i-rupee"/></svg></span><h4>Zero registration fee</h4><p>No hidden charges to get started — simple, transparent and family-friendly.</p></div>
-      <div class="why reveal"><span class="i"><svg class="ic"><use href="#i-globe"/></svg></span><h4>All major boards</h4><p>CBSE, ICSE, State, Matric, ISC and IGCSE — for Classes 1 to 12.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- REVIEWS -->
-<section class="sec" id="reviews">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">Parent & student voices</span>
-      <h2>What families say</h2>
-    </div>
-    <div class="tgrid">
-      <div class="tcard reveal"><div class="stars">★★★★★</div><p>“Add a genuine review from a parent here — how their child's marks or confidence improved at Kongu Brilliance.”</p><div class="by"><span class="av">P</span><div><b>Parent name</b><small>Class 10 · CBSE</small></div></div></div>
-      <div class="tcard reveal"><div class="stars">★★★★★</div><p>“Add a real student testimonial here — what they liked about the teaching or a subject they improved in.”</p><div class="by"><span class="av">S</span><div><b>Student name</b><small>Class 12 · State board</small></div></div></div>
-      <div class="tcard reveal"><div class="stars">★★★★★</div><p>“Add another verified review — home tuition, online classes or engineering coaching experience.”</p><div class="by"><span class="av">R</span><div><b>Parent name</b><small>Home tuition</small></div></div></div>
-    </div>
-    <p class="tnote">Placeholder reviews — replace with genuine testimonials from your families before going live.</p>
-  </div>
-</section>
-
-<!-- CTA BAND -->
-<section class="sec cream" style="padding-top:0;background:var(--cream)">
-  <div class="wrap">
-    <div class="ctaband reveal">
-      <h2>Give your child the attention they deserve</h2>
-      <p>Book a free consultation and we'll recommend the right programme for your child — no obligation.</p>
-      <div class="row">
-        <a href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20book%20a%20free%20consultation%20at%20Kongu%20Brilliance" target="_blank" rel="noopener" class="btn btn-wa"><svg class="ic" style="stroke:#fff"><use href="#i-phone"/></svg> WhatsApp us</a>
-        <a href="tel:+919514524599" class="btn btn-outline"><svg class="ic"><use href="#i-phone"/></svg> Call +91 95145 24599</a>
+<!-- ===== AI TUTOR ROOM ===== -->
+<section id="room"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">The signature experience</div><h2>Have a lesson with the <em>AI tutor.</em></h2><p>Press start — the tutor teaches on a live board, asks you a question, and adapts when you say you don't understand. Speak or type.</p></div>
+  <div class="room reveal">
+    <div class="room-bar"><span>AI Tutor Room</span><span class="live">Session ready</span><span class="demo" id="modeTag">Interactive demonstration</span></div>
+    <div class="room-grid">
+      <!-- tutor -->
+      <div class="room-side">
+        <div class="presence">
+          <div class="orb" id="orb"><div class="wave" id="wave"><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div><div class="nm">Tutor K</div><div class="rl">AI learning guide</div></div>
+        </div>
+        <div class="state-list" id="states">
+          <div class="st" data-s="listen"><span class="d"></span> Listening</div>
+          <div class="st" data-s="think"><span class="d"></span> Understanding your question</div>
+          <div class="st" data-s="concept"><span class="d"></span> Identifying the concept</div>
+          <div class="st" data-s="explain"><span class="d"></span> Preparing an explanation</div>
+          <div class="st" data-s="speak"><span class="d"></span> Explaining</div>
+        </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- CONTACT -->
-<section class="sec" id="contact">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">Get in touch</span>
-      <h2>Book a free consultation</h2>
-      <p>Reach us by phone, WhatsApp, or send an enquiry — we'll get back quickly.</p>
-    </div>
-    <div class="contact-grid">
-      <div class="cinfo reveal">
-        <div class="item"><span class="i"><svg class="ic"><use href="#i-pin"/></svg></span><div><h4>Visit us</h4><p>Nilamukil Complex, Mettupalayam Rd,<br>Opp. Sulochana Pharmacy, Bharathiyar Nagar,<br>K. Vadamadurai, Kurudampalayam,<br>Coimbatore, Tamil Nadu – 641017</p><a href="https://maps.app.goo.gl/s3oeWWQDPjFykGqT8" target="_blank" rel="noopener">Open in Google Maps →</a></div></div>
-        <div class="item"><span class="i"><svg class="ic"><use href="#i-phone"/></svg></span><div><h4>Call us</h4><a href="tel:+919514524599">+91 95145 24599</a><br><a href="tel:+917845915044">+91 78459 15044</a></div></div>
-        <div class="item"><span class="i"><svg class="ic"><use href="#i-mail"/></svg></span><div><h4>Email</h4><a href="mailto:abhisekmurugesan@gmail.com">abhisekmurugesan@gmail.com</a></div></div>
+      <!-- whiteboard -->
+      <div class="board-col">
+        <div class="board"><div class="grid"></div><div class="content" id="board"></div><div class="cap" id="cap"><span class="who">Tutor K</span><span id="capText">Press “Start lesson” — or ask me anything.</span></div></div>
+        <div class="board-controls">
+          <button class="ctrl mic" id="micBtn"><svg class="ic"><use href="#i-mic"/></svg> Speak</button>
+          <button class="ctrl" data-cmd="start">▷ Start lesson</button>
+          <button class="ctrl" data-cmd="simplify">Simplify</button>
+          <button class="ctrl" data-cmd="example">Example</button>
+          <button class="ctrl" data-cmd="harder">Harder</button>
+          <button class="ctrl" data-cmd="repeat">Repeat</button>
+          <button class="ctrl" data-cmd="graph">Show graph</button>
+          <button class="ctrl spacer" id="soundState">Voice: browser engine</button>
+        </div>
       </div>
-      <div class="cform reveal">
-        <h3>Send an enquiry</h3>
-        <p class="sub">Fill this in and we'll open WhatsApp with your details ready to send.</p>
-        <form id="enq" onsubmit="return sendEnq(event)">
-          <div class="row2">
-            <div class="field"><label>Parent / student name</label><input id="f-name" required placeholder="Your name"></div>
-            <div class="field"><label>Phone</label><input id="f-phone" required placeholder="Mobile number"></div>
+      <!-- context -->
+      <div class="room-side right">
+        <div class="ctx">
+          <h4>Lesson context</h4>
+          <div class="cx"><span>Subject</span><b id="cx-subj">Mathematics</b></div>
+          <div class="cx"><span>Topic</span><b id="cx-topic">Linear equations</b></div>
+          <div class="cx"><span>Difficulty</span><b id="cx-diff">Level 2</b></div>
+          <div class="cx"><span>Status</span><b id="cx-status" style="color:var(--ice2)">Ready</b></div>
+          <div class="qbox" id="qbox">
+            <div class="k">Tutor asks</div>
+            <div id="qtext">—</div>
+            <div class="ans-in"><input id="qans" placeholder="Type or speak your answer"><button id="qsend">Check</button></div>
           </div>
-          <div class="row2">
-            <div class="field"><label>Class</label><input id="f-class" placeholder="e.g. Class 9"></div>
-            <div class="field"><label>Programme</label><select id="f-prog"><option>Offline tuition</option><option>Online tuition</option><option>Home tuition</option><option>Engineering tuition</option></select></div>
-          </div>
-          <div class="field"><label>Message (optional)</label><textarea id="f-msg" rows="3" placeholder="Board, subjects, or anything you'd like us to know"></textarea></div>
-          <button type="submit" class="btn btn-wa"><svg class="ic" style="stroke:#fff"><use href="#i-phone"/></svg> Send via WhatsApp</button>
-        </form>
+          <p class="hint">Voice needs a Chromium browser &amp; mic permission. On the live site the tutor can use the real AI model; otherwise it runs a scripted lesson. No audio is recorded or stored.</p>
+        </div>
       </div>
     </div>
   </div>
-</section>
+</div></section>
 
-<footer>
-  <div class="wrap">
-    <div class="fgrid">
-      <div>
-        <div class="logo" style="margin-bottom:16px"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="t">Kongu Brilliance<small>Where Brilliance is Born</small></span></div>
-        <p>Home, centre & online tuition in Coimbatore for Classes 1–12. Small batches, experienced teachers, genuine results.</p>
+<!-- PAPER EVALUATION -->
+<section class="scene" id="evaluate"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">From paper to insight</div><h2>A written answer, <em>read and understood.</em></h2><p>A handwritten sheet is scanned, the working is followed step by step, and the exact line where it broke becomes a targeted lesson.</p></div>
+  <div class="worlds" style="grid-template-columns:1fr 1fr;align-items:center">
+    <div class="reveal">
+      <div class="paper" id="paper"><div class="scan" id="scan"></div>
+        <div class="h"><span>Class 8 · Mathematics</span><span>Q4 · 5 marks</span></div>
+        <div class="q">Solve&nbsp; 2x + 5 = 15</div>
+        <div class="a">Step 1&nbsp; 2x = 15 <span class="flag" id="pflag">+ 5</span> &nbsp;→&nbsp; x = <span class="x">10</span></div>
+        <div class="q" style="font-size:.82rem;color:#7a7768">Correct: 15 − 5 = 10 → x = 5</div>
       </div>
-      <div><h4>Programs</h4><a href="#programs">Offline tuition</a><a href="#programs">Online tuition</a><a href="#programs">Home tuition</a><a href="#programs">Engineering tuition</a></div>
-      <div><h4>Explore</h4><a href="/index.html">Home</a><a href="#subjects">Subjects</a><a href="#why">Why us</a><a href="/exam-portal.html">Exam Portal</a></div>
-      <div><h4>Contact</h4><a href="tel:+919514524599">+91 95145 24599</a><a href="tel:+917845915044">+91 78459 15044</a><a href="https://wa.me/919514524599" target="_blank" rel="noopener">WhatsApp</a><a href="https://maps.app.goo.gl/s3oeWWQDPjFykGqT8" target="_blank" rel="noopener">Mettupalayam Rd, Coimbatore</a></div>
     </div>
-    <div class="fbottom">© <span id="yr"></span> Kongu Brilliance Tuition Centre, Coimbatore. All rights reserved.</div>
+    <div class="reveal">
+      <div class="flow" id="pflow">
+        <div class="st">Document detected · OCR</div>
+        <div class="st">Question identified — Q4</div>
+        <div class="st err">Error — Step 1: added instead of subtracting</div>
+        <div class="st warn">Concept gap — transposing across “=”</div>
+        <div class="st act">Targeted practice generated</div>
+        <div class="st ok">Sent to Tutor K for a mini-lesson</div>
+      </div>
+      <div class="paper-link"><button class="btn btn-ai" id="paperToTutor"><svg class="ic"><use href="#i-spark"/></svg> Open this in the AI Tutor</button></div>
+    </div>
   </div>
-</footer>
+</div></section>
 
-<a class="fab" href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20know%20more%20about%20Kongu%20Brilliance" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.5 15.3L2 22l4.8-1.5A10 10 0 1012 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.5-4-4.6-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.4 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.2.1.4.1.6-.1l.9-1c.2-.2.4-.2.6-.1l1.8.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3z"/></svg></a>
+<!-- KNOWLEDGE GRAPH -->
+<section class="scene" id="memory"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Learning memory</div><h2>Every learner has a shape. <em>The system maps it.</em></h2><p>A map of ideas, not surveillance — strong concepts hold, weak ones stay lit until mastered.</p></div>
+  <div class="kg reveal" id="kg"><svg id="kglines"></svg></div>
+  <p class="note">Illustrative learning profile — example data, not a real student record.</p>
+</div></section>
+
+<!-- GROWTH -->
+<section class="scene" id="growth"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Performance growth</div><h2>Real growth is <em>never a straight line.</em></h2></div>
+  <div class="growth reveal">
+    <svg viewBox="0 0 940 380" id="gsvg"><defs><linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(224,178,92,.25)"/><stop offset="1" stop-color="rgba(224,178,92,0)"/></linearGradient></defs>
+      <line x1="56" y1="330" x2="900" y2="330" stroke="rgba(255,255,255,.09)"/><line x1="56" y1="40" x2="56" y2="330" stroke="rgba(255,255,255,.09)"/>
+      <path class="ga" id="ga"/><path class="gl" id="gl"/><g id="gpts"></g>
+    </svg>
+    <p class="note">Interactive demonstration · illustrative trajectory with a setback and recovery</p>
+  </div>
+</div></section>
+
+<!-- CAREER -->
+<section class="scene" id="career"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">The bigger picture</div><h2>Not just the next exam — <em>the next chapter.</em></h2><p>Strong fundamentals compound into confidence, higher education and, in time, a career.</p></div>
+  <div class="panel reveal" style="border-radius:16px">
+    <div class="career">
+      <div class="cstep"><div class="n">01</div><h4>Strong fundamentals</h4><p>Concepts that actually hold.</p></div>
+      <div class="cstep"><div class="n">02</div><h4>Exam readiness</h4><p>Board exams, confidently.</p></div>
+      <div class="cstep"><div class="n">03</div><h4>Higher education</h4><p>College &amp; specialisation.</p></div>
+      <div class="cstep"><div class="n">04</div><h4>Skills &amp; growth</h4><p>Learning that continues.</p></div>
+      <div class="cstep last"><div class="n">05</div><h4>A better future</h4><p>Ready for what comes next.</p></div>
+    </div>
+  </div>
+  <p class="note" style="text-align:left;margin-top:14px">Aspirational journey — Kongu Brilliance does not guarantee specific placements or outcomes.</p>
+</div></section>
+
+<!-- FINAL -->
+<section id="final"><div class="wrap">
+  <div class="eyebrow reveal" style="justify-content:center">The whole ecosystem</div>
+  <h2 class="reveal">Human teaching. Intelligent learning.</h2>
+  <p class="tag reveal">Better futures — for Classes 1–12, in Coimbatore.</p>
+  <div class="ctarow reveal">
+    <a href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20book%20a%20free%20consultation%20at%20Kongu%20Brilliance" target="_blank" rel="noopener" class="btn btn-primary">Book a consultation <svg class="ic"><use href="#i-arrow"/></svg></a>
+    <a href="tel:+919514524599" class="btn btn-ghost"><svg class="ic"><use href="#i-phone"/></svg> Call +91 95145 24599</a>
+    <button class="btn btn-ai" id="talkK2"><svg class="ic"><use href="#i-spark"/></svg> Talk to Tutor K</button>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <div class="fg">
+    <div><div class="brand" style="margin-bottom:14px"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Where Brilliance is Born</small></span></div><p style="color:var(--muted);font-size:.88rem">Home, centre &amp; online tuition for Classes 1–12 · CBSE · ICSE · State · Matric · ISC · IGCSE. Founded 2021.</p></div>
+    <div class="fcol"><h4>Learn</h4><a href="#worlds">Offline tuition</a><a href="#worlds">Online tuition</a><a href="#worlds">Home tuition</a><a href="#worlds">Engineering tuition</a></div>
+    <div class="fcol"><h4>Explore</h4><a href="/index.html">Home</a><a href="#room">AI Tutor</a><a href="/exam-portal.html">Exam Portal</a><a href="#growth">Student growth</a></div>
+    <div class="fcol"><h4>Visit &amp; contact</h4><p>Nilamukil Complex, Mettupalayam Rd,<br>K. Vadamadurai, Coimbatore – 641017</p><a href="tel:+919514524599">+91 95145 24599</a><a href="tel:+917845915044">+91 78459 15044</a><a href="https://wa.me/919514524599" target="_blank" rel="noopener">WhatsApp</a></div>
+  </div>
+  <div class="fbot"><span>© <span id="yr"></span> Kongu Brilliance, Coimbatore</span><span>Human teaching · Intelligent learning</span></div>
+  <p class="disc">About the demonstrations: the AI Tutor Room, paper evaluation, knowledge graph and growth figures are interactive demonstrations of how AI-assisted learning works. Voice uses your browser's built-in speech engine; free-form answers use the live AI model where available and otherwise fall back to a scripted lesson. Numbers shown are illustrative examples, not real student records, and no audio or personal data is stored on this page. Business details are from kongubrilliance.com; replace testimonials and any headline statistics with verified content before publishing.</p>
+</div></footer>
+
+<button class="askfab" id="askfab"><svg class="ic"><use href="#i-spark"/></svg> Ask Tutor K</button>
 
 <script>
-const burger=document.getElementById('burger'),nav=document.getElementById('nav');
-burger.addEventListener('click',()=>nav.classList.toggle('open'));
-nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
-document.getElementById('yr').textContent=new Date().getFullYear();
-// scroll reveal
-const io=new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');o.unobserve(e.target);}}),{threshold:.12});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-// enquiry -> whatsapp
-function sendEnq(e){e.preventDefault();
-  const name=document.getElementById('f-name').value.trim();
-  const phone=document.getElementById('f-phone').value.trim();
-  const cls=document.getElementById('f-class').value.trim();
-  const prog=document.getElementById('f-prog').value;
-  const msg=document.getElementById('f-msg').value.trim();
-  let t=`Hi Kongu Brilliance, I'd like a free consultation.%0A%0AName: ${name}%0APhone: ${phone}`;
-  if(cls)t+=`%0AClass: ${cls}`;
-  t+=`%0AProgramme: ${prog}`;
-  if(msg)t+=`%0AMessage: ${msg}`;
-  window.open('https://wa.me/919514524599?text='+t,'_blank');
-  return false;
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const MOB=innerWidth<820;
+
+/* ---------- background field ---------- */
+(function(){const c=$('#field'),x=c.getContext('2d');let W,H,P=[];
+ function sz(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;}sz();addEventListener('resize',sz);
+ const N=RM?0:(MOB?30:70);for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.1,vy:(Math.random()-.5)*.1});
+ let warm=0;addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;warm=Math.min(1,scrollY/h);},{passive:true});
+ function d(){x.clearRect(0,0,W,H);const R=103+warm*120,G=214-warm*36,B=207-warm*115;
+  for(let i=0;i<P.length;i++){const p=P[i];p.x+=p.vx*devicePixelRatio;p.y+=p.vy*devicePixelRatio;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+   for(let j=i+1;j<P.length;j++){const q=P[j],dx=p.x-q.x,dy=p.y-q.y,dd=Math.hypot(dx,dy),md=150*devicePixelRatio;if(dd<md){x.strokeStyle=`rgba(${R},${G},${B},${(1-dd/md)*.07})`;x.lineWidth=1;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke();}}
+   x.fillStyle=`rgba(${R},${G},${B},.45)`;x.beginPath();x.arc(p.x,p.y,1.1*devicePixelRatio,0,7);x.fill();}
+  requestAnimationFrame(d);}
+ if(!RM)d();else c.style.background='radial-gradient(ellipse at 50% 25%,rgba(103,214,207,.05),transparent 60%)';})();
+
+/* ---------- nav/progress ---------- */
+const hdr=$('#hdr'),prog=$('#prog'),nav=$('#nav'),burger=$('#burger');
+burger.onclick=()=>nav.classList.toggle('open');nav.querySelectorAll('a').forEach(a=>a.onclick=()=>nav.classList.remove('open'));
+$('#yr').textContent=new Date().getFullYear();
+addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;prog.style.width=(scrollY/h*100)+'%';hdr.classList.toggle('solid',scrollY>50);},{passive:true});
+
+/* ---------- reveals ---------- */
+const revO=new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){if(window.gsap)gsap.to(e.target,{opacity:1,y:0,duration:.85,ease:'power3.out'});else{e.target.style.opacity=1;e.target.style.transform='none';}o.unobserve(e.target);}}),{threshold:.12});
+$$('.reveal').forEach(el=>revO.observe(el));
+
+/* ---------- world env line-art ---------- */
+function env(key,host){const A={
+ offline:`<svg viewBox='0 0 400 170' fill='none' stroke='%23e0b25c' stroke-width='1.3' opacity='.9'><rect x='150' y='30' width='100' height='60' rx='2'/><line x1='150' y1='48' x2='250' y2='48'/><circle cx='70' cy='128' r='10'/><circle cx='130' cy='134' r='10'/><circle cx='290' cy='134' r='10'/><circle cx='340' cy='128' r='10'/></svg>`,
+ online:`<svg viewBox='0 0 400 170' fill='none' stroke='%2367d6cf' stroke-width='1.3'><rect x='40' y='34' width='150' height='95' rx='3'/><circle cx='115' cy='75' r='16'/><rect x='230' y='44' width='130' height='75' rx='3'/><line x1='230' y1='66' x2='360' y2='66'/><line x1='245' y1='86' x2='330' y2='86'/></svg>`,
+ home:`<svg viewBox='0 0 400 170' fill='none' stroke='%23e0b25c' stroke-width='1.3'><path d='M60 80l45-32 45 32v45H60z'/><circle cx='255' cy='66' r='13'/><circle cx='305' cy='66' r='13'/><rect x='232' y='96' width='96' height='34' rx='2'/></svg>`,
+ engineering:`<svg viewBox='0 0 400 170' fill='none' stroke='%2367d6cf' stroke-width='1.3'><rect x='40' y='44' width='95' height='78' rx='2'/><path d='M55 108l22-34 16 16 22-38'/><circle cx='255' cy='82' r='28'/><path d='M255 54v-8M255 118v-8M227 82h-8M291 82h-8'/><path d='M320 56h44M320 78h44M320 100h30'/></svg>`};
+ host.innerHTML=decodeURIComponent(A[key]);}
+$$('.world .env').forEach(e=>env(e.dataset.env,e));
+
+/* ---------- knowledge graph ---------- */
+(function(){const box=$('#kg'),svg=$('#kglines');
+ const nodes=[{t:'ALGEBRA',x:32,y:24,s:'weak'},{t:'FRACTIONS',x:18,y:60,s:'weak'},{t:'EQUATIONS',x:54,y:44,s:'strong'},{t:'GEOMETRY',x:80,y:26,s:'strong'},{t:'READING',x:76,y:70,s:'strong'},{t:'GRAMMAR',x:46,y:84,s:'strong'}];
+ const links=[[0,2],[1,2],[1,0],[2,3],[2,4],[4,5]];
+ links.forEach(([a,b])=>{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',nodes[a].x);l.setAttribute('y1',nodes[a].y);l.setAttribute('x2',nodes[b].x);l.setAttribute('y2',nodes[b].y);const w=nodes[a].s==='weak'||nodes[b].s==='weak';l.setAttribute('stroke',w?'rgba(226,177,90,.45)':'rgba(84,201,150,.35)');l.setAttribute('stroke-width',w?'.7':'.5');svg.appendChild(l);});
+ svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
+ nodes.forEach(n=>{const d=document.createElement('div');d.className='kn '+n.s;d.textContent=n.t;d.style.left=n.x+'%';d.style.top=n.y+'%';box.appendChild(d);});})();
+
+/* ---------- boot GSAP-driven bits ---------- */
+function boot(){
+ if(!window.gsap){setTimeout(boot,60);return;}gsap.registerPlugin(ScrollTrigger);
+ // search type
+ const q="Best tuition centre for CBSE Maths";let i=0;const st=$('#stype');
+ (function ty(){if(i<=q.length){st.textContent=q.slice(0,i++);setTimeout(ty,RM?0:55);}else{
+   $$('#sresults .sres').forEach((r,k)=>gsap.to(r,{opacity:1,y:0,duration:.5,delay:k*.25}));
+   $$('#sigchips span').forEach((c,k)=>gsap.to(c,{opacity:1,duration:.3,delay:1+k*.12}));}})();
+ // 24h clock
+ ScrollTrigger.create({trigger:'#always',start:'top 60%',once:true,onEnter:()=>{
+   const arc=$('#clockArc'),len=2*Math.PI*82;arc.style.strokeDasharray=len;arc.style.strokeDashoffset=len;gsap.to(arc,{strokeDashoffset:0,duration:2.4,ease:'power2.inOut'});
+   const dot=$('#clockDot');gsap.to({a:0},{a:1,duration:2.4,ease:'power2.inOut',onUpdate:function(){const ang=this.targets()[0].a*2*Math.PI-Math.PI/2;dot.setAttribute('cx',100+82*Math.cos(ang));dot.setAttribute('cy',100+82*Math.sin(ang));}});
+   $$('#qa .q').forEach((el,k)=>gsap.to(el,{opacity:1,x:0,duration:.6,delay:.5+k*.6}));}});
+ // paper
+ ScrollTrigger.create({trigger:'#evaluate',start:'top 58%',once:true,onEnter:runPaper});
+ // growth
+ ScrollTrigger.create({trigger:'#growth',start:'top 60%',once:true,onEnter:drawGrowth});
+ // knowledge strengthen
+ ScrollTrigger.create({trigger:'#memory',start:'top 60%',once:true,onEnter:()=>{setTimeout(()=>{const w=$$('#kg .kn.weak');w.forEach((n,k)=>setTimeout(()=>{n.classList.remove('weak');n.classList.add('strong');},k*700+500));},400);}});
 }
+addEventListener('load',boot);
+
+function runPaper(){const scan=$('#scan');if(window.gsap){gsap.set(scan,{opacity:1});gsap.fromTo(scan,{top:-80},{top:'100%',duration:1.7,ease:'power1.inOut',onComplete:()=>gsap.to(scan,{opacity:0,duration:.3})});}
+ setTimeout(()=>$('#pflag').classList.add('hl'),1300);
+ $$('#pflow .st').forEach((s,k)=>{if(window.gsap)gsap.to(s,{opacity:1,x:0,duration:.5,delay:1.5+k*.3});else{s.style.opacity=1;s.style.transform='none';}});}
+function drawGrowth(){const data=[38,52,46,60,73,90],labels=['ASSESS','PRACTISE','SETBACK','INTERVENE','RETRY','MASTERY'];
+ const x0=56,x1=900,y0=330,yT=56,dx=(x1-x0)/(data.length-1),X=i=>x0+i*dx,Y=v=>y0-(v-30)/(100-30)*(y0-yT);
+ let d='M '+X(0)+' '+Y(data[0]);for(let i=1;i<data.length;i++){const cx=(X(i-1)+X(i))/2;d+=` C ${cx} ${Y(data[i-1])}, ${cx} ${Y(data[i])}, ${X(i)} ${Y(data[i])}`;}
+ const gl=$('#gl');gl.setAttribute('d',d);const L=gl.getTotalLength();gl.style.strokeDasharray=L;gl.style.strokeDashoffset=L;gsap.to(gl,{strokeDashoffset:0,duration:2.2,ease:'power2.inOut'});
+ $('#ga').setAttribute('d',d+` L ${X(5)} ${y0} L ${X(0)} ${y0} Z`);gsap.to('#ga',{opacity:1,duration:1,delay:1.3});
+ const G=$('#gpts');data.forEach((v,i)=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',X(i));c.setAttribute('cy',Y(v));c.setAttribute('r',5);c.setAttribute('class','gd');G.appendChild(c);
+  const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',X(i));t.setAttribute('y',Y(v)-15);t.setAttribute('class','gt');t.textContent=v+'%';G.appendChild(t);
+  const l=document.createElementNS('http://www.w3.org/2000/svg','text');l.setAttribute('x',X(i));l.setAttribute('y',y0+24);l.setAttribute('class','gc');l.textContent=labels[i];G.appendChild(l);
+  gsap.to(c,{opacity:1,duration:.4,delay:.4+i*.32});gsap.to(t,{opacity:1,duration:.4,delay:.55+i*.32});gsap.to(l,{opacity:.85,duration:.4,delay:.3+i*.32});});}
+
+/* ============================================================
+   AI TUTOR ROOM ENGINE — voice, whiteboard, lesson, adaptive
+   ============================================================ */
+const board=$('#board'),cap=$('#cap'),capText=$('#capText'),orb=$('#orb'),wave=$('#wave'),micBtn=$('#micBtn');
+const cxTopic=$('#cx-topic'),cxDiff=$('#cx-diff'),cxStatus=$('#cx-status'),qbox=$('#qbox'),qtext=$('#qtext'),qans=$('#qans'),qsend=$('#qsend');
+const canSpeak='speechSynthesis'in window, canHear=('webkitSpeechRecognition'in window||'SpeechRecognition'in window);
+let voice=null;if(canSpeak){const pv=()=>{const v=speechSynthesis.getVoices();voice=v.find(x=>/en-IN/i.test(x.lang))||v.find(x=>/en-GB/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||v[0];};pv();speechSynthesis.onvoiceschanged=pv;}
+let speaking=false,rec=null,listening=false,waitingAnswer=null,lessonPos=0,busy=false,diff=2;
+
+function setState(s){$$('#states .st').forEach(el=>el.classList.toggle('on',el.dataset.s===s));}
+function orbState(s){orb.className='orb'+(s?' '+s:'');}
+let waveTimer=null;
+function waveOn(){if(waveTimer)return;const bars=wave.querySelectorAll('i');waveTimer=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*24)+'px'),110);}
+function waveOff(){clearInterval(waveTimer);waveTimer=null;wave.querySelectorAll('i').forEach(b=>b.style.height='8px');}
+
+function say(text,{onend,state='speak'}={}){
+  capText.textContent=text;setState(state);orbState('speaking');waveOn();cxStatus.textContent='Speaking';cxStatus.style.color='var(--ice2)';
+  if(!canSpeak){setTimeout(()=>{waveOff();orbState('');cxStatus.textContent='Ready';onend&&onend();},Math.min(4200,900+text.length*38));return;}
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);if(voice)u.voice=voice;u.rate=1;u.pitch=1.02;u.lang=(voice&&voice.lang)||'en-IN';
+    speaking=true;u.onend=()=>{speaking=false;waveOff();orbState('');cxStatus.textContent='Ready';onend&&onend();};u.onerror=u.onend;speechSynthesis.speak(u);
+  }catch(e){waveOff();orbState('');onend&&onend();}}
+function stopSpeak(){if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}speaking=false;waveOff();}
+
+/* whiteboard command engine */
+function bClear(){board.innerHTML='';}
+function bLine(html,cls){return new Promise(res=>{const d=document.createElement('div');d.className='bl'+(cls?' '+cls:'');d.innerHTML=html;board.appendChild(d);
+  if(window.gsap)gsap.to(d,{opacity:1,y:0,duration:.4,onComplete:res});else{d.style.opacity=1;d.style.transform='none';res();}});}
+async function boardGraph(){bClear();await bLine('GRAPH · y = 2x + 5','title');
+  const svg=`<svg viewBox="0 0 260 150" style="width:100%;max-width:340px"><g stroke="rgba(255,255,255,.12)"><line x1="20" y1="130" x2="250" y2="130"/><line x1="30" y1="10" x2="30" y2="140"/></g><line x1="30" y1="120" x2="230" y2="30" stroke="#e0b25c" stroke-width="2.5"/><circle cx="30" cy="120" r="3.5" fill="#67d6cf"/><text x="238" y="34" fill="#98a0b6" font-family="JetBrains Mono" font-size="9">y=2x+5</text></svg>`;
+  const d=document.createElement('div');d.className='bl';d.innerHTML=svg;board.appendChild(d);if(window.gsap)gsap.to(d,{opacity:1,y:0,duration:.4});else d.style.opacity=1;}
+
+/* the scripted lesson (linear equations) as command steps */
+const LESSON=[
+ {say:"Let's solve a linear equation together. The idea is balance — whatever we do to one side, we do to the other.",board:async()=>{bClear();await bLine('LINEAR EQUATIONS','title');await bLine('2x + 5 = 15');}},
+ {say:"First we move the 5 across. Because it's plus 5, we subtract 5 from both sides.",board:async()=>{await bLine('2x + 5 <span class="hl">− 5</span> = 15 <span class="hl">− 5</span>');}},
+ {say:"That leaves two x equals ten.",board:async()=>{await bLine('2x = 10');}},
+ {say:"Now divide both sides by two, and we get x equals five.",board:async()=>{await bLine('x = <span class="good">5</span>');},ask:{q:"Quick check — solve 3x + 4 = 19. What is x?",accept:['5','x=5','x = 5']}},
+];
+const ADAPT={
+ simplify:{say:"Think of it like a balance scale. Take the same weight off both pans and it stays level — that's why we subtract 5 from each side.",board:async()=>{await bLine('balance:  left  =  right','title');await bLine('2x + 5  =  15   (take 5 off both)');await bLine('2x      =  10');}},
+ example:{say:"Another example: x plus 7 equals 12. Subtract 7 from both sides, so x equals 5.",board:async()=>{bClear();await bLine('EXAMPLE','title');await bLine('x + 7 = 12');await bLine('x = 12 − 7');await bLine('x = <span class="good">5</span>');}},
+ harder:{say:"Let's make it harder. Solve 4x minus 3 equals 2x plus 7. Bring the x terms together and the numbers together.",board:async()=>{bClear();await bLine('HARDER','title');await bLine('4x − 3 = 2x + 7');await bLine('4x − 2x = 7 + 3');await bLine('2x = 10  →  x = <span class="good">5</span>');},bump:1},
+ graph:{say:"Here's what y equals two x plus five looks like — a straight line rising steadily.",board:boardGraph},
+};
+
+async function playStep(step){busy=true;setState('explain');cxStatus.textContent='Preparing';
+  if(step.board)await step.board();
+  say(step.say,{onend:()=>{busy=false;
+    if(step.ask){waitingAnswer=step.ask;qtext.textContent=step.ask.q;qbox.classList.add('on');cxStatus.textContent='Waiting for you';cxStatus.style.color='var(--brass)';capText.textContent="Your turn — type or speak your answer.";}
+  }});}
+
+async function startLesson(topic){stopSpeak();lessonPos=0;qbox.classList.remove('on');waitingAnswer=null;
+  if(topic){cxTopic.textContent=topic;}
+  await playStep(LESSON[0]);
+  // auto-advance the first explanation steps with pauses
+  advanceTimer();}
+let adv=null;
+function advanceTimer(){clearTimeout(adv);adv=setTimeout(async function nxt(){
+  if(busy||waitingAnswer){adv=setTimeout(nxt,600);return;}
+  lessonPos++;if(lessonPos<LESSON.length){await playStep(LESSON[lessonPos]);if(!LESSON[lessonPos].ask)adv=setTimeout(nxt,900);}
+},1400);}
+
+function checkAnswer(ans){if(!waitingAnswer)return;const a=(ans||'').toLowerCase().replace(/\s/g,'');
+  const ok=waitingAnswer.accept.some(x=>a.includes(x.toLowerCase().replace(/\s/g,'')));
+  qbox.classList.remove('on');const was=waitingAnswer;waitingAnswer=null;
+  if(ok){say("Exactly right — x equals 5. You subtracted before dividing. That's the balancing method working.",{state:'speak'});cxStatus.textContent='Correct';cxStatus.style.color='var(--ok)';}
+  else{say("Close — let's look at it visually and try once more.",{onend:()=>{ADAPT.simplify.board();},state:'explain'});cxStatus.textContent='Re-teaching';cxStatus.style.color='var(--warn)';}}
+qsend.onclick=()=>{if(qans.value.trim()){checkAnswer(qans.value);qans.value='';}};
+qans.addEventListener('keydown',e=>{if(e.key==='Enter'&&qans.value.trim()){checkAnswer(qans.value);qans.value='';}});
+
+/* control buttons */
+$$('.board-controls .ctrl[data-cmd]').forEach(b=>b.onclick=()=>doCmd(b.dataset.cmd));
+async function doCmd(cmd){stopSpeak();clearTimeout(adv);
+ if(cmd==='start'){startLesson();return;}
+ if(cmd==='repeat'){if(LESSON[lessonPos])playStep(LESSON[lessonPos]);return;}
+ if(ADAPT[cmd]){const a=ADAPT[cmd];if(a.bump){diff++;cxDiff.textContent='Level '+diff;}busy=true;setState('explain');if(a.board)await a.board();say(a.say,{onend:()=>busy=false});return;}
+}
+
+/* free-form intent (voice/typed questions) */
+const INTENTS=[
+ {k:['mistake','wrong','error'],go:()=>{location.hash='#evaluate';setTimeout(runPaper,500);},say:"When a student makes a mistake, we don't just mark it wrong — we find the step that broke, the concept underneath, and turn it into practice. Watch the paper being analysed."},
+ {k:['paper','evaluat','grade','correct'],go:()=>{location.hash='#evaluate';setTimeout(runPaper,500);},say:"Here's how a paper is evaluated — scanned, followed step by step, and the exact error located, then targeted practice is created."},
+ {k:['online'],go:()=>location.hash='#worlds',say:"Online tuition is a live interactive class on a shared board — the full classroom, from anywhere."},
+ {k:['home'],go:()=>location.hash='#worlds',say:"Home tuition is one to one, at your child's own desk, completely personalised."},
+ {k:['engineer'],go:()=>location.hash='#worlds',say:"Engineering tuition covers mathematics and core technical subjects, with rigorous problem solving."},
+ {k:['offline','centre','center'],go:()=>location.hash='#worlds',say:"Offline tuition is at our Coimbatore centre, in small focused batches with regular tests."},
+ {k:['equation','algebra','maths','math','solve','learn','teach'],go:()=>{location.hash='#room';},say:null,lesson:'Linear equations'},
+ {k:['fraction'],go:()=>{location.hash='#room';},say:null,lesson:'Fractions'},
+ {k:['parent','progress','track'],go:()=>location.hash='#growth',say:"Parents see where a child started, where they are now, and exactly what to work on next."},
+ {k:['contact','fee','join','admission','call','number'],go:()=>location.hash='#contact',say:"You can reach Kongu Brilliance on 95145 24599, or message on WhatsApp — we'll arrange a free consultation."},
+];
+async function askK(text){if(!text)return;stopSpeak();clearTimeout(adv);
+ setState('think');orbState('thinking');cxStatus.textContent='Understanding';capText.textContent='“'+text+'”';
+ const q=text.toLowerCase();const it=INTENTS.find(i=>i.k.some(k=>q.includes(k)));
+ // try live model on the real site; fall back to scripted
+ let answer=null;
+ try{const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),8000);
+   const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+     body:JSON.stringify({messages:[{role:'system',content:K_SYS},{role:'user',content:text}],temperature:.5,json:false})});
+   clearTimeout(to);if(r.ok){const j=await r.json();if(j&&j.text&&j.text.trim()){answer=j.text.trim();$('#modeTag').textContent='Live AI model';}}
+ }catch(e){}
+ if(it&&it.go)setTimeout(it.go,300);
+ if(it&&it.lesson&&!answer){setTimeout(()=>startLesson(it.lesson),700);return;}
+ const final=answer||(it&&it.say)||"I can teach a topic, show how a paper is evaluated, or explain our offline, online, home and engineering tuition. What would you like?";
+ say(final);}
+const K_SYS="You are Tutor K, the friendly AI learning guide for Kongu Brilliance Tuition Centre, Coimbatore. Answer in 2-3 short warm spoken sentences, no markdown or lists, spell maths in words. Explain concretely how AI-assisted learning works here: assessing, spotting and analysing mistakes, adapting, generating practice, evaluating answers, showing progress. Never invent statistics, fees, results or testimonials; if unsure of a fact, invite them to call 95145 24599. Context: home, centre and online tuition for Classes 1-12 across CBSE, ICSE, State, Matric, ISC, IGCSE; founded 2021; max 12 students per batch; zero registration fee.";
+
+/* voice input */
+function startListen(){if(!canHear){cxStatus.textContent='Type instead';capText.textContent="Voice needs a Chromium browser — type your answer in the box, or use the lesson buttons.";return;}
+ stopSpeak();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;try{rec=new SR();}catch(e){return;}
+ rec.lang='en-IN';rec.interimResults=true;rec.maxAlternatives=1;let fin='';
+ listening=true;micBtn.classList.add('on');setState('listen');orbState('listening');waveOn();cxStatus.textContent='Listening';cxStatus.style.color='var(--ice2)';capText.textContent='Listening…';
+ rec.onresult=e=>{let it='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:it+=t;}capText.textContent='“'+(fin+it).trim()+'”';};
+ rec.onerror=()=>{listening=false;micBtn.classList.remove('on');waveOff();orbState('');cxStatus.textContent='Ready';};
+ rec.onend=()=>{listening=false;micBtn.classList.remove('on');waveOff();orbState('');const t=fin.trim();
+   if(!t){cxStatus.textContent='Ready';return;}
+   if(waitingAnswer){checkAnswer(t);}else{askK(t);}};
+ try{rec.start();}catch(e){listening=false;micBtn.classList.remove('on');}}
+micBtn.onclick=()=>{if(listening){try{rec.stop();}catch(e){}}else if(speaking){stopSpeak();cxStatus.textContent='Ready';}else{startListen();}};
+
+/* entry points */
+$('#startBtn').onclick=e=>{setTimeout(()=>startLesson(),700);};
+$('#paperToTutor').onclick=()=>{location.hash='#room';setTimeout(()=>startLesson('Linear equations'),700);};
+$('#talkK2').onclick=()=>{location.hash='#room';setTimeout(startListen,700);};
+$('#askfab').onclick=()=>{location.hash='#room';setTimeout(startListen,700);};
+addEventListener('beforeunload',()=>{if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}});
 </script>
 </body>
 </html>
