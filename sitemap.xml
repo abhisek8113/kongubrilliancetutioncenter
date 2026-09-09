@@ -1,117 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<url>
-<loc>https://kongubrilliance.com/</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>weekly</changefreq>
-<priority>1.0</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/centum-studio.html</loc>
-<lastmod>2026-09-03</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.9</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/about.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/courses.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.9</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/contact.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/locations.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.9</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.7</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/results.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/faq.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.7</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/admissions.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>weekly</changefreq>
-<priority>0.9</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/testimonials.html</loc>
-<lastmod>2026-05-22</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.8</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-score-100-maths-class-10-12.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-tuition-centre-vadamalaipalayam-coimbatore.html</loc>
-<lastmod>2026-07-10</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-time-management-tips-students.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-cbse-vs-state-board-vs-icse.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-physics-chemistry-class-11-12.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-english-grammar-writing-skills.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-home-tuition-vs-group-coaching.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
-<url>
-<loc>https://kongubrilliance.com/blog-quick-study-tips.html</loc>
-<lastmod>2026-07-05</lastmod>
-<changefreq>monthly</changefreq>
-<priority>0.6</priority>
-</url>
+  <url><loc>https://kongubrilliance.com/</loc><lastmod>2026-09-08</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://kongubrilliance.com/free-demo.html</loc><lastmod>2026-09-08</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://kongubrilliance.com/admissions.html</loc><lastmod>2026-09-08</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://kongubrilliance.com/courses.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kongubrilliance.com/ai-data-science-courses.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kongubrilliance.com/how-it-works.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kongubrilliance.com/locations.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kongubrilliance.com/results.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kongubrilliance.com/testimonials.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kongubrilliance.com/about.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kongubrilliance.com/faq.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kongubrilliance.com/contact.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kongubrilliance.com/experience.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kongubrilliance.com/blog.html</loc><lastmod>2026-09-08</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-cbse-vs-state-board-vs-icse.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-english-grammar-writing-skills.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-home-tuition-vs-group-coaching.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-physics-chemistry-class-11-12.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-quick-study-tips.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-score-100-maths-class-10-12.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-time-management-tips-students.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://kongubrilliance.com/blog-tuition-centre-vadamalaipalayam-coimbatore.html</loc><lastmod>2026-09-08</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>
