@@ -124,6 +124,10 @@ canvas#pen{position:absolute;inset:0;touch-action:none}
   <!-- LEFT -->
   <aside class="panel left">
     <div class="brand"><span class="m">🔥</span><span>Kognita<small>Live Classroom</small></span></div>
+    <div class="lbl">Language</div>
+    <select id="langSel" style="width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:9px;background:var(--panel);color:var(--ink);font-family:inherit;font-size:.82rem">
+      <option>English</option><option>தமிழ் (Tamil)</option><option>Tanglish</option><option>हिन्दी (Hindi)</option>
+    </select>
     <div class="lbl">Class mode</div>
     <div class="modes" id="modes"></div>
     <div class="lbl">Lesson timeline</div>
@@ -173,6 +177,8 @@ Kognita will write here as it teaches.</div>
     <div class="ctrls">
       <button class="big hand" id="handBtn" title="Interrupt — the tutor stops and listens">✋ Raise hand</button>
       <button class="big mic" id="micBtn" title="Hold a hands-free conversation">🎙 Voice</button>
+      <button class="chip" id="visionBtn" title="Photograph your handwritten work — the tutor reads it">📷 Show my work</button>
+      <input type="file" id="visionFile" accept="image/*" capture="environment" hidden>
       <button class="chip" data-cmd="different">🔁 Explain differently</button>
       <button class="chip" data-cmd="slower">🐢 Slow down</button>
       <button class="chip" data-cmd="back">⏮ Go back</button>
@@ -216,10 +222,10 @@ if(Speech.canSpeak){try{speechSynthesis.onvoiceschanged=()=>Speech.pick();Speech
 
 /* ================= AI (real on live site via /api/llm; scripted fallback) ================= */
 let AI_LIVE=null;
-async function ai(messages,{json=true,temperature=0.5}={}){
-  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),15000);
-  const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
-    body:JSON.stringify({messages,temperature,json})});
+async function ai(messages,{json=true,temperature=0.5,image=null}={}){
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),image?30000:15000);
+  const body={messages,temperature,json}; if(image)body.image=image;
+  const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,body:JSON.stringify(body)});
   clearTimeout(to); if(!r.ok)throw new Error('ai '+r.status); const j=await r.json();
   if(!j||!j.text)throw new Error('no text'); AI_LIVE=true; return j.text;
 }
@@ -228,13 +234,24 @@ const parseJSON=t=>{t=String(t).replace(/```json|```/g,"").trim();const a=t.inde
 /* ================= CLASSROOM STATE (the interruption engine) =================
    stack[0] = MAIN lesson frame. A side question PUSHES a frame; resuming POPS.  */
 const S={
-  topic:"", mode:"teaching", strategy:0,
+  topic:"", mode:"teaching", strategy:0, lang:"English",
   plan:[], step:0,
   history:[],           // running dialogue for the model
   stack:[],             // context frames: {kind:'lesson'|'side', topic, note}
   understanding:55, confidence:50,
-  timeline:[]
+  timeline:[], mem:null
 };
+/* ---------- persistent learning memory (per browser) ---------- */
+const MEM_KEY="kognita_mem_v1";
+function loadMem(){ try{ return JSON.parse(localStorage.getItem(MEM_KEY))||null; }catch(e){ return null; } }
+function saveMem(){ try{ localStorage.setItem(MEM_KEY,JSON.stringify(S.mem)); }catch(e){} }
+function markWeak(){ const t=S.plan[S.step]||S.topic; if(S.mem&&t&&!S.mem.weak.includes(t)){ S.mem.weak.push(t); if(S.mem.weak.length>12)S.mem.weak.shift(); saveMem(); } }
+function langInstruction(){ const l=S.lang;
+  if(/Tanglish/i.test(l)) return "Teach in Tanglish — Tamil spoken naturally but written in English letters, mixed with English technical words, like a friendly Coimbatore teacher.";
+  if(/Tamil/i.test(l)) return "Teach and speak in simple Tamil.";
+  if(/Hindi/i.test(l)) return "Teach and speak in simple Hindi.";
+  return "Teach in clear, simple English. If the student mixes languages, understand and reply naturally.";
+}
 const STRATS=["simple words","a real-life analogy","a visual/step-by-step example","a worked example","Socratic questions","an exam-oriented explanation"];
 const MODES=[["teaching","👩‍🏫 Teaching"],["doubt","❓ Doubt"],["practice","✍ Practice"],["exam","📝 Exam"],["revision","🔁 Revision"],["socratic","🧩 Socratic"]];
 const t0=Date.now();
@@ -258,7 +275,8 @@ function addTimeline(label){ S.timeline.push({t:clock(),label,step:S.step});
 }
 function setMeters(u,c){ if(u!=null)S.understanding=Math.max(0,Math.min(100,u)); if(c!=null)S.confidence=Math.max(0,Math.min(100,c));
   $("#uBar").style.width=S.understanding+"%";$("#uPct").textContent=S.understanding+"%";
-  $("#cBar").style.width=S.confidence+"%";$("#cPct").textContent=S.confidence+"%"; }
+  $("#cBar").style.width=S.confidence+"%";$("#cPct").textContent=S.confidence+"%";
+  if(S.mem && S.understanding<40) markWeak(); }
 function renderKG(){ const kg=$("#kg"); if(!S.plan.length){kg.innerHTML='<div class="kgnode"><span class="d idle"></span>Waiting for a topic…</div>';return;}
   kg.innerHTML=S.plan.map((p,i)=>{const cls=i<S.step?"ok":i===S.step?"mid":"idle";
     return '<div class="kgnode"><span class="d '+cls+'"></span>'+esc(p)+'</div>';}).join(""); }
@@ -276,6 +294,8 @@ function sysPrompt(){
   +`After teaching a step, ask ONE short check question and STOP. Be encouraging; never say just "wrong". `
   +`Current lesson topic: "${S.topic}". Lesson step ${S.step+1} of ${S.plan.length||"?"}${S.plan[S.step]?': "'+S.plan[S.step]+'"':''}. `
   +`Preferred teaching strategy right now: ${STRATS[S.strategy%STRATS.length]}. Class mode: ${S.mode}. `
+  +langInstruction()+" "
+  +((S.mem&&S.mem.weak.length)?`This returning student has previously found these topics tricky: ${S.mem.weak.slice(-6).join(", ")}. Watch for them. `:``)
   +(frame.kind==="side"
      ? `IMPORTANT: the student INTERRUPTED with a side question. Answer THAT question briefly and clearly first, then in one sentence offer to return to "${S.topic}". Do not continue the main lesson yet. `
      : `Continue the main lesson from the current step. `)
@@ -363,6 +383,9 @@ function jumpTo(step){ S.step=Math.max(0,Math.min(step,S.plan.length-1)); render
 /* ================= START A CLASS ================= */
 async function planLesson(topic){
   S.topic=topic; S.step=0; S.strategy=0; S.stack=[{kind:"lesson",topic}]; S.history=[];
+  S.mem=loadMem()||{topics:[],weak:[],last:null,sessions:0};
+  const returning=S.mem.sessions>0;
+  S.mem.sessions++; S.mem.last=topic; if(!S.mem.topics.includes(topic))S.mem.topics.push(topic); saveMem();
   setState("thinking","Preparing your lesson on "+topic+"…"); writeBoard(topic,"Planning the lesson…");
   let plan;
   try{
@@ -373,7 +396,8 @@ async function planLesson(topic){
   S.plan=(plan&&plan.length?plan:fallbackPlan(topic)).slice(0,8);
   renderKG(); addTimeline("Class started: "+topic);
   // greet + teach step 1
-  const greet="Hi! Let's learn "+topic+". We'll go step by step, and you can stop me any time with the raise-hand button or just by talking. Ready? Let's start.";
+  const weakNote=(returning&&S.mem.weak.length)?" Last time, "+S.mem.weak.slice(-2).join(" and ")+" felt a bit tricky — I'll keep an eye on those.":"";
+  const greet=(returning?"Welcome back! ":"Hi! ")+"Let's learn "+topic+"."+weakNote+" We'll go step by step, and you can stop me any time — just talk or press raise-hand. Ready? Let's start.";
   say(greet); writeBoard(topic, S.plan.map((p,i)=>"Step "+(i+1)+": "+p).join("\n"));
   Speech.speak(greet,{onend:()=>turn("Start teaching step 1 now.",{})});
 }
@@ -398,6 +422,38 @@ $$(".chip[data-cmd]").forEach(b=>b.onclick=()=>{ const c=b.dataset.cmd;
   if(c==="continue"){ resumeLesson(); } else if(c==="back"){ doControl("back"); } else doControl(c); });
 $("#askBtn").onclick=()=>{ const v=$("#askIn").value.trim(); if(v){ $("#askIn").value=""; handleStudent(v); } };
 $("#askIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ const v=$("#askIn").value.trim(); if(v){$("#askIn").value="";handleStudent(v);} }});
+// language
+$("#langSel").onchange=e=>{ S.lang=e.target.value; addTimeline("Language → "+S.lang); };
+// mark weak topics into memory when the student struggles
+const _doControl=doControl; doControl=function(cmd){ if(cmd==="different"||cmd==="slower")markWeak(); return _doControl(cmd); };
+/* ---------- VISION: read a photo of the student's handwritten work ---------- */
+function readImage(file){ return new Promise(res=>{ const r=new FileReader();
+  r.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=1100; let w=img.width,h=img.height;
+    const sc=Math.min(1,max/Math.max(w,h)); const c=document.createElement('canvas');
+    c.width=Math.round(w*sc); c.height=Math.round(h*sc); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    res(c.toDataURL('image/jpeg',0.82)); }; img.src=r.result; }; r.readAsDataURL(file); }); }
+async function analyzeImage(dataUrl){
+  Speech.stopSpeak(); setState("verifying","Reading your work…"); writeBoard("Reading your work…","Looking closely at each step…");
+  const sys="You are Kognita, a kind, sharp tutor looking at a PHOTO of a student's handwritten work for the topic \""
+    +(S.topic||"their problem")+"\". Read every step carefully. Find the FIRST place a mistake happens (or confirm it is fully correct), "
+    +"explain it simply and kindly, and show the corrected step. "+langInstruction()
+    +" Keep the spoken part short (2-4 sentences). Return STRICT JSON {\"say\":\"spoken feedback ending with an encouraging check\",\"board\":\"what you see, then the exact line of the mistake, then the corrected step\",\"mistakeFound\":true}.";
+  let out;
+  try{
+    const txt=await ai([{role:"system",content:sys},{role:"user",content:"Here is my work. Where did I go wrong?"}],{image:dataUrl,temperature:.3,json:true});
+    try{ out=parseJSON(txt); }catch(e){ out={say:String(txt).slice(0,400),board:String(txt)}; }
+  }catch(e){ setState("teaching","");
+    say("I couldn't read the photo just now. On the live site this needs a free Gemini key — or just tell me your steps and I'll check them.");
+    writeBoard("Vision not available","Add GEMINI_API_KEY (free) in Vercel → Settings → Environment Variables to enable photo reading."); return; }
+  if(out.board) writeBoard("Your work — checked", out.board);
+  S.history.push({role:"assistant",content:out.say||""});
+  addTimeline("📷 Checked your work");
+  speakOut(out.say||"Let's look at your work together — where do you think it went wrong?");
+}
+$("#visionBtn").onclick=()=>$("#visionFile").click();
+$("#visionFile").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f)return;
+  try{ const durl=await readImage(f); analyzeImage(durl); }catch(err){ say("Couldn't open that image — try another photo."); }
+  e.target.value=""; });
 // pen
 (function pen(){ const c=$("#pen"),b=$("#board").parentElement; let on=false,drawing=false,px,py;
   function size(){ const r=b.getBoundingClientRect(); c.width=r.width; c.height=r.height; }
