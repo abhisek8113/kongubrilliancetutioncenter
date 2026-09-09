@@ -9,8 +9,11 @@
 //   OPENROUTER_API_KEY  (many models)                model override via OPENROUTER_MODEL
 //   OPENAI_API_KEY      (paid)                        model override via OPENAI_MODEL
 //
-// Request  (POST):  { messages:[{role,content}], temperature?, json? }
-// Response (200):   { text, provider, model }
+// Request  (POST):  { messages:[{role,content}], temperature?, json?, image? }
+//   image: optional data URL ("data:image/jpeg;base64,...") — routes to a vision
+//          model (Gemini free tier, or OpenAI gpt-4o-mini) so the tutor can READ
+//          a photo of a student's handwritten work. Text requests are unchanged.
+// Response (200):   { text, provider, model, vision? }
 // Response (5xx):   { error, tried:[{provider,error}] }
 
 const PROVIDERS = [
@@ -69,6 +72,46 @@ async function callGemini(p, key, model, messages, temperature) {
   return text;
 }
 
+// ---- VISION (multimodal) ---------------------------------------------------
+function dataUrlParts(image) {
+  const m = /^data:([^;]+);base64,(.*)$/.exec(image || '');
+  return m ? { mime: m[1], b64: m[2] } : null;
+}
+async function callGeminiVision(key, model, messages, image, temperature) {
+  const sys = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+  const contents = messages.filter(m => m.role !== 'system').map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }],
+  }));
+  const img = dataUrlParts(image);
+  if (img && contents.length) contents[contents.length - 1].parts.push({ inline_data: { mime_type: img.mime, data: img.b64 } });
+  else if (img) contents.push({ role: 'user', parts: [{ inline_data: { mime_type: img.mime, data: img.b64 } }] });
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + key;
+  const body = { contents, generationConfig: { temperature: temperature ?? 0.3 } };
+  if (sys) body.systemInstruction = { parts: [{ text: sys }] };
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const raw = await r.text();
+  if (!r.ok) { const e = new Error('gemini-vision/' + model + ' ' + r.status + ' ' + raw.slice(0, 140)); e.status = r.status; throw e; }
+  const data = JSON.parse(raw);
+  const text = data?.candidates?.[0]?.content?.parts?.map(x => x.text).join('') || '';
+  if (!text) throw new Error('gemini-vision returned no content');
+  return text;
+}
+async function callOpenAIVision(url, key, model, messages, image, temperature, json) {
+  const msgs = messages.slice();
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role === 'user') { msgs[i] = { role: 'user', content: [{ type: 'text', text: msgs[i].content }, { type: 'image_url', image_url: { url: image } }] }; break; }
+  }
+  const body = { model, temperature: temperature ?? 0.3, messages: msgs };
+  if (json) body.response_format = { type: 'json_object' };
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: JSON.stringify(body) });
+  const raw = await r.text();
+  if (!r.ok) { const e = new Error('openai-vision/' + model + ' ' + r.status + ' ' + raw.slice(0, 140)); e.status = r.status; throw e; }
+  const data = JSON.parse(raw);
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('openai-vision returned no content');
+  return text;
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     const available = PROVIDERS.filter(p => process.env[p.keyEnv]).map(p => p.id);
@@ -78,8 +121,17 @@ export default async function handler(req, res) {
 
   let payload = req.body;
   if (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch { payload = {}; } }
-  const { messages, temperature, json } = payload || {};
+  const { messages, temperature, json, image } = payload || {};
   if (!Array.isArray(messages) || !messages.length) return res.status(400).json({ error: 'messages[] required' });
+
+  // ---- VISION request: route to a multimodal model ----
+  if (image) {
+    const vtried = [];
+    const gk = process.env.GEMINI_API_KEY, ok = process.env.OPENAI_API_KEY;
+    if (gk) { try { const text = await callGeminiVision(gk, 'gemini-1.5-flash', messages, image, temperature); return res.status(200).json({ text, provider: 'gemini', model: 'gemini-1.5-flash', vision: true }); } catch (e) { vtried.push({ provider: 'gemini', error: String(e.message || e).slice(0, 180) }); } }
+    if (ok) { try { const text = await callOpenAIVision('https://api.openai.com/v1/chat/completions', ok, 'gpt-4o-mini', messages, image, temperature, json); return res.status(200).json({ text, provider: 'openai', model: 'gpt-4o-mini', vision: true }); } catch (e) { vtried.push({ provider: 'openai', error: String(e.message || e).slice(0, 180) }); } }
+    return res.status(503).json({ error: 'Vision needs a GEMINI_API_KEY (free) or OPENAI_API_KEY in Vercel env vars.', tried: vtried });
+  }
 
   const active = PROVIDERS.filter(p => process.env[p.keyEnv]);
   if (!active.length) return res.status(503).json({ error: 'No AI provider configured. Add GROQ_API_KEY in Vercel env vars.', tried: [] });
