@@ -1,3 +1,7 @@
+
+kb-comm-FULL.txt
+
+100%
 /* ============================================================================
    Kongu Brilliance — Messages & Calls engine (in-portal)
    - Self-injects a "Messages" section into Student, Tutor and Admin portals
@@ -465,3 +469,112 @@ W.KBComm={mount,openAdminOverlay,openParentShell,canAccess,myConversations,loadR
 
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
+/* ============================================================================
+   KONGU BRILLIANCE — MARKETING & LEAD-GEN LAYER
+   >>> APPEND THIS ENTIRE BLOCK TO THE VERY END of assets/kb-comm.js <<<
+   (paste it AFTER the final line `})();` — do not touch anything above)
+
+   Applies site-wide because kb-comm.js is loaded on every page.
+   Fixes:
+     1. GA4 conversion events (call / whatsapp / demo / enquiry / forms)
+     2. Meta (FB/Instagram) Pixel + Lead event  [no-op until you add your ID]
+     3. Floating WhatsApp lead button (pre-filled message)
+     4. Required name + 10-digit mobile validation on lead forms
+   ONE THING TO SET: put your Meta Pixel ID in META_PIXEL_ID below.
+   Leave it "" and the pixel simply stays off — nothing breaks.
+============================================================================ */
+(function(){
+  'use strict';
+
+  var META_PIXEL_ID = "";              // <-- paste your Meta Pixel ID here (or leave "" to keep it off)
+  var WA_NUMBER     = "919514524599";  // country code + number, no + or spaces
+  var WA_TEXT       = "Hi Kongu Brilliance, I'd like a FREE demo class. My child is in class ___.";
+
+  function ga(name, params){ if (window.gtag) window.gtag('event', name, params || {}); }
+  function fb(name, params){ if (window.fbq) window.fbq('track', name, params || {}); }
+  function lead(source){ ga('generate_lead', { lead_source: source }); fb('Lead', { content_name: source }); }
+
+  /* ---- 2. Meta Pixel (loads only if an ID is set) ---- */
+  if (META_PIXEL_ID) {
+    (function(f,b,e,v,n,t,s){
+      if(f.fbq)return; n=f.fbq=function(){ n.callMethod ? n.callMethod.apply(n,arguments) : n.queue.push(arguments) };
+      if(!f._fbq)f._fbq=n; n.push=n; n.loaded=!0; n.version='2.0'; n.queue=[];
+      t=b.createElement(e); t.async=!0; t.src=v; s=b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t,s);
+    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    window.fbq('init', META_PIXEL_ID);
+    window.fbq('track', 'PageView');
+  }
+
+  function boot(){
+    /* ---- 3. Floating WhatsApp lead button ---- */
+    if (!document.getElementById('kbWaFloat')) {
+      var css = document.createElement('style');
+      css.textContent =
+        '#kbWaFloat{position:fixed;right:18px;bottom:84px;z-index:9500;display:flex;align-items:center;gap:8px;'+
+        'background:#25D366;color:#fff;text-decoration:none;padding:12px 18px;border-radius:50px;'+
+        'font:600 15px/1 system-ui,-apple-system,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28);transition:transform .15s}'+
+        '#kbWaFloat:hover{transform:translateY(-2px) scale(1.03)}#kbWaFloat svg{width:22px;height:22px;fill:#fff}'+
+        '@media(max-width:520px){#kbWaFloat span{display:none}#kbWaFloat{padding:14px;border-radius:50%;bottom:80px}}'+
+        '.kb-invalid{outline:2px solid #e53935 !important;outline-offset:1px}';
+      document.head.appendChild(css);
+
+      var a = document.createElement('a');
+      a.id = 'kbWaFloat';
+      a.href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(WA_TEXT);
+      a.target = '_blank'; a.rel = 'noopener';
+      a.innerHTML = '<svg viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.2-1.7-.8-2-.9-.3-.1-.5-.2-.7.1-.2.3-.8.9-1 1.1-.2.2-.4.2-.7.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.6s-.7-1.7-1-2.3c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.4 1.4 3.6c.2.2 2.5 3.8 6 5.3 2.2.9 3 .9 4.1.8.7-.1 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.2-.6-.4zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.4 1.3 4.9L2 22l5.2-1.3C8.7 21.5 10.3 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg><span>Chat on WhatsApp</span>';
+      a.addEventListener('click', function(){ lead('whatsapp_float'); });
+      document.body.appendChild(a);
+    }
+
+    /* ---- 1. Track tap-to-call, WhatsApp links, email ---- */
+    document.addEventListener('click', function(e){
+      var t = e.target.closest && e.target.closest('a'); if (!t) return;
+      var href = t.getAttribute('href') || '';
+      if (href.indexOf('tel:') === 0){ ga('phone_call', { phone: href }); fb('Contact'); }
+      else if (href.indexOf('wa.me') > -1 || href.indexOf('whatsapp') > -1){ lead('whatsapp_link'); }
+      else if (href.indexOf('mailto:') === 0){ ga('email_click'); }
+    }, true);
+
+    /* ---- 4. Required-field validation on lead forms ---- */
+    var GROUPS = [
+      ['demo-name','demo-phone','demo'],
+      ['enq-name','enq-phone','enquiry']
+    ];
+    GROUPS.forEach(function(g){
+      var nameEl = document.getElementById(g[0]);
+      var phEl   = document.getElementById(g[1]);
+      var source = g[2];
+      if (!nameEl || !phEl) return;
+      var scope = nameEl.closest('form,div,section,.modal') || document;
+      var btn = Array.prototype.slice.call(scope.querySelectorAll('button,a,input[type=submit]'))
+        .find(function(b){ return /submit|send|book|enroll|enquir|demo|register|➤/i.test((b.textContent||'') + (b.value||'')); });
+      if (!btn || btn.dataset.kbBound) return;
+      btn.dataset.kbBound = '1';
+      btn.addEventListener('click', function(ev){
+        var bad = [];
+        [nameEl, phEl].forEach(function(el){
+          el.classList.remove('kb-invalid');
+          if (!el.value.trim()){ el.classList.add('kb-invalid'); bad.push(el); }
+        });
+        var digits = (phEl.value.match(/\d/g) || []).length;
+        if (phEl.value.trim() && digits < 10){ phEl.classList.add('kb-invalid'); bad.push(phEl); }
+        if (bad.length){
+          ev.preventDefault(); ev.stopImmediatePropagation(); bad[0].focus();
+          alert('Please enter a valid name and 10-digit mobile number so we can call you back.');
+          return false;
+        }
+        lead(source);
+      }, true);
+    });
+
+    /* real <form> submits (e.g. Contact quick message) */
+    Array.prototype.forEach.call(document.querySelectorAll('form'), function(f){
+      f.addEventListener('submit', function(){ lead('contact_form'); });
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+Displaying kb-comm-FULL.txt.
