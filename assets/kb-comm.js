@@ -1,16 +1,4 @@
 
-
-100%
-/* ============================================================================
-   Kongu Brilliance — Messages & Calls engine (in-portal)
-   - Self-injects a "Messages" section into Student, Tutor and Admin portals
-   - Parent read-only portal (sees the tutor profile + child's conversations)
-   - WhatsApp-style WebRTC calls with tutor DND + ringing notification
-   - Privacy: a private chat is visible ONLY to the student, their assigned
-     tutor, and admin. Tutors see only their assigned students.
-   - Realtime: uses Supabase realtime when kb_messages exists (run sql/messaging.sql),
-     otherwise a live cross-tab bus (works on GitHub Pages with no backend change).
-   ========================================================================== */
 (function(){
 'use strict';
 const W = window;
