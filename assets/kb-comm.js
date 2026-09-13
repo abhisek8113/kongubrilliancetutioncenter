@@ -564,4 +564,4 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
-Displaying kb-comm-FULL.txt.
+
