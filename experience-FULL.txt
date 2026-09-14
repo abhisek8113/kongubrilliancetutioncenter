@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kongu Brilliance — Human Teaching. Intelligent Learning.</title>
+<meta name="description" content="Kongu Brilliance, Coimbatore — home, centre, online & engineering tuition for Classes 1–12. Experienced teachers with an AI learning layer: a live tutor room, paper evaluation, and adaptive practice.">
+<meta name="keywords" content="Kongu Brilliance, tuition Coimbatore, AI tutor, home tuition, online tuition, engineering tuition, CBSE, ICSE, adaptive learning">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.kongubrilliance.com/experience.html">
+<meta property="og:title" content="Kongu Brilliance — Human Teaching. Intelligent Learning.">
+<meta property="og:description" content="A live AI tutor room, paper evaluation and adaptive practice — on top of real teaching. Coimbatore.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.kongubrilliance.com/experience.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --bg:#07080d; --bg2:#0b0d15; --panel:rgba(255,255,255,.04); --panel2:rgba(255,255,255,.065);
+  --ink:#eceef5; --muted:#98a0b6; --faint:#6a7290; --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.15);
+  --brass:#e0b25c; --brass2:#f2cf87; --ice:#67d6cf; --ice2:#9aeae4; --vio:#8f88f5;
+  --ok:#54c996; --warn:#e2b15a; --bad:#e57a6f;
+  --disp:'Space Grotesk','Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+  --shadow:0 30px 80px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,.dsp{font-family:var(--disp);letter-spacing:-.02em;line-height:1.06;font-weight:600}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1200px;margin:0 auto;padding:0 26px}
+.mono{font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ice2)}
+.brass{color:var(--brass)}
+.ic{width:20px;height:20px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:.92rem;border-radius:12px;padding:13px 24px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink);transition:.22s}
+.btn-primary{background:linear-gradient(135deg,var(--brass),var(--brass2));color:#241a06;border-color:transparent}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(224,178,92,.35)}
+.btn-ghost:hover{border-color:var(--ice);color:var(--ice)}
+.btn-ai{background:rgba(103,214,207,.12);border-color:rgba(103,214,207,.4);color:var(--ice2)}
+.btn-ai:hover{background:rgba(103,214,207,.2)}
+.reveal{opacity:0;transform:translateY(26px)}
+.eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--ice2);margin-bottom:18px}
+.eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--ice),transparent)}
+
+/* bg */
+#field{position:fixed;inset:0;z-index:0;pointer-events:none}
+.vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 80% at 50% -5%,transparent 45%,rgba(7,8,13,.6) 100%)}
+main,header,footer{position:relative;z-index:2}
+
+/* progress + nav */
+#prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--ice),var(--brass));z-index:130}
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:70px;display:flex;align-items:center;transition:.3s;border-bottom:1px solid transparent}
+header.solid{background:rgba(7,8,13,.82);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;width:100%}
+.brand{display:flex;align-items:center;gap:11px}
+.brand .m{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brass),var(--brass2));display:grid;place-items:center}
+.brand .m svg{width:20px;height:20px;stroke:#241a06;stroke-width:2.2;fill:none}
+.brand .t{font-family:var(--disp);font-weight:700;font-size:1.02rem}
+.brand .t small{display:block;font-family:var(--mono);font-size:.54rem;letter-spacing:.28em;color:var(--faint);text-transform:uppercase}
+nav.links{display:flex;align-items:center;gap:28px}
+nav.links a{font-family:var(--disp);font-size:.88rem;color:var(--muted);transition:.2s}
+nav.links a:hover{color:var(--ink)}
+.burger{display:none;background:none;border:0;color:#fff;cursor:pointer}
+.burger svg{width:26px;height:26px;stroke:#fff;stroke-width:1.6;fill:none}
+
+/* scene scaffold */
+.scene{padding:110px 0;position:relative}
+.scene-head{max-width:60ch;margin:0 auto 54px;text-align:center}
+.scene-head h2{font-size:clamp(1.9rem,4.2vw,3rem);margin-bottom:16px}
+.scene-head h2 em{font-style:normal;color:var(--brass)}
+.scene-head p{color:var(--muted);font-size:1.06rem}
+@media(max-width:820px){.scene{padding:76px 0}}
+
+/* HERO / search */
+#hero{min-height:100vh;display:flex;align-items:center;padding-top:70px}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;width:100%}
+#hero h1{font-size:clamp(2.4rem,5.6vw,4.4rem);font-weight:600;letter-spacing:-.035em;margin:18px 0 20px}
+#hero h1 .g{background:linear-gradient(120deg,var(--brass),var(--brass2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{color:var(--muted);font-size:1.15rem;max-width:46ch;margin-bottom:30px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:40px}.hero-vis{order:2}}
+/* search visual */
+.searchbox{background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.searchbar{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:11px;padding:13px 16px;font-family:var(--mono);font-size:.9rem;color:var(--ink)}
+.searchbar .cur{width:2px;height:16px;background:var(--ice);animation:cur 1s steps(1) infinite}
+@keyframes cur{50%{opacity:0}}
+.sresults{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.sres{display:flex;gap:12px;padding:13px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.02);opacity:0;transform:translateY(10px)}
+.sres.top{border-color:var(--brass);background:rgba(224,178,92,.07)}
+.sres .rank{font-family:var(--mono);font-size:.72rem;color:var(--faint);flex-shrink:0}
+.sres .rt{font-family:var(--disp);font-weight:600;font-size:.98rem}
+.sres .rt small{display:block;font-family:'Inter';font-weight:400;color:var(--muted);font-size:.8rem}
+.sres .badge{margin-left:auto;font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);align-self:center}
+.sig-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.sig-chips span{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:5px 11px;opacity:0}
+
+/* generic panel */
+.panel{background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:18px}
+
+/* four worlds */
+.worlds{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.world{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.02);transition:.3s}
+.world:hover{border-color:var(--brass);transform:translateY(-4px);box-shadow:var(--shadow)}
+.world .env{height:170px;position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:radial-gradient(circle at 50% 40%,rgba(103,214,207,.06),transparent 60%)}
+.world .env svg{position:absolute;inset:0;width:100%;height:100%}
+.world .body{padding:26px}
+.world .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ice2);margin-bottom:8px}
+.world h3{font-size:1.4rem;margin-bottom:10px}
+.world p{color:var(--muted);font-size:.95rem;margin-bottom:14px}
+.world .scn{font-size:.86rem;color:var(--faint);border-left:2px solid var(--line2);padding-left:12px;font-style:italic}
+@media(max-width:760px){.worlds{grid-template-columns:1fr}}
+
+/* 24h clock */
+.clock-wrap{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
+.clock{position:relative;aspect-ratio:1;max-width:400px;margin:0 auto;width:100%}
+.clock svg{width:100%;height:100%}
+.qa{display:flex;flex-direction:column;gap:14px}
+.qa .q{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:rgba(255,255,255,.02);opacity:0;transform:translateX(16px)}
+.qa .q .time{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;color:var(--brass);margin-bottom:6px}
+.qa .q .txt{font-size:.95rem}
+.qa .q .ans{color:var(--muted);font-size:.86rem;margin-top:6px;display:flex;gap:8px}
+.qa .q .ans::before{content:"→";color:var(--ice)}
+@media(max-width:820px){.clock-wrap{grid-template-columns:1fr;gap:30px}}
+
+/* ===== AI TUTOR ROOM ===== */
+#room{padding:70px 0}
+.room{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));box-shadow:var(--shadow)}
+.room-bar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.room-bar .live{color:var(--ice);display:flex;align-items:center;gap:7px}
+.room-bar .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ice);box-shadow:0 0 8px var(--ice);animation:bl 1.6s infinite}
+@keyframes bl{50%{opacity:.3}}
+.room-bar .demo{margin-left:auto;color:var(--warn)}
+.room-grid{display:grid;grid-template-columns:270px 1fr 240px;min-height:440px}
+@media(max-width:960px){.room-grid{grid-template-columns:1fr}.room-side.right{display:none}}
+/* tutor presence */
+.room-side{padding:22px;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.room-side.right{border-right:0;border-left:1px solid var(--line)}
+.presence{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:10px 0 18px}
+.orb{width:120px;height:120px;border-radius:50%;position:relative;display:grid;place-items:center;
+  background:radial-gradient(circle at 38% 32%,rgba(103,214,207,.35),rgba(103,214,207,.06) 60%,transparent);
+  border:1px solid rgba(103,214,207,.35)}
+.orb::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(103,214,207,.25);opacity:0}
+.orb.listening::before{opacity:1;animation:ring 1.4s infinite}
+.orb.speaking::before{opacity:1;animation:ring .7s infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.3);opacity:0}}
+.orb.thinking{background:radial-gradient(circle at 38% 32%,rgba(143,136,245,.4),transparent 60%);border-color:rgba(143,136,245,.4)}
+.wave{display:flex;align-items:center;gap:3px;height:34px}
+.wave i{width:3px;height:8px;background:var(--ice);border-radius:2px;transition:height .12s}
+.presence .nm{font-family:var(--disp);font-weight:600;font-size:1.02rem}
+.presence .rl{font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.state-list{margin-top:auto;display:flex;flex-direction:column;gap:0}
+.state-list .st{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:8px 0;border-top:1px solid var(--line);opacity:.4;transition:.3s;display:flex;align-items:center;gap:9px}
+.state-list .st.on{opacity:1;color:var(--ice2)}
+.state-list .st .d{width:6px;height:6px;border-radius:50%;background:currentColor}
+/* whiteboard */
+.board-col{display:flex;flex-direction:column;min-width:0}
+.board{flex:1;background:#0a0d16;position:relative;overflow:hidden;min-height:300px}
+.board .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:26px 26px}
+.board .content{position:relative;padding:26px 30px;font-family:var(--mono);font-size:1.15rem;color:#dfe6ec;display:flex;flex-direction:column;gap:12px}
+.board .bl{opacity:0;transform:translateY(6px)}
+.board .bl.title{font-family:var(--disp);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ice2)}
+.board .bl .hl{background:rgba(224,178,92,.22);box-shadow:0 0 0 1px rgba(224,178,92,.5);border-radius:3px;padding:0 3px}
+.board .bl .good{color:var(--ok)}
+.board .cap{position:absolute;left:0;right:0;bottom:0;padding:14px 20px;background:linear-gradient(180deg,transparent,rgba(7,8,13,.9));font-family:'Inter';font-size:.92rem;color:#eef1f6;min-height:56px}
+.board .cap .who{font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ice2);margin-right:8px}
+.board-controls{border-top:1px solid var(--line);padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:rgba(255,255,255,.015)}
+.ctrl{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);background:transparent;border-radius:8px;padding:9px 12px;cursor:pointer;transition:.18s}
+.ctrl:hover{border-color:var(--ice);color:var(--ice2)}
+.ctrl.mic{background:linear-gradient(135deg,var(--brass),var(--brass2));color:#241a06;border-color:transparent}
+.ctrl.mic.on{background:linear-gradient(135deg,var(--ice),var(--ice2));color:#04241f;animation:micp 1.2s infinite}
+@keyframes micp{50%{box-shadow:0 0 0 6px rgba(103,214,207,.18)}}
+.ctrl .ic{width:15px;height:15px}
+.ctrl.spacer{margin-left:auto;border:0;cursor:default}
+.ctrl.spacer:hover{color:var(--muted)}
+/* right context */
+.ctx h4{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
+.ctx .cx{display:flex;justify-content:space-between;font-size:.85rem;padding:9px 0;border-bottom:1px solid var(--line);color:var(--muted)}
+.ctx .cx b{color:var(--ink);font-family:var(--disp);font-weight:500}
+.ctx .qbox{margin-top:16px;border:1px solid rgba(224,178,92,.3);background:rgba(224,178,92,.06);border-radius:11px;padding:14px;display:none}
+.ctx .qbox.on{display:block}
+.ctx .qbox .k{font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.ctx .qbox .ans-in{margin-top:10px;display:flex;gap:6px}
+.ctx .qbox input{flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:.85rem}
+.ctx .qbox button{border:0;border-radius:8px;background:var(--brass);color:#241a06;font-weight:700;padding:0 12px;cursor:pointer}
+.hint{font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;color:var(--faint);margin-top:14px;line-height:1.7}
+
+/* paper eval */
+.paper{position:relative;background:#efece3;color:#1b1d24;border-radius:12px;padding:24px 26px;box-shadow:var(--shadow);overflow:hidden;font-family:var(--disp)}
+.paper .h{font-family:var(--mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:#8a8676;margin-bottom:14px;display:flex;justify-content:space-between}
+.paper .q{font-size:1rem;font-weight:600;margin-bottom:6px}
+.paper .a{font-size:1.3rem;color:#26407a;margin-bottom:16px}
+.paper .a .x{color:#c0392b}
+.paper .a .flag{border-radius:3px;padding:0 3px}
+.paper .a .flag.hl{background:rgba(229,122,111,.25);box-shadow:0 0 0 1px rgba(229,122,111,.6)}
+.scan{position:absolute;left:0;right:0;height:70px;top:-80px;background:linear-gradient(180deg,transparent,rgba(103,214,207,.3),transparent);border-top:1px solid var(--ice);border-bottom:1px solid var(--ice);box-shadow:0 0 30px rgba(103,214,207,.4);opacity:0}
+.flow{display:flex;flex-direction:column;gap:2px}
+.flow .st{display:flex;gap:12px;align-items:center;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:12px 14px;border:1px solid var(--line);border-left:2px solid var(--line2);background:rgba(255,255,255,.02);opacity:0;transform:translateX(-12px)}
+.flow .st.err{border-left-color:var(--bad);color:var(--bad)}
+.flow .st.warn{border-left-color:var(--warn);color:var(--warn)}
+.flow .st.act{border-left-color:var(--brass);color:var(--brass)}
+.flow .st.ok{border-left-color:var(--ok);color:var(--ok)}
+.paper-link{margin-top:20px;text-align:center}
+
+/* knowledge graph */
+.kg{position:relative;aspect-ratio:1.2;max-width:520px;margin:0 auto;width:100%}
+.kg svg{position:absolute;inset:0;width:100%;height:100%}
+.kn{position:absolute;transform:translate(-50%,-50%);font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;padding:7px 12px;border-radius:20px;border:1px solid var(--line2);background:var(--bg2);white-space:nowrap}
+.kn.strong{color:var(--ok);border-color:rgba(84,201,150,.5)}
+.kn.weak{color:var(--warn);border-color:rgba(226,177,90,.5);animation:wk 2.2s infinite}
+@keyframes wk{50%{box-shadow:0 0 0 6px rgba(226,177,90,0)}0%,100%{box-shadow:0 0 0 0 rgba(226,177,90,.3)}}
+
+/* growth */
+.growth{border:1px solid var(--line);border-radius:18px;padding:28px;background:rgba(255,255,255,.02)}
+.growth svg{width:100%;height:auto;overflow:visible}
+.gl{fill:none;stroke:var(--brass);stroke-width:2.5;stroke-linecap:round}
+.ga{fill:url(#gf);opacity:0}
+.gd{fill:var(--brass);stroke:var(--bg);stroke-width:2.5;opacity:0}
+.gt{fill:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px;text-anchor:middle;opacity:0}
+.gc{fill:var(--faint);font-family:var(--mono);font-size:10px;text-anchor:middle;opacity:0;text-transform:uppercase}
+.note{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;text-align:center;margin-top:16px}
+
+/* teacher/ai/parent system */
+.sys{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.sys .c{padding:28px;border-right:1px solid var(--line)}
+.sys .c:last-child{border-right:0}
+.sys .c .k{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ice2);margin-bottom:10px}
+.sys .c h3{font-size:1.2rem;margin-bottom:12px}
+.sys .c ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+.sys .c li{color:var(--muted);font-size:.9rem;display:flex;gap:9px}
+.sys .c li::before{content:"›";color:var(--brass)}
+@media(max-width:820px){.sys{grid-template-columns:1fr}.sys .c{border-right:0;border-bottom:1px solid var(--line)}}
+
+/* career */
+.career{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding-bottom:8px}
+.cstep{flex:1;min-width:150px;padding:24px 20px;border-right:1px solid var(--line);position:relative}
+.cstep:last-child{border-right:0}
+.cstep .n{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--faint);margin-bottom:10px}
+.cstep h4{font-size:1.05rem;margin-bottom:6px}
+.cstep p{color:var(--muted);font-size:.84rem}
+.cstep.last h4{color:var(--brass)}
+
+/* final */
+#final{text-align:center;padding:120px 0}
+#final h2{font-size:clamp(2rem,5vw,3.6rem);margin-bottom:14px}
+#final .tag{font-family:var(--disp);color:var(--brass);font-size:clamp(1.1rem,2.4vw,1.4rem);margin-bottom:30px}
+.ctarow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:52px 0 30px}
+.fg{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr;gap:34px;margin-bottom:34px}
+.fcol h4{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ice2);margin-bottom:14px}
+.fcol a,.fcol p{color:var(--muted);font-size:.88rem;display:block;margin-bottom:9px}
+.fcol a:hover{color:var(--ink)}
+.fbot{border-top:1px solid var(--line);padding-top:22px;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.disc{font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;color:var(--faint);line-height:1.8;margin-top:22px;max-width:90ch;text-transform:none}
+@media(max-width:820px){.fg{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.fg{grid-template-columns:1fr}}
+
+/* floating ask */
+.askfab{position:fixed;right:20px;bottom:20px;z-index:95;display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:.85rem;background:linear-gradient(135deg,var(--ice),var(--ice2));color:#04241f;border:0;border-radius:30px;padding:13px 20px;cursor:pointer;box-shadow:0 12px 30px rgba(103,214,207,.4);transition:.2s}
+.askfab:hover{transform:translateY(-2px)}
+.askfab .ic{width:18px;height:18px;stroke:#04241f}
+
+@media(max-width:900px){
+  nav.links{position:fixed;inset:70px 0 auto 0;flex-direction:column;align-items:flex-start;background:rgba(7,8,13,.98);padding:24px 26px;gap:20px;border-bottom:1px solid var(--line);transform:translateY(-160%);transition:.35s}
+  nav.links.open{transform:none}.burger{display:block}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-arrow"><path d="M5 12h14M13 6l6 6-6 6"/></g>
+<g id="i-mic"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></g>
+<g id="i-search"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></g>
+<g id="i-spark"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></g>
+<g id="i-phone"><path d="M5 4h4l2 5-2 1.5a12 12 0 006 6L18 15l5 2v4a1 1 0 01-1 1A17 17 0 014 6a1 1 0 011-2z"/></g>
+<g id="i-pin"><path d="M12 21s7-6 7-11a7 7 0 10-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></g>
+<g id="i-chat"><path d="M4 5h16v11H9l-5 4z"/></g>
+<g id="i-menu"><path d="M4 7h16M4 12h16M4 17h16"/></g>
+<g id="i-x"><path d="M6 6l12 12M18 6L6 18"/></g>
+</defs></svg>
+
+<div id="prog"></div>
+<canvas id="field" aria-hidden="true"></canvas>
+<div class="vig"></div>
+
+<header id="hdr"><div class="wrap">
+  <a href="/index.html" class="brand"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Coimbatore</small></span></a>
+  <nav class="links" id="nav">
+    <a href="#worlds">Learning</a><a href="#room">AI Tutor</a><a href="#evaluate">Evaluation</a><a href="#growth">Growth</a><a href="#contact">Contact</a>
+    <a href="#room" class="btn btn-primary" style="padding:10px 18px" id="startBtn">Start a session</a>
+  </nav>
+  <button class="burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24"><use href="#i-menu"/></svg></button>
+</div></header>
+
+<main>
+<!-- HERO: SEARCH → DISCOVERY -->
+<section id="hero"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">Where learning becomes visible</div>
+    <h1>It starts with a student, <span class="g">looking for help.</span></h1>
+    <p class="hero-sub">Kongu Brilliance, Coimbatore — home, centre, online &amp; engineering tuition for Classes 1–12, with experienced teachers and an AI learning layer that never sleeps.</p>
+    <div class="hero-cta">
+      <a href="#room" class="btn btn-primary">Start an AI learning session <svg class="ic"><use href="#i-arrow"/></svg></a>
+      <a href="#contact" class="btn btn-ghost">Talk to us</a>
+    </div>
+  </div>
+  <div class="hero-vis">
+    <div class="searchbox">
+      <div class="searchbar"><svg class="ic" style="color:var(--faint)"><use href="#i-search"/></svg><span id="stype"></span><span class="cur"></span></div>
+      <div class="sresults" id="sresults">
+        <div class="sres"><span class="rank">01</span><div class="rt">Coaching listings<small>Generic directory results</small></div></div>
+        <div class="sres top"><span class="rank">02</span><div class="rt">Kongu Brilliance Tuition Centre<small>Home · Centre · Online · Engineering · Classes 1–12</small></div><span class="badge">Best match</span></div>
+        <div class="sres"><span class="rank">03</span><div class="rt">Other tuition centres<small>Coimbatore</small></div></div>
+      </div>
+      <div class="sig-chips" id="sigchips">
+        <span>CBSE</span><span>ICSE</span><span>State</span><span>Coimbatore</span><span>Maths</span><span>Small batches</span><span>AI-assisted</span>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- HUMAN + AI -->
+<section class="scene" id="human"><div class="wrap">
+  <div class="scene-head reveal">
+    <div class="eyebrow" style="justify-content:center">Human at the heart</div>
+    <h2>Real teachers. <em>An intelligent layer around them.</em></h2>
+    <p>Experienced tutors explain, mentor and correct. Technology quietly analyses learning patterns, generates practice and evaluates work — so teachers can spend their time teaching.</p>
+  </div>
+  <div class="sys reveal">
+    <div class="c"><div class="k">The student</div><h3>At the centre</h3><ul><li>Learns at their own pace</li><li>Asks doubts any time</li><li>Sees their own progress</li></ul></div>
+    <div class="c"><div class="k">The teacher</div><h3>Leads the learning</h3><ul><li>Explains &amp; mentors</li><li>Reads each student</li><li>Decides the strategy</li></ul></div>
+    <div class="c"><div class="k">The AI layer</div><h3>Assists tirelessly</h3><ul><li>Analyses every answer</li><li>Generates targeted practice</li><li>Flags recurring mistakes</li></ul></div>
+  </div>
+</div></section>
+
+<!-- FOUR WORLDS -->
+<section class="scene" id="worlds"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Four ways to learn</div><h2>One standard of teaching, <em>four environments.</em></h2></div>
+  <div class="worlds">
+    <div class="world reveal"><div class="env" data-env="offline"></div><div class="body"><div class="k">Offline · at our centre</div><h3>Offline tuition</h3><p>Focused small-group classes with a teacher at the board and regular written tests.</p><div class="scn">A student raises a doubt; the teacher responds while the system notes the concept.</div></div></div>
+    <div class="world reveal"><div class="env" data-env="online"></div><div class="body"><div class="k">Online · live from anywhere</div><h3>Online tuition</h3><p>Live interactive sessions on a shared board — the full classroom, from home.</p><div class="scn">Video, whiteboard, live captions and chat — questions answered in real time.</div></div></div>
+    <div class="world reveal"><div class="env" data-env="home"></div><div class="body"><div class="k">Home · one-to-one</div><h3>Home tuition</h3><p>A tutor at your child's own desk, completely personalised in pace and attention.</p><div class="scn">Individual teaching while performance is tracked quietly in the background.</div></div></div>
+    <div class="world reveal"><div class="env" data-env="engineering"></div><div class="body"><div class="k">Engineering · advanced</div><h3>Engineering tuition</h3><p>Rigorous coaching in mathematics and core technical subjects for engineering students.</p><div class="scn">Problem-solving, technical concepts and exam-focused preparation.</div></div></div>
+  </div>
+</div></section>
+
+<!-- 24 HOUR -->
+<section class="scene" id="always"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Around the clock</div><h2>Learning doesn't stop when <em>class ends.</em></h2><p>Revise, ask a doubt, or practise at any hour — the AI layer picks up from where the lesson left off.</p></div>
+  <div class="clock-wrap">
+    <div class="clock reveal">
+      <svg viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="82" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+        <circle id="clockArc" cx="100" cy="100" r="82" fill="none" stroke="url(#cg)" stroke-width="2.5" stroke-linecap="round" transform="rotate(-90 100 100)"/>
+        <defs><linearGradient id="cg"><stop offset="0" stop-color="#67d6cf"/><stop offset="1" stop-color="#e0b25c"/></linearGradient></defs>
+        <text x="100" y="96" text-anchor="middle" fill="#eceef5" font-family="Space Grotesk" font-weight="600" font-size="20">24 hrs</text>
+        <text x="100" y="116" text-anchor="middle" fill="#6a7290" font-family="JetBrains Mono" font-size="8" letter-spacing="2">ALWAYS ON</text>
+        <circle id="clockDot" cx="100" cy="18" r="4" fill="#e0b25c"/>
+      </svg>
+    </div>
+    <div class="qa" id="qa">
+      <div class="q"><div class="time">8:15 PM</div><div class="txt">“Explain today's algebra topic again.”</div><div class="ans">Re-teaches the concept with a fresh example.</div></div>
+      <div class="q"><div class="time">11:42 PM</div><div class="txt">“Give me 3 practice questions on fractions.”</div><div class="ans">Generates targeted practice at the right level.</div></div>
+      <div class="q"><div class="time">6:17 AM</div><div class="txt">“Quick revision before my test.”</div><div class="ans">Summarises weak areas from earlier attempts.</div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ===== AI TUTOR ROOM ===== -->
+<section id="room"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">The signature experience</div><h2>Have a lesson with the <em>AI tutor.</em></h2><p>Press start — the tutor teaches on a live board, asks you a question, and adapts when you say you don't understand. Speak or type.</p></div>
+  <div class="room reveal">
+    <div class="room-bar"><span>AI Tutor Room</span><span class="live">Session ready</span><span class="demo" id="modeTag">Interactive demonstration</span></div>
+    <div class="room-grid">
+      <!-- tutor -->
+      <div class="room-side">
+        <div class="presence">
+          <div class="orb" id="orb"><div class="wave" id="wave"><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div><div class="nm">Tutor K</div><div class="rl">AI learning guide</div></div>
+        </div>
+        <div class="state-list" id="states">
+          <div class="st" data-s="listen"><span class="d"></span> Listening</div>
+          <div class="st" data-s="think"><span class="d"></span> Understanding your question</div>
+          <div class="st" data-s="concept"><span class="d"></span> Identifying the concept</div>
+          <div class="st" data-s="explain"><span class="d"></span> Preparing an explanation</div>
+          <div class="st" data-s="speak"><span class="d"></span> Explaining</div>
+        </div>
+      </div>
+      <!-- whiteboard -->
+      <div class="board-col">
+        <div class="board"><div class="grid"></div><div class="content" id="board"></div><div class="cap" id="cap"><span class="who">Tutor K</span><span id="capText">Press “Start lesson” — or ask me anything.</span></div></div>
+        <div class="board-controls">
+          <button class="ctrl mic" id="micBtn"><svg class="ic"><use href="#i-mic"/></svg> Speak</button>
+          <button class="ctrl" data-cmd="start">▷ Start lesson</button>
+          <button class="ctrl" data-cmd="simplify">Simplify</button>
+          <button class="ctrl" data-cmd="example">Example</button>
+          <button class="ctrl" data-cmd="harder">Harder</button>
+          <button class="ctrl" data-cmd="repeat">Repeat</button>
+          <button class="ctrl" data-cmd="graph">Show graph</button>
+          <button class="ctrl spacer" id="soundState">Voice: browser engine</button>
+        </div>
+      </div>
+      <!-- context -->
+      <div class="room-side right">
+        <div class="ctx">
+          <h4>Lesson context</h4>
+          <div class="cx"><span>Subject</span><b id="cx-subj">Mathematics</b></div>
+          <div class="cx"><span>Topic</span><b id="cx-topic">Linear equations</b></div>
+          <div class="cx"><span>Difficulty</span><b id="cx-diff">Level 2</b></div>
+          <div class="cx"><span>Status</span><b id="cx-status" style="color:var(--ice2)">Ready</b></div>
+          <div class="qbox" id="qbox">
+            <div class="k">Tutor asks</div>
+            <div id="qtext">—</div>
+            <div class="ans-in"><input id="qans" placeholder="Type or speak your answer"><button id="qsend">Check</button></div>
+          </div>
+          <p class="hint">Voice needs a Chromium browser &amp; mic permission. On the live site the tutor can use the real AI model; otherwise it runs a scripted lesson. No audio is recorded or stored.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- PAPER EVALUATION -->
+<section class="scene" id="evaluate"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">From paper to insight</div><h2>A written answer, <em>read and understood.</em></h2><p>A handwritten sheet is scanned, the working is followed step by step, and the exact line where it broke becomes a targeted lesson.</p></div>
+  <div class="worlds" style="grid-template-columns:1fr 1fr;align-items:center">
+    <div class="reveal">
+      <div class="paper" id="paper"><div class="scan" id="scan"></div>
+        <div class="h"><span>Class 8 · Mathematics</span><span>Q4 · 5 marks</span></div>
+        <div class="q">Solve&nbsp; 2x + 5 = 15</div>
+        <div class="a">Step 1&nbsp; 2x = 15 <span class="flag" id="pflag">+ 5</span> &nbsp;→&nbsp; x = <span class="x">10</span></div>
+        <div class="q" style="font-size:.82rem;color:#7a7768">Correct: 15 − 5 = 10 → x = 5</div>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="flow" id="pflow">
+        <div class="st">Document detected · OCR</div>
+        <div class="st">Question identified — Q4</div>
+        <div class="st err">Error — Step 1: added instead of subtracting</div>
+        <div class="st warn">Concept gap — transposing across “=”</div>
+        <div class="st act">Targeted practice generated</div>
+        <div class="st ok">Sent to Tutor K for a mini-lesson</div>
+      </div>
+      <div class="paper-link"><button class="btn btn-ai" id="paperToTutor"><svg class="ic"><use href="#i-spark"/></svg> Open this in the AI Tutor</button></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- KNOWLEDGE GRAPH -->
+<section class="scene" id="memory"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Learning memory</div><h2>Every learner has a shape. <em>The system maps it.</em></h2><p>A map of ideas, not surveillance — strong concepts hold, weak ones stay lit until mastered.</p></div>
+  <div class="kg reveal" id="kg"><svg id="kglines"></svg></div>
+  <p class="note">Illustrative learning profile — example data, not a real student record.</p>
+</div></section>
+
+<!-- GROWTH -->
+<section class="scene" id="growth"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Performance growth</div><h2>Real growth is <em>never a straight line.</em></h2></div>
+  <div class="growth reveal">
+    <svg viewBox="0 0 940 380" id="gsvg"><defs><linearGradient id="gf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(224,178,92,.25)"/><stop offset="1" stop-color="rgba(224,178,92,0)"/></linearGradient></defs>
+      <line x1="56" y1="330" x2="900" y2="330" stroke="rgba(255,255,255,.09)"/><line x1="56" y1="40" x2="56" y2="330" stroke="rgba(255,255,255,.09)"/>
+      <path class="ga" id="ga"/><path class="gl" id="gl"/><g id="gpts"></g>
+    </svg>
+    <p class="note">Interactive demonstration · illustrative trajectory with a setback and recovery</p>
+  </div>
+</div></section>
+
+<!-- CAREER -->
+<section class="scene" id="career"><div class="wrap">
+  <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">The bigger picture</div><h2>Not just the next exam — <em>the next chapter.</em></h2><p>Strong fundamentals compound into confidence, higher education and, in time, a career.</p></div>
+  <div class="panel reveal" style="border-radius:16px">
+    <div class="career">
+      <div class="cstep"><div class="n">01</div><h4>Strong fundamentals</h4><p>Concepts that actually hold.</p></div>
+      <div class="cstep"><div class="n">02</div><h4>Exam readiness</h4><p>Board exams, confidently.</p></div>
+      <div class="cstep"><div class="n">03</div><h4>Higher education</h4><p>College &amp; specialisation.</p></div>
+      <div class="cstep"><div class="n">04</div><h4>Skills &amp; growth</h4><p>Learning that continues.</p></div>
+      <div class="cstep last"><div class="n">05</div><h4>A better future</h4><p>Ready for what comes next.</p></div>
+    </div>
+  </div>
+  <p class="note" style="text-align:left;margin-top:14px">Aspirational journey — Kongu Brilliance does not guarantee specific placements or outcomes.</p>
+</div></section>
+
+<!-- FINAL -->
+<section id="final"><div class="wrap">
+  <div class="eyebrow reveal" style="justify-content:center">The whole ecosystem</div>
+  <h2 class="reveal">Human teaching. Intelligent learning.</h2>
+  <p class="tag reveal">Better futures — for Classes 1–12, in Coimbatore.</p>
+  <div class="ctarow reveal">
+    <a href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20book%20a%20free%20consultation%20at%20Kongu%20Brilliance" target="_blank" rel="noopener" class="btn btn-primary">Book a consultation <svg class="ic"><use href="#i-arrow"/></svg></a>
+    <a href="tel:+919514524599" class="btn btn-ghost"><svg class="ic"><use href="#i-phone"/></svg> Call +91 95145 24599</a>
+    <button class="btn btn-ai" id="talkK2"><svg class="ic"><use href="#i-spark"/></svg> Talk to Tutor K</button>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <div class="fg">
+    <div><div class="brand" style="margin-bottom:14px"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Where Brilliance is Born</small></span></div><p style="color:var(--muted);font-size:.88rem">Home, centre &amp; online tuition for Classes 1–12 · CBSE · ICSE · State · Matric · ISC · IGCSE. Founded 2021.</p></div>
+    <div class="fcol"><h4>Learn</h4><a href="#worlds">Offline tuition</a><a href="#worlds">Online tuition</a><a href="#worlds">Home tuition</a><a href="#worlds">Engineering tuition</a></div>
+    <div class="fcol"><h4>Explore</h4><a href="/index.html">Home</a><a href="#room">AI Tutor</a><a href="/exam-portal.html">Exam Portal</a><a href="#growth">Student growth</a></div>
+    <div class="fcol"><h4>Visit &amp; contact</h4><p>Nilamukil Complex, Mettupalayam Rd,<br>K. Vadamadurai, Coimbatore – 641017</p><a href="tel:+919514524599">+91 95145 24599</a><a href="tel:+917845915044">+91 78459 15044</a><a href="https://wa.me/919514524599" target="_blank" rel="noopener">WhatsApp</a></div>
+  </div>
+  <div class="fbot"><span>© <span id="yr"></span> Kongu Brilliance, Coimbatore</span><span>Human teaching · Intelligent learning</span></div>
+  <p class="disc">About the demonstrations: the AI Tutor Room, paper evaluation, knowledge graph and growth figures are interactive demonstrations of how AI-assisted learning works. Voice uses your browser's built-in speech engine; free-form answers use the live AI model where available and otherwise fall back to a scripted lesson. Numbers shown are illustrative examples, not real student records, and no audio or personal data is stored on this page. Business details are from kongubrilliance.com; replace testimonials and any headline statistics with verified content before publishing.</p>
+</div></footer>
+
+<button class="askfab" id="askfab"><svg class="ic"><use href="#i-spark"/></svg> Ask Tutor K</button>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const MOB=innerWidth<820;
+
+/* ---------- background field ---------- */
+(function(){const c=$('#field'),x=c.getContext('2d');let W,H,P=[];
+ function sz(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;}sz();addEventListener('resize',sz);
+ const N=RM?0:(MOB?30:70);for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.1,vy:(Math.random()-.5)*.1});
+ let warm=0;addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;warm=Math.min(1,scrollY/h);},{passive:true});
+ function d(){x.clearRect(0,0,W,H);const R=103+warm*120,G=214-warm*36,B=207-warm*115;
+  for(let i=0;i<P.length;i++){const p=P[i];p.x+=p.vx*devicePixelRatio;p.y+=p.vy*devicePixelRatio;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+   for(let j=i+1;j<P.length;j++){const q=P[j],dx=p.x-q.x,dy=p.y-q.y,dd=Math.hypot(dx,dy),md=150*devicePixelRatio;if(dd<md){x.strokeStyle=`rgba(${R},${G},${B},${(1-dd/md)*.07})`;x.lineWidth=1;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke();}}
+   x.fillStyle=`rgba(${R},${G},${B},.45)`;x.beginPath();x.arc(p.x,p.y,1.1*devicePixelRatio,0,7);x.fill();}
+  requestAnimationFrame(d);}
+ if(!RM)d();else c.style.background='radial-gradient(ellipse at 50% 25%,rgba(103,214,207,.05),transparent 60%)';})();
+
+/* ---------- nav/progress ---------- */
+const hdr=$('#hdr'),prog=$('#prog'),nav=$('#nav'),burger=$('#burger');
+burger.onclick=()=>nav.classList.toggle('open');nav.querySelectorAll('a').forEach(a=>a.onclick=()=>nav.classList.remove('open'));
+$('#yr').textContent=new Date().getFullYear();
+addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;prog.style.width=(scrollY/h*100)+'%';hdr.classList.toggle('solid',scrollY>50);},{passive:true});
+
+/* ---------- reveals ---------- */
+const revO=new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){if(window.gsap)gsap.to(e.target,{opacity:1,y:0,duration:.85,ease:'power3.out'});else{e.target.style.opacity=1;e.target.style.transform='none';}o.unobserve(e.target);}}),{threshold:.12});
+$$('.reveal').forEach(el=>revO.observe(el));
+
+/* ---------- world env line-art ---------- */
+function env(key,host){const A={
+ offline:`<svg viewBox='0 0 400 170' fill='none' stroke='%23e0b25c' stroke-width='1.3' opacity='.9'><rect x='150' y='30' width='100' height='60' rx='2'/><line x1='150' y1='48' x2='250' y2='48'/><circle cx='70' cy='128' r='10'/><circle cx='130' cy='134' r='10'/><circle cx='290' cy='134' r='10'/><circle cx='340' cy='128' r='10'/></svg>`,
+ online:`<svg viewBox='0 0 400 170' fill='none' stroke='%2367d6cf' stroke-width='1.3'><rect x='40' y='34' width='150' height='95' rx='3'/><circle cx='115' cy='75' r='16'/><rect x='230' y='44' width='130' height='75' rx='3'/><line x1='230' y1='66' x2='360' y2='66'/><line x1='245' y1='86' x2='330' y2='86'/></svg>`,
+ home:`<svg viewBox='0 0 400 170' fill='none' stroke='%23e0b25c' stroke-width='1.3'><path d='M60 80l45-32 45 32v45H60z'/><circle cx='255' cy='66' r='13'/><circle cx='305' cy='66' r='13'/><rect x='232' y='96' width='96' height='34' rx='2'/></svg>`,
+ engineering:`<svg viewBox='0 0 400 170' fill='none' stroke='%2367d6cf' stroke-width='1.3'><rect x='40' y='44' width='95' height='78' rx='2'/><path d='M55 108l22-34 16 16 22-38'/><circle cx='255' cy='82' r='28'/><path d='M255 54v-8M255 118v-8M227 82h-8M291 82h-8'/><path d='M320 56h44M320 78h44M320 100h30'/></svg>`};
+ host.innerHTML=decodeURIComponent(A[key]);}
+$$('.world .env').forEach(e=>env(e.dataset.env,e));
+
+/* ---------- knowledge graph ---------- */
+(function(){const box=$('#kg'),svg=$('#kglines');
+ const nodes=[{t:'ALGEBRA',x:32,y:24,s:'weak'},{t:'FRACTIONS',x:18,y:60,s:'weak'},{t:'EQUATIONS',x:54,y:44,s:'strong'},{t:'GEOMETRY',x:80,y:26,s:'strong'},{t:'READING',x:76,y:70,s:'strong'},{t:'GRAMMAR',x:46,y:84,s:'strong'}];
+ const links=[[0,2],[1,2],[1,0],[2,3],[2,4],[4,5]];
+ links.forEach(([a,b])=>{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',nodes[a].x);l.setAttribute('y1',nodes[a].y);l.setAttribute('x2',nodes[b].x);l.setAttribute('y2',nodes[b].y);const w=nodes[a].s==='weak'||nodes[b].s==='weak';l.setAttribute('stroke',w?'rgba(226,177,90,.45)':'rgba(84,201,150,.35)');l.setAttribute('stroke-width',w?'.7':'.5');svg.appendChild(l);});
+ svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
+ nodes.forEach(n=>{const d=document.createElement('div');d.className='kn '+n.s;d.textContent=n.t;d.style.left=n.x+'%';d.style.top=n.y+'%';box.appendChild(d);});})();
+
+/* ---------- boot GSAP-driven bits ---------- */
+function boot(){
+ if(!window.gsap){setTimeout(boot,60);return;}gsap.registerPlugin(ScrollTrigger);
+ // search type
+ const q="Best tuition centre for CBSE Maths";let i=0;const st=$('#stype');
+ (function ty(){if(i<=q.length){st.textContent=q.slice(0,i++);setTimeout(ty,RM?0:55);}else{
+   $$('#sresults .sres').forEach((r,k)=>gsap.to(r,{opacity:1,y:0,duration:.5,delay:k*.25}));
+   $$('#sigchips span').forEach((c,k)=>gsap.to(c,{opacity:1,duration:.3,delay:1+k*.12}));}})();
+ // 24h clock
+ ScrollTrigger.create({trigger:'#always',start:'top 60%',once:true,onEnter:()=>{
+   const arc=$('#clockArc'),len=2*Math.PI*82;arc.style.strokeDasharray=len;arc.style.strokeDashoffset=len;gsap.to(arc,{strokeDashoffset:0,duration:2.4,ease:'power2.inOut'});
+   const dot=$('#clockDot');gsap.to({a:0},{a:1,duration:2.4,ease:'power2.inOut',onUpdate:function(){const ang=this.targets()[0].a*2*Math.PI-Math.PI/2;dot.setAttribute('cx',100+82*Math.cos(ang));dot.setAttribute('cy',100+82*Math.sin(ang));}});
+   $$('#qa .q').forEach((el,k)=>gsap.to(el,{opacity:1,x:0,duration:.6,delay:.5+k*.6}));}});
+ // paper
+ ScrollTrigger.create({trigger:'#evaluate',start:'top 58%',once:true,onEnter:runPaper});
+ // growth
+ ScrollTrigger.create({trigger:'#growth',start:'top 60%',once:true,onEnter:drawGrowth});
+ // knowledge strengthen
+ ScrollTrigger.create({trigger:'#memory',start:'top 60%',once:true,onEnter:()=>{setTimeout(()=>{const w=$$('#kg .kn.weak');w.forEach((n,k)=>setTimeout(()=>{n.classList.remove('weak');n.classList.add('strong');},k*700+500));},400);}});
+}
+addEventListener('load',boot);
+
+function runPaper(){const scan=$('#scan');if(window.gsap){gsap.set(scan,{opacity:1});gsap.fromTo(scan,{top:-80},{top:'100%',duration:1.7,ease:'power1.inOut',onComplete:()=>gsap.to(scan,{opacity:0,duration:.3})});}
+ setTimeout(()=>$('#pflag').classList.add('hl'),1300);
+ $$('#pflow .st').forEach((s,k)=>{if(window.gsap)gsap.to(s,{opacity:1,x:0,duration:.5,delay:1.5+k*.3});else{s.style.opacity=1;s.style.transform='none';}});}
+function drawGrowth(){const data=[38,52,46,60,73,90],labels=['ASSESS','PRACTISE','SETBACK','INTERVENE','RETRY','MASTERY'];
+ const x0=56,x1=900,y0=330,yT=56,dx=(x1-x0)/(data.length-1),X=i=>x0+i*dx,Y=v=>y0-(v-30)/(100-30)*(y0-yT);
+ let d='M '+X(0)+' '+Y(data[0]);for(let i=1;i<data.length;i++){const cx=(X(i-1)+X(i))/2;d+=` C ${cx} ${Y(data[i-1])}, ${cx} ${Y(data[i])}, ${X(i)} ${Y(data[i])}`;}
+ const gl=$('#gl');gl.setAttribute('d',d);const L=gl.getTotalLength();gl.style.strokeDasharray=L;gl.style.strokeDashoffset=L;gsap.to(gl,{strokeDashoffset:0,duration:2.2,ease:'power2.inOut'});
+ $('#ga').setAttribute('d',d+` L ${X(5)} ${y0} L ${X(0)} ${y0} Z`);gsap.to('#ga',{opacity:1,duration:1,delay:1.3});
+ const G=$('#gpts');data.forEach((v,i)=>{const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',X(i));c.setAttribute('cy',Y(v));c.setAttribute('r',5);c.setAttribute('class','gd');G.appendChild(c);
+  const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',X(i));t.setAttribute('y',Y(v)-15);t.setAttribute('class','gt');t.textContent=v+'%';G.appendChild(t);
+  const l=document.createElementNS('http://www.w3.org/2000/svg','text');l.setAttribute('x',X(i));l.setAttribute('y',y0+24);l.setAttribute('class','gc');l.textContent=labels[i];G.appendChild(l);
+  gsap.to(c,{opacity:1,duration:.4,delay:.4+i*.32});gsap.to(t,{opacity:1,duration:.4,delay:.55+i*.32});gsap.to(l,{opacity:.85,duration:.4,delay:.3+i*.32});});}
+
+/* ============================================================
+   AI TUTOR ROOM ENGINE v2 — real interactive tutor
+   Multi-turn memory · any subject/class · LaTeX (KaTeX) · voice
+   Socratic practice + answer checking · uses live /api/llm brain
+   ============================================================ */
+const board=$('#board'),cap=$('#cap'),capText=$('#capText'),orb=$('#orb'),wave=$('#wave'),micBtn=$('#micBtn');
+const cxSubj=$('#cx-subj'),cxTopic=$('#cx-topic'),cxDiff=$('#cx-diff'),cxStatus=$('#cx-status');
+const qbox=$('#qbox'),qtext=$('#qtext'),qans=$('#qans'),qsend=$('#qsend'),modeTag=$('#modeTag');
+const canSpeak='speechSynthesis'in window, canHear=('webkitSpeechRecognition'in window||'SpeechRecognition'in window);
+let voice=null;if(canSpeak){const pv=()=>{const v=speechSynthesis.getVoices();voice=v.find(x=>/en-IN/i.test(x.lang))||v.find(x=>/en-GB/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||v[0];};pv();speechSynthesis.onvoiceschanged=pv;}
+let speaking=false,rec=null,listening=false,busy=false,awaitingAnswer=false,diff=2;
+
+/* lesson context (class + subject picker injected into the room bar) */
+let ctx={cls:'Class 8',subject:'Mathematics'};
+(function injectPicker(){
+  const bar=document.querySelector('.room-bar');if(!bar)return;
+  const wrap=document.createElement('span');wrap.className='tutor-pick';
+  wrap.style.cssText='margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  const mk=(opts,val)=>{const s=document.createElement('select');
+    s.style.cssText='background:rgba(255,255,255,.06);color:#eceef5;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 8px;font-family:var(--mono,monospace);font-size:.68rem;';
+    opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(o===val)op.selected=true;s.appendChild(op);});return s;};
+  const cls=mk(Array.from({length:12},(_,i)=>'Class '+(i+1)),ctx.cls);
+  const subj=mk(['Mathematics','Science','Physics','Chemistry','Biology','English','Social Science','Computer Science','Accountancy','Economics'],ctx.subject);
+  cls.onchange=()=>{ctx.cls=cls.value;if(cxSubj){}syncCtx();};
+  subj.onchange=()=>{ctx.subject=subj.value;syncCtx();};
+  wrap.appendChild(cls);wrap.appendChild(subj);bar.appendChild(wrap);
+})();
+function syncCtx(){if(cxSubj)cxSubj.textContent=ctx.subject;}
+syncCtx();
+
+/* ---- orb / wave / states ---- */
+function setState(s){$$('#states .st').forEach(el=>el.classList.toggle('on',el.dataset.s===s));}
+function orbState(s){orb.className='orb'+(s?' '+s:'');}
+let waveTimer=null;
+function waveOn(){if(waveTimer||!wave)return;const bars=wave.querySelectorAll('i');waveTimer=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*24)+'px'),110);}
+function waveOff(){clearInterval(waveTimer);waveTimer=null;if(wave)wave.querySelectorAll('i').forEach(b=>b.style.height='8px');}
+function status(t,c){if(cxStatus){cxStatus.textContent=t;if(c)cxStatus.style.color=c;}}
+
+/* ---- speech out ---- */
+function say(text,onend){
+  if(!text){onend&&onend();return;}
+  setState('speak');orbState('speaking');waveOn();status('Speaking','var(--ice2)');
+  if(!canSpeak){setTimeout(()=>{waveOff();orbState('');status('Ready');onend&&onend();},Math.min(4200,700+text.length*32));return;}
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);if(voice)u.voice=voice;u.rate=1;u.pitch=1.02;u.lang=(voice&&voice.lang)||'en-IN';
+    speaking=true;u.onend=()=>{speaking=false;waveOff();orbState('');status('Ready');onend&&onend();};u.onerror=u.onend;speechSynthesis.speak(u);
+  }catch(e){waveOff();orbState('');onend&&onend();}
+}
+function stopSpeak(){if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}speaking=false;waveOff();}
+
+/* ---- whiteboard render (with KaTeX) ---- */
+const escHtml=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function renderBoard(title,bodyText){
+  if(!board)return;board.innerHTML='';
+  if(title){const t=document.createElement('div');t.className='bl title';t.style.opacity=1;t.textContent=title;board.appendChild(t);}
+  String(bodyText||'').split(/\n+/).forEach(line=>{
+    line=line.trim();if(!line)return;
+    const d=document.createElement('div');d.className='bl';d.style.opacity=1;
+    // bold **x** and highlight ==x==
+    let html=escHtml(line).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span class="hl">$1</span>');
+    d.innerHTML=html;board.appendChild(d);
+    if(window.gsap)gsap.fromTo(d,{opacity:0,y:8},{opacity:1,y:0,duration:.35});
+  });
+  typesetMath(board,0);
+  if(board.scrollTo)board.scrollTop=board.scrollHeight;
+}
+function typesetMath(el,tries){
+  if(window.renderMathInElement){try{renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false});}catch(e){}return;}
+  if((tries||0)<20)setTimeout(()=>typesetMath(el,(tries||0)+1),150); // KaTeX may still be loading (defer)
+}
+
+/* ---- conversation memory ---- */
+const SYS=()=>`You are Tutor K, an expert, warm and patient tutor at Kongu Brilliance Tuition Centre, Coimbatore. You teach ${ctx.cls}, ${ctx.subject} (boards: CBSE, ICSE, State, Matric, ISC, IGCSE). Teach ANY topic the student asks, at the right level for their class.
+HOW TO TEACH:
+- Be interactive and Socratic. Explain in small, clear steps. After teaching a step or concept, ask ONE short check-question and stop, so the student can answer.
+- Adapt: if the student is confused or wrong, re-explain more simply using a concrete real-life analogy, then re-ask. If they answer well, praise briefly and go a little deeper or harder.
+- Keep each turn focused: about 3 to 6 short sentences or a few worked steps. Never dump a whole chapter at once.
+- Use LaTeX for ALL mathematics: inline $...$ and display $$...$$. Never write formulae in words. Mark a final answer with ==...==.
+- Never invent fees, exam results, or statistics. For admissions or fees, tell them to call 95145 24599.
+ALWAYS reply as STRICT JSON only, no extra text, with these keys:
+{"board":"the explanation to show on the whiteboard — use LaTeX and put each step on its own line","speak":"one or two short spoken sentences in plain English, with any numbers or math said in words (no symbols), summarising what you just showed","question":"a single short check-question for the student, or empty string if none","topic":"short current topic name"}`;
+let history=[];
+function resetHistory(){history=[{role:'system',content:SYS()}];}
+resetHistory();
+
+async function callTutor(userText,{seedBoard,seedStatus}={}){
+  if(busy)return;busy=true;awaitingAnswer=false;qbox&&qbox.classList.remove('on');
+  history.push({role:'user',content:userText});
+  // keep system + last 14 turns
+  if(history.length>15)history=[history[0],...history.slice(-14)];
+  setState('think');orbState('thinking');status(seedStatus||'Thinking…','var(--brass)');
+  if(seedBoard)capText.textContent=seedBoard;
+  let data=null,raw='';
+  try{
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),22000);
+    const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+      body:JSON.stringify({messages:history,temperature:0.5,json:true})});
+    clearTimeout(to);
+    if(r.ok){const j=await r.json();raw=(j&&j.text)||'';if(modeTag)modeTag.textContent='Live AI · '+((j&&j.model)||'model');}
+  }catch(e){}
+  if(raw){data=parseReply(raw);}
+  busy=false;
+  if(!data){
+    say("I could not reach the tutor engine just now. Please check your connection and try again — or call us on 9 5 1 4 5, 2 4 5 9 9.");
+    renderBoard('Connection issue','The AI tutor could not be reached.\nPlease try again in a moment.');
+    status('Offline','var(--bad)');return;
+  }
+  history.push({role:'assistant',content:raw});
+  if(data.topic&&cxTopic)cxTopic.textContent=data.topic;
+  renderBoard(data.topic||'',data.board||'');
+  const spoken=(data.speak||data.board||'').slice(0,600);
+  say(spoken,()=>{
+    if(data.question){
+      awaitingAnswer=true;qtext&&(qtext.textContent=data.question);qbox&&qbox.classList.add('on');
+      status('Your turn','var(--brass)');capText.textContent='Your turn — type or speak your answer.';
+    }else{status('Ready');}
+  });
+}
+function parseReply(raw){
+  let s=String(raw).trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  try{return JSON.parse(s);}catch(e){}
+  // try to locate first {...}
+  const m=s.match(/\{[\s\S]*\}/);if(m){try{return JSON.parse(m[0]);}catch(e){}}
+  // fallback: use raw text as board + plain speak
+  const plain=s.replace(/\$+[^$]*\$+/g,'').replace(/[#*_>`]/g,'').trim();
+  return {board:s,speak:plain.slice(0,300),question:'',topic:cxTopic?cxTopic.textContent:''};
+}
+
+/* ---- public actions ---- */
+function startLesson(topic){
+  stopSpeak();resetHistory();
+  const t=topic||(qans&&qans.value.trim());
+  const ask=t?`Teach me: ${t}. Start the lesson.`:`Start teaching me an important ${ctx.subject} topic for ${ctx.cls}. Begin with the first concept.`;
+  if(qans)qans.value='';
+  callTutor(ask,{seedBoard:'Starting your lesson…',seedStatus:'Preparing lesson'});
+}
+function askTutor(text){if(!text)return;stopSpeak();capText.textContent='“'+text+'”';callTutor(text,{seedStatus:'Understanding'});}
+function submitAnswer(text){if(!text)return;stopSpeak();qbox&&qbox.classList.remove('on');capText.textContent='Your answer: “'+text+'”';callTutor(`My answer: ${text}`,{seedStatus:'Checking your answer'});}
+
+/* ---- control buttons ---- */
+const CMD={
+  start:()=>startLesson(),
+  simplify:()=>askTutor('I did not fully understand. Please explain that again more simply, with a real-life analogy.'),
+  example:()=>askTutor('Please give me another worked example of this, step by step.'),
+  harder:()=>{diff++;if(cxDiff)cxDiff.textContent='Level '+diff;askTutor('Give me a harder practice problem on this topic and let me try it.');},
+  repeat:()=>askTutor('Please repeat and summarise the last explanation.'),
+  graph:()=>askTutor('Show and explain a graph or diagram for this concept. Describe the axes and shape clearly.')
+};
+$$('.board-controls .ctrl[data-cmd]').forEach(b=>b.onclick=()=>{const f=CMD[b.dataset.cmd];if(f)f();});
+
+/* answer box */
+if(qsend)qsend.onclick=()=>{const v=qans&&qans.value.trim();if(!v)return;qans.value='';awaitingAnswer?submitAnswer(v):askTutor(v);};
+if(qans)qans.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=qans.value.trim();if(!v)return;qans.value='';awaitingAnswer?submitAnswer(v):askTutor(v);}});
+
+/* ---- voice input ---- */
+function startListen(){
+  if(!canHear){status('Type instead');capText.textContent='Voice needs a Chromium browser — type your question in the box.';return;}
+  stopSpeak();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;try{rec=new SR();}catch(e){return;}
+  rec.lang='en-IN';rec.interimResults=true;rec.maxAlternatives=1;let fin='';
+  listening=true;micBtn&&micBtn.classList.add('on');setState('listen');orbState('listening');waveOn();status('Listening','var(--ice2)');capText.textContent='Listening…';
+  rec.onresult=e=>{let it='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:it+=t;}capText.textContent='“'+(fin+it).trim()+'”';};
+  rec.onerror=()=>{listening=false;micBtn&&micBtn.classList.remove('on');waveOff();orbState('');status('Ready');};
+  rec.onend=()=>{listening=false;micBtn&&micBtn.classList.remove('on');waveOff();orbState('');const t=fin.trim();if(!t){status('Ready');return;}awaitingAnswer?submitAnswer(t):askTutor(t);};
+  try{rec.start();}catch(e){listening=false;micBtn&&micBtn.classList.remove('on');}
+}
+if(micBtn)micBtn.onclick=()=>{if(listening){try{rec.stop();}catch(e){}}else if(speaking){stopSpeak();status('Ready');}else{startListen();}};
+
+/* ---- entry points ---- */
+const paperBtn=$('#paperToTutor');if(paperBtn)paperBtn.onclick=()=>{location.hash='#room';setTimeout(()=>startLesson('Solve the linear equation 2x + 5 = 15, and explain the balance method'),700);};
+const talk2=$('#talkK2');if(talk2)talk2.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
+const fab=$('#askfab');if(fab)fab.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
+addEventListener('beforeunload',()=>{if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}});
+
+</script>
+</body>
+</html>
