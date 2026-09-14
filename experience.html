@@ -17,6 +17,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:rgba(255,255,255,.04); --panel2:rgba(255,255,255,.065);
@@ -592,131 +595,177 @@ function drawGrowth(){const data=[38,52,46,60,73,90],labels=['ASSESS','PRACTISE'
   gsap.to(c,{opacity:1,duration:.4,delay:.4+i*.32});gsap.to(t,{opacity:1,duration:.4,delay:.55+i*.32});gsap.to(l,{opacity:.85,duration:.4,delay:.3+i*.32});});}
 
 /* ============================================================
-   AI TUTOR ROOM ENGINE — voice, whiteboard, lesson, adaptive
+   AI TUTOR ROOM ENGINE v2 — real interactive tutor
+   Multi-turn memory · any subject/class · LaTeX (KaTeX) · voice
+   Socratic practice + answer checking · uses live /api/llm brain
    ============================================================ */
 const board=$('#board'),cap=$('#cap'),capText=$('#capText'),orb=$('#orb'),wave=$('#wave'),micBtn=$('#micBtn');
-const cxTopic=$('#cx-topic'),cxDiff=$('#cx-diff'),cxStatus=$('#cx-status'),qbox=$('#qbox'),qtext=$('#qtext'),qans=$('#qans'),qsend=$('#qsend');
+const cxSubj=$('#cx-subj'),cxTopic=$('#cx-topic'),cxDiff=$('#cx-diff'),cxStatus=$('#cx-status');
+const qbox=$('#qbox'),qtext=$('#qtext'),qans=$('#qans'),qsend=$('#qsend'),modeTag=$('#modeTag');
 const canSpeak='speechSynthesis'in window, canHear=('webkitSpeechRecognition'in window||'SpeechRecognition'in window);
 let voice=null;if(canSpeak){const pv=()=>{const v=speechSynthesis.getVoices();voice=v.find(x=>/en-IN/i.test(x.lang))||v.find(x=>/en-GB/i.test(x.lang))||v.find(x=>/^en/i.test(x.lang))||v[0];};pv();speechSynthesis.onvoiceschanged=pv;}
-let speaking=false,rec=null,listening=false,waitingAnswer=null,lessonPos=0,busy=false,diff=2;
+let speaking=false,rec=null,listening=false,busy=false,awaitingAnswer=false,diff=2;
 
+/* lesson context (class + subject picker injected into the room bar) */
+let ctx={cls:'Class 8',subject:'Mathematics'};
+(function injectPicker(){
+  const bar=document.querySelector('.room-bar');if(!bar)return;
+  const wrap=document.createElement('span');wrap.className='tutor-pick';
+  wrap.style.cssText='margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  const mk=(opts,val)=>{const s=document.createElement('select');
+    s.style.cssText='background:rgba(255,255,255,.06);color:#eceef5;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:5px 8px;font-family:var(--mono,monospace);font-size:.68rem;';
+    opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;if(o===val)op.selected=true;s.appendChild(op);});return s;};
+  const cls=mk(Array.from({length:12},(_,i)=>'Class '+(i+1)),ctx.cls);
+  const subj=mk(['Mathematics','Science','Physics','Chemistry','Biology','English','Social Science','Computer Science','Accountancy','Economics'],ctx.subject);
+  cls.onchange=()=>{ctx.cls=cls.value;if(cxSubj){}syncCtx();};
+  subj.onchange=()=>{ctx.subject=subj.value;syncCtx();};
+  wrap.appendChild(cls);wrap.appendChild(subj);bar.appendChild(wrap);
+})();
+function syncCtx(){if(cxSubj)cxSubj.textContent=ctx.subject;}
+syncCtx();
+
+/* ---- orb / wave / states ---- */
 function setState(s){$$('#states .st').forEach(el=>el.classList.toggle('on',el.dataset.s===s));}
 function orbState(s){orb.className='orb'+(s?' '+s:'');}
 let waveTimer=null;
-function waveOn(){if(waveTimer)return;const bars=wave.querySelectorAll('i');waveTimer=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*24)+'px'),110);}
-function waveOff(){clearInterval(waveTimer);waveTimer=null;wave.querySelectorAll('i').forEach(b=>b.style.height='8px');}
+function waveOn(){if(waveTimer||!wave)return;const bars=wave.querySelectorAll('i');waveTimer=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*24)+'px'),110);}
+function waveOff(){clearInterval(waveTimer);waveTimer=null;if(wave)wave.querySelectorAll('i').forEach(b=>b.style.height='8px');}
+function status(t,c){if(cxStatus){cxStatus.textContent=t;if(c)cxStatus.style.color=c;}}
 
-function say(text,{onend,state='speak'}={}){
-  capText.textContent=text;setState(state);orbState('speaking');waveOn();cxStatus.textContent='Speaking';cxStatus.style.color='var(--ice2)';
-  if(!canSpeak){setTimeout(()=>{waveOff();orbState('');cxStatus.textContent='Ready';onend&&onend();},Math.min(4200,900+text.length*38));return;}
+/* ---- speech out ---- */
+function say(text,onend){
+  if(!text){onend&&onend();return;}
+  setState('speak');orbState('speaking');waveOn();status('Speaking','var(--ice2)');
+  if(!canSpeak){setTimeout(()=>{waveOff();orbState('');status('Ready');onend&&onend();},Math.min(4200,700+text.length*32));return;}
   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);if(voice)u.voice=voice;u.rate=1;u.pitch=1.02;u.lang=(voice&&voice.lang)||'en-IN';
-    speaking=true;u.onend=()=>{speaking=false;waveOff();orbState('');cxStatus.textContent='Ready';onend&&onend();};u.onerror=u.onend;speechSynthesis.speak(u);
-  }catch(e){waveOff();orbState('');onend&&onend();}}
+    speaking=true;u.onend=()=>{speaking=false;waveOff();orbState('');status('Ready');onend&&onend();};u.onerror=u.onend;speechSynthesis.speak(u);
+  }catch(e){waveOff();orbState('');onend&&onend();}
+}
 function stopSpeak(){if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}speaking=false;waveOff();}
 
-/* whiteboard command engine */
-function bClear(){board.innerHTML='';}
-function bLine(html,cls){return new Promise(res=>{const d=document.createElement('div');d.className='bl'+(cls?' '+cls:'');d.innerHTML=html;board.appendChild(d);
-  if(window.gsap)gsap.to(d,{opacity:1,y:0,duration:.4,onComplete:res});else{d.style.opacity=1;d.style.transform='none';res();}});}
-async function boardGraph(){bClear();await bLine('GRAPH · y = 2x + 5','title');
-  const svg=`<svg viewBox="0 0 260 150" style="width:100%;max-width:340px"><g stroke="rgba(255,255,255,.12)"><line x1="20" y1="130" x2="250" y2="130"/><line x1="30" y1="10" x2="30" y2="140"/></g><line x1="30" y1="120" x2="230" y2="30" stroke="#e0b25c" stroke-width="2.5"/><circle cx="30" cy="120" r="3.5" fill="#67d6cf"/><text x="238" y="34" fill="#98a0b6" font-family="JetBrains Mono" font-size="9">y=2x+5</text></svg>`;
-  const d=document.createElement('div');d.className='bl';d.innerHTML=svg;board.appendChild(d);if(window.gsap)gsap.to(d,{opacity:1,y:0,duration:.4});else d.style.opacity=1;}
-
-/* the scripted lesson (linear equations) as command steps */
-const LESSON=[
- {say:"Let's solve a linear equation together. The idea is balance — whatever we do to one side, we do to the other.",board:async()=>{bClear();await bLine('LINEAR EQUATIONS','title');await bLine('2x + 5 = 15');}},
- {say:"First we move the 5 across. Because it's plus 5, we subtract 5 from both sides.",board:async()=>{await bLine('2x + 5 <span class="hl">− 5</span> = 15 <span class="hl">− 5</span>');}},
- {say:"That leaves two x equals ten.",board:async()=>{await bLine('2x = 10');}},
- {say:"Now divide both sides by two, and we get x equals five.",board:async()=>{await bLine('x = <span class="good">5</span>');},ask:{q:"Quick check — solve 3x + 4 = 19. What is x?",accept:['5','x=5','x = 5']}},
-];
-const ADAPT={
- simplify:{say:"Think of it like a balance scale. Take the same weight off both pans and it stays level — that's why we subtract 5 from each side.",board:async()=>{await bLine('balance:  left  =  right','title');await bLine('2x + 5  =  15   (take 5 off both)');await bLine('2x      =  10');}},
- example:{say:"Another example: x plus 7 equals 12. Subtract 7 from both sides, so x equals 5.",board:async()=>{bClear();await bLine('EXAMPLE','title');await bLine('x + 7 = 12');await bLine('x = 12 − 7');await bLine('x = <span class="good">5</span>');}},
- harder:{say:"Let's make it harder. Solve 4x minus 3 equals 2x plus 7. Bring the x terms together and the numbers together.",board:async()=>{bClear();await bLine('HARDER','title');await bLine('4x − 3 = 2x + 7');await bLine('4x − 2x = 7 + 3');await bLine('2x = 10  →  x = <span class="good">5</span>');},bump:1},
- graph:{say:"Here's what y equals two x plus five looks like — a straight line rising steadily.",board:boardGraph},
-};
-
-async function playStep(step){busy=true;setState('explain');cxStatus.textContent='Preparing';
-  if(step.board)await step.board();
-  say(step.say,{onend:()=>{busy=false;
-    if(step.ask){waitingAnswer=step.ask;qtext.textContent=step.ask.q;qbox.classList.add('on');cxStatus.textContent='Waiting for you';cxStatus.style.color='var(--brass)';capText.textContent="Your turn — type or speak your answer.";}
-  }});}
-
-async function startLesson(topic){stopSpeak();lessonPos=0;qbox.classList.remove('on');waitingAnswer=null;
-  if(topic){cxTopic.textContent=topic;}
-  await playStep(LESSON[0]);
-  // auto-advance the first explanation steps with pauses
-  advanceTimer();}
-let adv=null;
-function advanceTimer(){clearTimeout(adv);adv=setTimeout(async function nxt(){
-  if(busy||waitingAnswer){adv=setTimeout(nxt,600);return;}
-  lessonPos++;if(lessonPos<LESSON.length){await playStep(LESSON[lessonPos]);if(!LESSON[lessonPos].ask)adv=setTimeout(nxt,900);}
-},1400);}
-
-function checkAnswer(ans){if(!waitingAnswer)return;const a=(ans||'').toLowerCase().replace(/\s/g,'');
-  const ok=waitingAnswer.accept.some(x=>a.includes(x.toLowerCase().replace(/\s/g,'')));
-  qbox.classList.remove('on');const was=waitingAnswer;waitingAnswer=null;
-  if(ok){say("Exactly right — x equals 5. You subtracted before dividing. That's the balancing method working.",{state:'speak'});cxStatus.textContent='Correct';cxStatus.style.color='var(--ok)';}
-  else{say("Close — let's look at it visually and try once more.",{onend:()=>{ADAPT.simplify.board();},state:'explain'});cxStatus.textContent='Re-teaching';cxStatus.style.color='var(--warn)';}}
-qsend.onclick=()=>{if(qans.value.trim()){checkAnswer(qans.value);qans.value='';}};
-qans.addEventListener('keydown',e=>{if(e.key==='Enter'&&qans.value.trim()){checkAnswer(qans.value);qans.value='';}});
-
-/* control buttons */
-$$('.board-controls .ctrl[data-cmd]').forEach(b=>b.onclick=()=>doCmd(b.dataset.cmd));
-async function doCmd(cmd){stopSpeak();clearTimeout(adv);
- if(cmd==='start'){startLesson();return;}
- if(cmd==='repeat'){if(LESSON[lessonPos])playStep(LESSON[lessonPos]);return;}
- if(ADAPT[cmd]){const a=ADAPT[cmd];if(a.bump){diff++;cxDiff.textContent='Level '+diff;}busy=true;setState('explain');if(a.board)await a.board();say(a.say,{onend:()=>busy=false});return;}
+/* ---- whiteboard render (with KaTeX) ---- */
+const escHtml=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function renderBoard(title,bodyText){
+  if(!board)return;board.innerHTML='';
+  if(title){const t=document.createElement('div');t.className='bl title';t.style.opacity=1;t.textContent=title;board.appendChild(t);}
+  String(bodyText||'').split(/\n+/).forEach(line=>{
+    line=line.trim();if(!line)return;
+    const d=document.createElement('div');d.className='bl';d.style.opacity=1;
+    // bold **x** and highlight ==x==
+    let html=escHtml(line).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span class="hl">$1</span>');
+    d.innerHTML=html;board.appendChild(d);
+    if(window.gsap)gsap.fromTo(d,{opacity:0,y:8},{opacity:1,y:0,duration:.35});
+  });
+  typesetMath(board,0);
+  if(board.scrollTo)board.scrollTop=board.scrollHeight;
+}
+function typesetMath(el,tries){
+  if(window.renderMathInElement){try{renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false});}catch(e){}return;}
+  if((tries||0)<20)setTimeout(()=>typesetMath(el,(tries||0)+1),150); // KaTeX may still be loading (defer)
 }
 
-/* free-form intent (voice/typed questions) */
-const INTENTS=[
- {k:['mistake','wrong','error'],go:()=>{location.hash='#evaluate';setTimeout(runPaper,500);},say:"When a student makes a mistake, we don't just mark it wrong — we find the step that broke, the concept underneath, and turn it into practice. Watch the paper being analysed."},
- {k:['paper','evaluat','grade','correct'],go:()=>{location.hash='#evaluate';setTimeout(runPaper,500);},say:"Here's how a paper is evaluated — scanned, followed step by step, and the exact error located, then targeted practice is created."},
- {k:['online'],go:()=>location.hash='#worlds',say:"Online tuition is a live interactive class on a shared board — the full classroom, from anywhere."},
- {k:['home'],go:()=>location.hash='#worlds',say:"Home tuition is one to one, at your child's own desk, completely personalised."},
- {k:['engineer'],go:()=>location.hash='#worlds',say:"Engineering tuition covers mathematics and core technical subjects, with rigorous problem solving."},
- {k:['offline','centre','center'],go:()=>location.hash='#worlds',say:"Offline tuition is at our Coimbatore centre, in small focused batches with regular tests."},
- {k:['equation','algebra','maths','math','solve','learn','teach'],go:()=>{location.hash='#room';},say:null,lesson:'Linear equations'},
- {k:['fraction'],go:()=>{location.hash='#room';},say:null,lesson:'Fractions'},
- {k:['parent','progress','track'],go:()=>location.hash='#growth',say:"Parents see where a child started, where they are now, and exactly what to work on next."},
- {k:['contact','fee','join','admission','call','number'],go:()=>location.hash='#contact',say:"You can reach Kongu Brilliance on 95145 24599, or message on WhatsApp — we'll arrange a free consultation."},
-];
-async function askK(text){if(!text)return;stopSpeak();clearTimeout(adv);
- setState('think');orbState('thinking');cxStatus.textContent='Understanding';capText.textContent='“'+text+'”';
- const q=text.toLowerCase();const it=INTENTS.find(i=>i.k.some(k=>q.includes(k)));
- // try live model on the real site; fall back to scripted
- let answer=null;
- try{const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),8000);
-   const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
-     body:JSON.stringify({messages:[{role:'system',content:K_SYS},{role:'user',content:text}],temperature:.5,json:false})});
-   clearTimeout(to);if(r.ok){const j=await r.json();if(j&&j.text&&j.text.trim()){answer=j.text.trim();$('#modeTag').textContent='Live AI model';}}
- }catch(e){}
- if(it&&it.go)setTimeout(it.go,300);
- if(it&&it.lesson&&!answer){setTimeout(()=>startLesson(it.lesson),700);return;}
- const final=answer||(it&&it.say)||"I can teach a topic, show how a paper is evaluated, or explain our offline, online, home and engineering tuition. What would you like?";
- say(final);}
-const K_SYS="You are Tutor K, the friendly AI learning guide for Kongu Brilliance Tuition Centre, Coimbatore. Answer in 2-3 short warm spoken sentences, no markdown or lists, spell maths in words. Explain concretely how AI-assisted learning works here: assessing, spotting and analysing mistakes, adapting, generating practice, evaluating answers, showing progress. Never invent statistics, fees, results or testimonials; if unsure of a fact, invite them to call 95145 24599. Context: home, centre and online tuition for Classes 1-12 across CBSE, ICSE, State, Matric, ISC, IGCSE; founded 2021; max 12 students per batch; zero registration fee.";
+/* ---- conversation memory ---- */
+const SYS=()=>`You are Tutor K, an expert, warm and patient tutor at Kongu Brilliance Tuition Centre, Coimbatore. You teach ${ctx.cls}, ${ctx.subject} (boards: CBSE, ICSE, State, Matric, ISC, IGCSE). Teach ANY topic the student asks, at the right level for their class.
+HOW TO TEACH:
+- Be interactive and Socratic. Explain in small, clear steps. After teaching a step or concept, ask ONE short check-question and stop, so the student can answer.
+- Adapt: if the student is confused or wrong, re-explain more simply using a concrete real-life analogy, then re-ask. If they answer well, praise briefly and go a little deeper or harder.
+- Keep each turn focused: about 3 to 6 short sentences or a few worked steps. Never dump a whole chapter at once.
+- Use LaTeX for ALL mathematics: inline $...$ and display $$...$$. Never write formulae in words. Mark a final answer with ==...==.
+- Never invent fees, exam results, or statistics. For admissions or fees, tell them to call 95145 24599.
+ALWAYS reply as STRICT JSON only, no extra text, with these keys:
+{"board":"the explanation to show on the whiteboard — use LaTeX and put each step on its own line","speak":"one or two short spoken sentences in plain English, with any numbers or math said in words (no symbols), summarising what you just showed","question":"a single short check-question for the student, or empty string if none","topic":"short current topic name"}`;
+let history=[];
+function resetHistory(){history=[{role:'system',content:SYS()}];}
+resetHistory();
 
-/* voice input */
-function startListen(){if(!canHear){cxStatus.textContent='Type instead';capText.textContent="Voice needs a Chromium browser — type your answer in the box, or use the lesson buttons.";return;}
- stopSpeak();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;try{rec=new SR();}catch(e){return;}
- rec.lang='en-IN';rec.interimResults=true;rec.maxAlternatives=1;let fin='';
- listening=true;micBtn.classList.add('on');setState('listen');orbState('listening');waveOn();cxStatus.textContent='Listening';cxStatus.style.color='var(--ice2)';capText.textContent='Listening…';
- rec.onresult=e=>{let it='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:it+=t;}capText.textContent='“'+(fin+it).trim()+'”';};
- rec.onerror=()=>{listening=false;micBtn.classList.remove('on');waveOff();orbState('');cxStatus.textContent='Ready';};
- rec.onend=()=>{listening=false;micBtn.classList.remove('on');waveOff();orbState('');const t=fin.trim();
-   if(!t){cxStatus.textContent='Ready';return;}
-   if(waitingAnswer){checkAnswer(t);}else{askK(t);}};
- try{rec.start();}catch(e){listening=false;micBtn.classList.remove('on');}}
-micBtn.onclick=()=>{if(listening){try{rec.stop();}catch(e){}}else if(speaking){stopSpeak();cxStatus.textContent='Ready';}else{startListen();}};
+async function callTutor(userText,{seedBoard,seedStatus}={}){
+  if(busy)return;busy=true;awaitingAnswer=false;qbox&&qbox.classList.remove('on');
+  history.push({role:'user',content:userText});
+  // keep system + last 14 turns
+  if(history.length>15)history=[history[0],...history.slice(-14)];
+  setState('think');orbState('thinking');status(seedStatus||'Thinking…','var(--brass)');
+  if(seedBoard)capText.textContent=seedBoard;
+  let data=null,raw='';
+  try{
+    const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),22000);
+    const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+      body:JSON.stringify({messages:history,temperature:0.5,json:true})});
+    clearTimeout(to);
+    if(r.ok){const j=await r.json();raw=(j&&j.text)||'';if(modeTag)modeTag.textContent='Live AI · '+((j&&j.model)||'model');}
+  }catch(e){}
+  if(raw){data=parseReply(raw);}
+  busy=false;
+  if(!data){
+    say("I could not reach the tutor engine just now. Please check your connection and try again — or call us on 9 5 1 4 5, 2 4 5 9 9.");
+    renderBoard('Connection issue','The AI tutor could not be reached.\nPlease try again in a moment.');
+    status('Offline','var(--bad)');return;
+  }
+  history.push({role:'assistant',content:raw});
+  if(data.topic&&cxTopic)cxTopic.textContent=data.topic;
+  renderBoard(data.topic||'',data.board||'');
+  const spoken=(data.speak||data.board||'').slice(0,600);
+  say(spoken,()=>{
+    if(data.question){
+      awaitingAnswer=true;qtext&&(qtext.textContent=data.question);qbox&&qbox.classList.add('on');
+      status('Your turn','var(--brass)');capText.textContent='Your turn — type or speak your answer.';
+    }else{status('Ready');}
+  });
+}
+function parseReply(raw){
+  let s=String(raw).trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  try{return JSON.parse(s);}catch(e){}
+  // try to locate first {...}
+  const m=s.match(/\{[\s\S]*\}/);if(m){try{return JSON.parse(m[0]);}catch(e){}}
+  // fallback: use raw text as board + plain speak
+  const plain=s.replace(/\$+[^$]*\$+/g,'').replace(/[#*_>`]/g,'').trim();
+  return {board:s,speak:plain.slice(0,300),question:'',topic:cxTopic?cxTopic.textContent:''};
+}
 
-/* entry points */
-$('#startBtn').onclick=e=>{setTimeout(()=>startLesson(),700);};
-$('#paperToTutor').onclick=()=>{location.hash='#room';setTimeout(()=>startLesson('Linear equations'),700);};
-$('#talkK2').onclick=()=>{location.hash='#room';setTimeout(startListen,700);};
-$('#askfab').onclick=()=>{location.hash='#room';setTimeout(startListen,700);};
+/* ---- public actions ---- */
+function startLesson(topic){
+  stopSpeak();resetHistory();
+  const t=topic||(qans&&qans.value.trim());
+  const ask=t?`Teach me: ${t}. Start the lesson.`:`Start teaching me an important ${ctx.subject} topic for ${ctx.cls}. Begin with the first concept.`;
+  if(qans)qans.value='';
+  callTutor(ask,{seedBoard:'Starting your lesson…',seedStatus:'Preparing lesson'});
+}
+function askTutor(text){if(!text)return;stopSpeak();capText.textContent='“'+text+'”';callTutor(text,{seedStatus:'Understanding'});}
+function submitAnswer(text){if(!text)return;stopSpeak();qbox&&qbox.classList.remove('on');capText.textContent='Your answer: “'+text+'”';callTutor(`My answer: ${text}`,{seedStatus:'Checking your answer'});}
+
+/* ---- control buttons ---- */
+const CMD={
+  start:()=>startLesson(),
+  simplify:()=>askTutor('I did not fully understand. Please explain that again more simply, with a real-life analogy.'),
+  example:()=>askTutor('Please give me another worked example of this, step by step.'),
+  harder:()=>{diff++;if(cxDiff)cxDiff.textContent='Level '+diff;askTutor('Give me a harder practice problem on this topic and let me try it.');},
+  repeat:()=>askTutor('Please repeat and summarise the last explanation.'),
+  graph:()=>askTutor('Show and explain a graph or diagram for this concept. Describe the axes and shape clearly.')
+};
+$$('.board-controls .ctrl[data-cmd]').forEach(b=>b.onclick=()=>{const f=CMD[b.dataset.cmd];if(f)f();});
+
+/* answer box */
+if(qsend)qsend.onclick=()=>{const v=qans&&qans.value.trim();if(!v)return;qans.value='';awaitingAnswer?submitAnswer(v):askTutor(v);};
+if(qans)qans.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=qans.value.trim();if(!v)return;qans.value='';awaitingAnswer?submitAnswer(v):askTutor(v);}});
+
+/* ---- voice input ---- */
+function startListen(){
+  if(!canHear){status('Type instead');capText.textContent='Voice needs a Chromium browser — type your question in the box.';return;}
+  stopSpeak();const SR=window.SpeechRecognition||window.webkitSpeechRecognition;try{rec=new SR();}catch(e){return;}
+  rec.lang='en-IN';rec.interimResults=true;rec.maxAlternatives=1;let fin='';
+  listening=true;micBtn&&micBtn.classList.add('on');setState('listen');orbState('listening');waveOn();status('Listening','var(--ice2)');capText.textContent='Listening…';
+  rec.onresult=e=>{let it='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:it+=t;}capText.textContent='“'+(fin+it).trim()+'”';};
+  rec.onerror=()=>{listening=false;micBtn&&micBtn.classList.remove('on');waveOff();orbState('');status('Ready');};
+  rec.onend=()=>{listening=false;micBtn&&micBtn.classList.remove('on');waveOff();orbState('');const t=fin.trim();if(!t){status('Ready');return;}awaitingAnswer?submitAnswer(t):askTutor(t);};
+  try{rec.start();}catch(e){listening=false;micBtn&&micBtn.classList.remove('on');}
+}
+if(micBtn)micBtn.onclick=()=>{if(listening){try{rec.stop();}catch(e){}}else if(speaking){stopSpeak();status('Ready');}else{startListen();}};
+
+/* ---- entry points ---- */
+const paperBtn=$('#paperToTutor');if(paperBtn)paperBtn.onclick=()=>{location.hash='#room';setTimeout(()=>startLesson('Solve the linear equation 2x + 5 = 15, and explain the balance method'),700);};
+const talk2=$('#talkK2');if(talk2)talk2.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
+const fab=$('#askfab');if(fab)fab.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
 addEventListener('beforeunload',()=>{if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}});
+
 </script>
 </body>
 </html>
