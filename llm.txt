@@ -1,0 +1,31 @@
+# Kongu Brilliance
+
+> Kongu Brilliance is a tuition and home-tuition centre in Coimbatore, Tamil Nadu, offering CBSE, State Board and ICSE coaching, plus AI & Data Science courses. We provide home tuition, group coaching, admissions guidance and demo classes.
+
+## Main Pages
+- [Home](https://www.kongubrilliance.com/): Overview of Kongu Brilliance coaching and tuition services in Coimbatore.
+- [Free Demo Class](https://www.kongubrilliance.com/free-demo.html): Book a free demo/trial class.
+- [Admissions](https://www.kongubrilliance.com/admissions.html): Admission process and enrolment.
+- [Courses](https://www.kongubrilliance.com/courses.html): List of courses and subjects offered.
+- [AI & Data Science Courses](https://www.kongubrilliance.com/ai-data-science-courses.html): AI and Data Science training programs.
+- [How It Works](https://www.kongubrilliance.com/how-it-works.html): How the tuition/coaching model works.
+- [CBSE Tuition Coimbatore](https://www.kongubrilliance.com/cbse-tuition-coimbatore.html): CBSE-focused tuition in Coimbatore.
+- [Home Tuition Coimbatore](https://www.kongubrilliance.com/home-tuition-coimbatore.html): Home tuition services in Coimbatore.
+- [Locations](https://www.kongubrilliance.com/locations.html): Areas served.
+- [Results](https://www.kongubrilliance.com/results.html): Student results and achievements.
+- [Testimonials](https://www.kongubrilliance.com/testimonials.html): Parent and student feedback.
+- [Experience](https://www.kongubrilliance.com/experience.html): The Kongu Brilliance learning experience.
+- [About](https://www.kongubrilliance.com/about.html): About the institute.
+- [FAQ](https://www.kongubrilliance.com/faq.html): Frequently asked questions.
+- [Contact](https://www.kongubrilliance.com/contact.html): Contact details and enquiry form.
+
+## Blog
+- [Blog Home](https://www.kongubrilliance.com/blog.html)
+- [CBSE vs State Board vs ICSE](https://www.kongubrilliance.com/blog-cbse-vs-state-board-vs-icse.html)
+- [English Grammar & Writing Skills](https://www.kongubrilliance.com/blog-english-grammar-writing-skills.html)
+- [Home Tuition vs Group Coaching](https://www.kongubrilliance.com/blog-home-tuition-vs-group-coaching.html)
+- [Physics & Chemistry Class 11-12](https://www.kongubrilliance.com/blog-physics-chemistry-class-11-12.html)
+- [Quick Study Tips](https://www.kongubrilliance.com/blog-quick-study-tips.html)
+- [Score 100 in Maths Class 10-12](https://www.kongubrilliance.com/blog-score-100-maths-class-10-12.html)
+- [Time Management Tips for Students](https://www.kongubrilliance.com/blog-time-management-tips-students.html)
+- [Tuition Centre Vadamalaipalayam Coimbatore](https://www.kongubrilliance.com/blog-tuition-centre-vadamalaipalayam-coimbatore.html)
