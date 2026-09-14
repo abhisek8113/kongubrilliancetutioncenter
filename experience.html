@@ -645,11 +645,19 @@ function stopSpeak(){if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}speak
 
 /* ---- whiteboard render (with KaTeX) ---- */
 const escHtml=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-function renderBoard(title,bodyText){
+function splitLines(text){
+  // protect $...$ / $$...$$ so LaTeX like \neq is never mistaken for a newline
+  const math=[];
+  let s=String(text==null?'':text).replace(/\$\$[\s\S]*?\$\$|\$[^$]*\$/g,m=>{math.push(m);return ' '+(math.length-1)+' ';});
+  s=s.replace(/\\n|\r?\n/g,'\n');
+  return s.split(/\n+/).map(l=>l.replace(/ (\d+) /g,(_,i)=>math[i]).trim()).filter(Boolean);
+}
+function renderBoard(title,body){
   if(!board)return;board.innerHTML='';
   if(title){const t=document.createElement('div');t.className='bl title';t.style.opacity=1;t.textContent=title;board.appendChild(t);}
-  String(bodyText||'').split(/\n+/).forEach(line=>{
-    line=line.trim();if(!line)return;
+  const lines=Array.isArray(body)?body.map(x=>String(x).trim()).filter(Boolean):splitLines(body);
+  lines.forEach(line=>{
+    if(!line)return;
     const d=document.createElement('div');d.className='bl';d.style.opacity=1;
     // bold **x** and highlight ==x==
     let html=escHtml(line).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span class="hl">$1</span>');
@@ -673,7 +681,8 @@ HOW TO TEACH:
 - Use LaTeX for ALL mathematics: inline $...$ and display $$...$$. Never write formulae in words. Mark a final answer with ==...==.
 - Never invent fees, exam results, or statistics. For admissions or fees, tell them to call 95145 24599.
 ALWAYS reply as STRICT JSON only, no extra text, with these keys:
-{"board":"the explanation to show on the whiteboard — use LaTeX and put each step on its own line","speak":"one or two short spoken sentences in plain English, with any numbers or math said in words (no symbols), summarising what you just showed","question":"a single short check-question for the student, or empty string if none","topic":"short current topic name"}`;
+{"steps":["each line or step as a separate string, using LaTeX for math"],"speak":"one or two short spoken sentences in plain English, numbers/math said in words (no symbols), summarising what you just showed","question":"a single short check-question for the student to answer now (do not leave empty unless the lesson is truly finished)","topic":"short current topic name"}
+Put ONE step per array item. Keep steps short. Always include a check-question to keep it interactive.`;
 let history=[];
 function resetHistory(){history=[{role:'system',content:SYS()}];}
 resetHistory();
@@ -702,7 +711,7 @@ async function callTutor(userText,{seedBoard,seedStatus}={}){
   }
   history.push({role:'assistant',content:raw});
   if(data.topic&&cxTopic)cxTopic.textContent=data.topic;
-  renderBoard(data.topic||'',data.board||'');
+  renderBoard(data.topic||'',data.steps||data.board||'');
   const spoken=(data.speak||data.board||'').slice(0,600);
   say(spoken,()=>{
     if(data.question){
