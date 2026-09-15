@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,12 +48,12 @@ a{color:inherit;text-decoration:none}
 .reveal{opacity:0;transform:translateY(26px)}
 .eyebrow{display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--ice2);margin-bottom:18px}
 .eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,var(--ice),transparent)}
-
+ 
 /* bg */
 #field{position:fixed;inset:0;z-index:0;pointer-events:none}
 .vig{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(120% 80% at 50% -5%,transparent 45%,rgba(7,8,13,.6) 100%)}
 main,header,footer{position:relative;z-index:2}
-
+ 
 /* progress + nav */
 #prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--ice),var(--brass));z-index:130}
 header{position:fixed;top:0;left:0;right:0;z-index:100;height:70px;display:flex;align-items:center;transition:.3s;border-bottom:1px solid transparent}
@@ -68,7 +69,7 @@ nav.links a{font-family:var(--disp);font-size:.88rem;color:var(--muted);transiti
 nav.links a:hover{color:var(--ink)}
 .burger{display:none;background:none;border:0;color:#fff;cursor:pointer}
 .burger svg{width:26px;height:26px;stroke:#fff;stroke-width:1.6;fill:none}
-
+ 
 /* scene scaffold */
 .scene{padding:110px 0;position:relative}
 .scene-head{max-width:60ch;margin:0 auto 54px;text-align:center}
@@ -76,7 +77,7 @@ nav.links a:hover{color:var(--ink)}
 .scene-head h2 em{font-style:normal;color:var(--brass)}
 .scene-head p{color:var(--muted);font-size:1.06rem}
 @media(max-width:820px){.scene{padding:76px 0}}
-
+ 
 /* HERO / search */
 #hero{min-height:100vh;display:flex;align-items:center;padding-top:70px}
 .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;width:100%}
@@ -99,10 +100,10 @@ nav.links a:hover{color:var(--ink)}
 .sres .badge{margin-left:auto;font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);align-self:center}
 .sig-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
 .sig-chips span{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:5px 11px;opacity:0}
-
+ 
 /* generic panel */
 .panel{background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.008));border:1px solid var(--line);border-radius:18px}
-
+ 
 /* four worlds */
 .worlds{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 .world{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.02);transition:.3s}
@@ -115,7 +116,7 @@ nav.links a:hover{color:var(--ink)}
 .world p{color:var(--muted);font-size:.95rem;margin-bottom:14px}
 .world .scn{font-size:.86rem;color:var(--faint);border-left:2px solid var(--line2);padding-left:12px;font-style:italic}
 @media(max-width:760px){.worlds{grid-template-columns:1fr}}
-
+ 
 /* 24h clock */
 .clock-wrap{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center}
 .clock{position:relative;aspect-ratio:1;max-width:400px;margin:0 auto;width:100%}
@@ -127,7 +128,7 @@ nav.links a:hover{color:var(--ink)}
 .qa .q .ans{color:var(--muted);font-size:.86rem;margin-top:6px;display:flex;gap:8px}
 .qa .q .ans::before{content:"→";color:var(--ice)}
 @media(max-width:820px){.clock-wrap{grid-template-columns:1fr;gap:30px}}
-
+ 
 /* ===== AI TUTOR ROOM ===== */
 #room{padding:70px 0}
 .room{border:1px solid var(--line);border-radius:20px;overflow:hidden;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));box-shadow:var(--shadow)}
@@ -189,7 +190,7 @@ nav.links a:hover{color:var(--ink)}
 .ctx .qbox input{flex:1;background:rgba(0,0,0,.25);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;color:var(--ink);font-family:var(--mono);font-size:.85rem}
 .ctx .qbox button{border:0;border-radius:8px;background:var(--brass);color:#241a06;font-weight:700;padding:0 12px;cursor:pointer}
 .hint{font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;color:var(--faint);margin-top:14px;line-height:1.7}
-
+ 
 /* paper eval */
 .paper{position:relative;background:#efece3;color:#1b1d24;border-radius:12px;padding:24px 26px;box-shadow:var(--shadow);overflow:hidden;font-family:var(--disp)}
 .paper .h{font-family:var(--mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:#8a8676;margin-bottom:14px;display:flex;justify-content:space-between}
@@ -206,7 +207,7 @@ nav.links a:hover{color:var(--ink)}
 .flow .st.act{border-left-color:var(--brass);color:var(--brass)}
 .flow .st.ok{border-left-color:var(--ok);color:var(--ok)}
 .paper-link{margin-top:20px;text-align:center}
-
+ 
 /* knowledge graph */
 .kg{position:relative;aspect-ratio:1.2;max-width:520px;margin:0 auto;width:100%}
 .kg svg{position:absolute;inset:0;width:100%;height:100%}
@@ -214,7 +215,7 @@ nav.links a:hover{color:var(--ink)}
 .kn.strong{color:var(--ok);border-color:rgba(84,201,150,.5)}
 .kn.weak{color:var(--warn);border-color:rgba(226,177,90,.5);animation:wk 2.2s infinite}
 @keyframes wk{50%{box-shadow:0 0 0 6px rgba(226,177,90,0)}0%,100%{box-shadow:0 0 0 0 rgba(226,177,90,.3)}}
-
+ 
 /* growth */
 .growth{border:1px solid var(--line);border-radius:18px;padding:28px;background:rgba(255,255,255,.02)}
 .growth svg{width:100%;height:auto;overflow:visible}
@@ -224,7 +225,7 @@ nav.links a:hover{color:var(--ink)}
 .gt{fill:var(--ink);font-family:var(--disp);font-weight:600;font-size:13px;text-anchor:middle;opacity:0}
 .gc{fill:var(--faint);font-family:var(--mono);font-size:10px;text-anchor:middle;opacity:0;text-transform:uppercase}
 .note{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;text-align:center;margin-top:16px}
-
+ 
 /* teacher/ai/parent system */
 .sys{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .sys .c{padding:28px;border-right:1px solid var(--line)}
@@ -235,7 +236,7 @@ nav.links a:hover{color:var(--ink)}
 .sys .c li{color:var(--muted);font-size:.9rem;display:flex;gap:9px}
 .sys .c li::before{content:"›";color:var(--brass)}
 @media(max-width:820px){.sys{grid-template-columns:1fr}.sys .c{border-right:0;border-bottom:1px solid var(--line)}}
-
+ 
 /* career */
 .career{display:flex;gap:0;align-items:stretch;overflow-x:auto;padding-bottom:8px}
 .cstep{flex:1;min-width:150px;padding:24px 20px;border-right:1px solid var(--line);position:relative}
@@ -244,13 +245,13 @@ nav.links a:hover{color:var(--ink)}
 .cstep h4{font-size:1.05rem;margin-bottom:6px}
 .cstep p{color:var(--muted);font-size:.84rem}
 .cstep.last h4{color:var(--brass)}
-
+ 
 /* final */
 #final{text-align:center;padding:120px 0}
 #final h2{font-size:clamp(2rem,5vw,3.6rem);margin-bottom:14px}
 #final .tag{font-family:var(--disp);color:var(--brass);font-size:clamp(1.1rem,2.4vw,1.4rem);margin-bottom:30px}
 .ctarow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-
+ 
 /* footer */
 footer{border-top:1px solid var(--line);padding:52px 0 30px}
 .fg{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.3fr;gap:34px;margin-bottom:34px}
@@ -261,12 +262,12 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
 .disc{font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;color:var(--faint);line-height:1.8;margin-top:22px;max-width:90ch;text-transform:none}
 @media(max-width:820px){.fg{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.fg{grid-template-columns:1fr}}
-
+ 
 /* floating ask */
 .askfab{position:fixed;right:20px;bottom:20px;z-index:95;display:inline-flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:600;font-size:.85rem;background:linear-gradient(135deg,var(--ice),var(--ice2));color:#04241f;border:0;border-radius:30px;padding:13px 20px;cursor:pointer;box-shadow:0 12px 30px rgba(103,214,207,.4);transition:.2s}
 .askfab:hover{transform:translateY(-2px)}
 .askfab .ic{width:18px;height:18px;stroke:#04241f}
-
+ 
 @media(max-width:900px){
   nav.links{position:fixed;inset:70px 0 auto 0;flex-direction:column;align-items:flex-start;background:rgba(7,8,13,.98);padding:24px 26px;gap:20px;border-bottom:1px solid var(--line);transform:translateY(-160%);transition:.35s}
   nav.links.open{transform:none}.burger{display:block}
@@ -286,11 +287,11 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
 <g id="i-menu"><path d="M4 7h16M4 12h16M4 17h16"/></g>
 <g id="i-x"><path d="M6 6l12 12M18 6L6 18"/></g>
 </defs></svg>
-
+ 
 <div id="prog"></div>
 <canvas id="field" aria-hidden="true"></canvas>
 <div class="vig"></div>
-
+ 
 <header id="hdr"><div class="wrap">
   <a href="/index.html" class="brand"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Coimbatore</small></span></a>
   <nav class="links" id="nav">
@@ -299,7 +300,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
   </nav>
   <button class="burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24"><use href="#i-menu"/></svg></button>
 </div></header>
-
+ 
 <main>
 <!-- HERO: SEARCH → DISCOVERY -->
 <section id="hero"><div class="wrap hero-grid">
@@ -326,7 +327,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     </div>
   </div>
 </div></section>
-
+ 
 <!-- HUMAN + AI -->
 <section class="scene" id="human"><div class="wrap">
   <div class="scene-head reveal">
@@ -340,7 +341,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     <div class="c"><div class="k">The AI layer</div><h3>Assists tirelessly</h3><ul><li>Analyses every answer</li><li>Generates targeted practice</li><li>Flags recurring mistakes</li></ul></div>
   </div>
 </div></section>
-
+ 
 <!-- FOUR WORLDS -->
 <section class="scene" id="worlds"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Four ways to learn</div><h2>One standard of teaching, <em>four environments.</em></h2></div>
@@ -351,7 +352,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     <div class="world reveal"><div class="env" data-env="engineering"></div><div class="body"><div class="k">Engineering · advanced</div><h3>Engineering tuition</h3><p>Rigorous coaching in mathematics and core technical subjects for engineering students.</p><div class="scn">Problem-solving, technical concepts and exam-focused preparation.</div></div></div>
   </div>
 </div></section>
-
+ 
 <!-- 24 HOUR -->
 <section class="scene" id="always"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Around the clock</div><h2>Learning doesn't stop when <em>class ends.</em></h2><p>Revise, ask a doubt, or practise at any hour — the AI layer picks up from where the lesson left off.</p></div>
@@ -373,7 +374,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     </div>
   </div>
 </div></section>
-
+ 
 <!-- ===== AI TUTOR ROOM ===== -->
 <section id="room"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">The signature experience</div><h2>Have a lesson with the <em>AI tutor.</em></h2><p>Press start — the tutor teaches on a live board, asks you a question, and adapts when you say you don't understand. Speak or type.</p></div>
@@ -427,7 +428,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     </div>
   </div>
 </div></section>
-
+ 
 <!-- PAPER EVALUATION -->
 <section class="scene" id="evaluate"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">From paper to insight</div><h2>A written answer, <em>read and understood.</em></h2><p>A handwritten sheet is scanned, the working is followed step by step, and the exact line where it broke becomes a targeted lesson.</p></div>
@@ -453,14 +454,14 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     </div>
   </div>
 </div></section>
-
+ 
 <!-- KNOWLEDGE GRAPH -->
 <section class="scene" id="memory"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Learning memory</div><h2>Every learner has a shape. <em>The system maps it.</em></h2><p>A map of ideas, not surveillance — strong concepts hold, weak ones stay lit until mastered.</p></div>
   <div class="kg reveal" id="kg"><svg id="kglines"></svg></div>
   <p class="note">Illustrative learning profile — example data, not a real student record.</p>
 </div></section>
-
+ 
 <!-- GROWTH -->
 <section class="scene" id="growth"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">Performance growth</div><h2>Real growth is <em>never a straight line.</em></h2></div>
@@ -472,7 +473,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     <p class="note">Interactive demonstration · illustrative trajectory with a setback and recovery</p>
   </div>
 </div></section>
-
+ 
 <!-- CAREER -->
 <section class="scene" id="career"><div class="wrap">
   <div class="scene-head reveal"><div class="eyebrow" style="justify-content:center">The bigger picture</div><h2>Not just the next exam — <em>the next chapter.</em></h2><p>Strong fundamentals compound into confidence, higher education and, in time, a career.</p></div>
@@ -487,7 +488,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
   </div>
   <p class="note" style="text-align:left;margin-top:14px">Aspirational journey — Kongu Brilliance does not guarantee specific placements or outcomes.</p>
 </div></section>
-
+ 
 <!-- FINAL -->
 <section id="final"><div class="wrap">
   <div class="eyebrow reveal" style="justify-content:center">The whole ecosystem</div>
@@ -500,7 +501,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
   </div>
 </div></section>
 </main>
-
+ 
 <footer><div class="wrap">
   <div class="fg">
     <div><div class="brand" style="margin-bottom:14px"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Where Brilliance is Born</small></span></div><p style="color:var(--muted);font-size:.88rem">Home, centre &amp; online tuition for Classes 1–12 · CBSE · ICSE · State · Matric · ISC · IGCSE. Founded 2021.</p></div>
@@ -511,15 +512,15 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
   <div class="fbot"><span>© <span id="yr"></span> Kongu Brilliance, Coimbatore</span><span>Human teaching · Intelligent learning</span></div>
   <p class="disc">About the demonstrations: the AI Tutor Room, paper evaluation, knowledge graph and growth figures are interactive demonstrations of how AI-assisted learning works. Voice uses your browser's built-in speech engine; free-form answers use the live AI model where available and otherwise fall back to a scripted lesson. Numbers shown are illustrative examples, not real student records, and no audio or personal data is stored on this page. Business details are from kongubrilliance.com; replace testimonials and any headline statistics with verified content before publishing.</p>
 </div></footer>
-
+ 
 <button class="askfab" id="askfab"><svg class="ic"><use href="#i-spark"/></svg> Ask Tutor K</button>
-
+ 
 <script>
 "use strict";
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
 const MOB=innerWidth<820;
-
+ 
 /* ---------- background field ---------- */
 (function(){const c=$('#field'),x=c.getContext('2d');let W,H,P=[];
  function sz(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;}sz();addEventListener('resize',sz);
@@ -531,17 +532,17 @@ const MOB=innerWidth<820;
    x.fillStyle=`rgba(${R},${G},${B},.45)`;x.beginPath();x.arc(p.x,p.y,1.1*devicePixelRatio,0,7);x.fill();}
   requestAnimationFrame(d);}
  if(!RM)d();else c.style.background='radial-gradient(ellipse at 50% 25%,rgba(103,214,207,.05),transparent 60%)';})();
-
+ 
 /* ---------- nav/progress ---------- */
 const hdr=$('#hdr'),prog=$('#prog'),nav=$('#nav'),burger=$('#burger');
 burger.onclick=()=>nav.classList.toggle('open');nav.querySelectorAll('a').forEach(a=>a.onclick=()=>nav.classList.remove('open'));
 $('#yr').textContent=new Date().getFullYear();
 addEventListener('scroll',()=>{const h=document.documentElement.scrollHeight-innerHeight;prog.style.width=(scrollY/h*100)+'%';hdr.classList.toggle('solid',scrollY>50);},{passive:true});
-
+ 
 /* ---------- reveals ---------- */
 const revO=new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){if(window.gsap)gsap.to(e.target,{opacity:1,y:0,duration:.85,ease:'power3.out'});else{e.target.style.opacity=1;e.target.style.transform='none';}o.unobserve(e.target);}}),{threshold:.12});
 $$('.reveal').forEach(el=>revO.observe(el));
-
+ 
 /* ---------- world env line-art ---------- */
 function env(key,host){const A={
  offline:`<svg viewBox='0 0 400 170' fill='none' stroke='%23e0b25c' stroke-width='1.3' opacity='.9'><rect x='150' y='30' width='100' height='60' rx='2'/><line x1='150' y1='48' x2='250' y2='48'/><circle cx='70' cy='128' r='10'/><circle cx='130' cy='134' r='10'/><circle cx='290' cy='134' r='10'/><circle cx='340' cy='128' r='10'/></svg>`,
@@ -550,7 +551,7 @@ function env(key,host){const A={
  engineering:`<svg viewBox='0 0 400 170' fill='none' stroke='%2367d6cf' stroke-width='1.3'><rect x='40' y='44' width='95' height='78' rx='2'/><path d='M55 108l22-34 16 16 22-38'/><circle cx='255' cy='82' r='28'/><path d='M255 54v-8M255 118v-8M227 82h-8M291 82h-8'/><path d='M320 56h44M320 78h44M320 100h30'/></svg>`};
  host.innerHTML=decodeURIComponent(A[key]);}
 $$('.world .env').forEach(e=>env(e.dataset.env,e));
-
+ 
 /* ---------- knowledge graph ---------- */
 (function(){const box=$('#kg'),svg=$('#kglines');
  const nodes=[{t:'ALGEBRA',x:32,y:24,s:'weak'},{t:'FRACTIONS',x:18,y:60,s:'weak'},{t:'EQUATIONS',x:54,y:44,s:'strong'},{t:'GEOMETRY',x:80,y:26,s:'strong'},{t:'READING',x:76,y:70,s:'strong'},{t:'GRAMMAR',x:46,y:84,s:'strong'}];
@@ -558,7 +559,7 @@ $$('.world .env').forEach(e=>env(e.dataset.env,e));
  links.forEach(([a,b])=>{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',nodes[a].x);l.setAttribute('y1',nodes[a].y);l.setAttribute('x2',nodes[b].x);l.setAttribute('y2',nodes[b].y);const w=nodes[a].s==='weak'||nodes[b].s==='weak';l.setAttribute('stroke',w?'rgba(226,177,90,.45)':'rgba(84,201,150,.35)');l.setAttribute('stroke-width',w?'.7':'.5');svg.appendChild(l);});
  svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
  nodes.forEach(n=>{const d=document.createElement('div');d.className='kn '+n.s;d.textContent=n.t;d.style.left=n.x+'%';d.style.top=n.y+'%';box.appendChild(d);});})();
-
+ 
 /* ---------- boot GSAP-driven bits ---------- */
 function boot(){
  if(!window.gsap){setTimeout(boot,60);return;}gsap.registerPlugin(ScrollTrigger);
@@ -580,7 +581,7 @@ function boot(){
  ScrollTrigger.create({trigger:'#memory',start:'top 60%',once:true,onEnter:()=>{setTimeout(()=>{const w=$$('#kg .kn.weak');w.forEach((n,k)=>setTimeout(()=>{n.classList.remove('weak');n.classList.add('strong');},k*700+500));},400);}});
 }
 addEventListener('load',boot);
-
+ 
 function runPaper(){const scan=$('#scan');if(window.gsap){gsap.set(scan,{opacity:1});gsap.fromTo(scan,{top:-80},{top:'100%',duration:1.7,ease:'power1.inOut',onComplete:()=>gsap.to(scan,{opacity:0,duration:.3})});}
  setTimeout(()=>$('#pflag').classList.add('hl'),1300);
  $$('#pflow .st').forEach((s,k)=>{if(window.gsap)gsap.to(s,{opacity:1,x:0,duration:.5,delay:1.5+k*.3});else{s.style.opacity=1;s.style.transform='none';}});}
@@ -593,7 +594,7 @@ function drawGrowth(){const data=[38,52,46,60,73,90],labels=['ASSESS','PRACTISE'
   const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',X(i));t.setAttribute('y',Y(v)-15);t.setAttribute('class','gt');t.textContent=v+'%';G.appendChild(t);
   const l=document.createElementNS('http://www.w3.org/2000/svg','text');l.setAttribute('x',X(i));l.setAttribute('y',y0+24);l.setAttribute('class','gc');l.textContent=labels[i];G.appendChild(l);
   gsap.to(c,{opacity:1,duration:.4,delay:.4+i*.32});gsap.to(t,{opacity:1,duration:.4,delay:.55+i*.32});gsap.to(l,{opacity:.85,duration:.4,delay:.3+i*.32});});}
-
+ 
 /* ============================================================
    AI TUTOR ROOM ENGINE v2 — real interactive tutor
    Multi-turn memory · any subject/class · LaTeX (KaTeX) · voice
@@ -613,7 +614,7 @@ function pickVoice(){
 const speechLang=()=>lang==='ta'?'ta-IN':'en-IN';
 let speaking=false,rec=null,listening=false,busy=false,awaitingAnswer=false,diff=2;
 let callMode=false,silenceTimer=null;
-
+ 
 /* lesson context (class + subject picker injected into the room bar) */
 let ctx={cls:'Class 8',subject:'Mathematics'};
 (function injectPicker(){
@@ -635,7 +636,7 @@ let ctx={cls:'Class 8',subject:'Mathematics'};
 })();
 function syncCtx(){if(cxSubj)cxSubj.textContent=ctx.subject;}
 syncCtx();
-
+ 
 /* ---- orb / wave / states ---- */
 function setState(s){$$('#states .st').forEach(el=>el.classList.toggle('on',el.dataset.s===s));}
 function orbState(s){orb.className='orb'+(s?' '+s:'');}
@@ -643,7 +644,7 @@ let waveTimer=null;
 function waveOn(){if(waveTimer||!wave)return;const bars=wave.querySelectorAll('i');waveTimer=setInterval(()=>bars.forEach(b=>b.style.height=(6+Math.random()*24)+'px'),110);}
 function waveOff(){clearInterval(waveTimer);waveTimer=null;if(wave)wave.querySelectorAll('i').forEach(b=>b.style.height='8px');}
 function status(t,c){if(cxStatus){cxStatus.textContent=t;if(c)cxStatus.style.color=c;}}
-
+ 
 /* ---- speech out ---- */
 function say(text,onend){
   if(!text){onend&&onend();return;}
@@ -654,7 +655,7 @@ function say(text,onend){
   }catch(e){waveOff();orbState('');onend&&onend();}
 }
 function stopSpeak(){if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}speaking=false;waveOff();}
-
+ 
 /* ---- whiteboard render (with KaTeX) ---- */
 const escHtml=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 /* ---- caption + player + followup UI (injected once) ---- */
@@ -691,7 +692,7 @@ function showFollowups(list){if(!followEl)return;followEl.innerHTML='';(list||['
 let paused=false;
 function togglePlay(){paused=!paused;const b=$('#kbPlay');if(b)b.textContent=paused?'▷ Play':'⏸ Pause';
   if(paused){stopSpeak();}else{playLesson(curLesson,curScene);} }
-
+ 
 /* ---- scene lesson player ---- */
 let curLesson=null,curScene=0;
 function renderScene(sc){
@@ -738,13 +739,13 @@ function sayR(text,onend){
     speaking=true;u.onend=()=>{speaking=false;waveOff();orbState('');onend&&onend();};u.onerror=u.onend;speechSynthesis.speak(u);
   }catch(e){waveOff();orbState('');onend&&onend();}
 }
-
+ 
 function splitLines(text){
   // protect $...$ / $$...$$ so LaTeX like \neq is never mistaken for a newline
   const math=[];
-  let s=String(text==null?'':text).replace(/\$\$[\s\S]*?\$\$|\$[^$]*\$/g,m=>{math.push(m);return ' '+(math.length-1)+' ';});
+  let s=String(text==null?'':text).replace(/\$\$[\s\S]*?\$\$|\$[^$]*\$/g,m=>{math.push(m);return ''+(math.length-1)+'';});
   s=s.replace(/\\n|\r?\n/g,'\n');
-  return s.split(/\n+/).map(l=>l.replace(/ (\d+) /g,(_,i)=>math[i]).trim()).filter(Boolean);
+  return s.split(/\n+/).map(l=>l.replace(/(\d+)/g,(_,i)=>math[i]).trim()).filter(Boolean);
 }
 function renderBoard(title,body){
   if(!board)return;board.innerHTML='';
@@ -765,26 +766,40 @@ function typesetMath(el,tries){
   if(window.renderMathInElement){try{renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false});}catch(e){}return;}
   if((tries||0)<20)setTimeout(()=>typesetMath(el,(tries||0)+1),150); // KaTeX may still be loading (defer)
 }
-
+ 
 /* ---- conversation memory ---- */
 const LANGRULE={
   en:'Respond in warm, simple English that a school student easily understands.',
   ta:'Respond in TAMIL (தமிழ் script). Explain warmly in Tamil. Keep subject/technical terms in English where that is natural for a Coimbatore classroom. The "speak" field must be natural spoken Tamil.',
   tn:'Respond in TANGLISH — Tamil written in English letters, mixed naturally with English, exactly like a friendly Coimbatore tutor talks (e.g. "seri, ithu romba easy, paaru..."). The "speak" field must be spoken Tanglish.'
 };
+const SUBJVIS={
+  Mathematics:'Prefer "steps" for algebra/derivations (one transformation per line, LaTeX). Use "svg" for graphs (draw axes with arrows, plot the curve as a <path>, label axes and key points), number lines, and geometry.',
+  Physics:'Use "svg" force/motion diagrams: draw the object as a rect, forces as arrows (use <line> + a triangular <polygon> arrowhead), label each force and its size; show vectors, circuits or waves. Use "steps" for the equation like $F=ma$.',
+  Chemistry:'Use "svg" for atoms/molecules (circles for atoms with element labels, lines for bonds) and reaction diagrams (reactants → arrow → products). Show particle rearrangement across scenes.',
+  Biology:'Use "svg" labelled diagrams: cells (nucleus, membrane), organs, or process flows (boxes joined by arrows). For meiosis/mitosis draw chromosomes as coloured bars and show them separating between scenes.',
+  Science:'Use clear labelled "svg" diagrams and process-flow arrows appropriate to the concept.',
+  'Social Science':'Use "svg" timelines (a horizontal line with dated event markers) or simple labelled maps/flow diagrams.',
+  Economics:'Use "svg" graphs: draw axes with arrows, plot supply/demand as two <line>s, mark the equilibrium point and label the axes.',
+  'Computer Science':'Use "svg" flowcharts (boxes + arrows) or "steps" for code/logic, one step per line.',
+  English:'Use "steps" with clear examples; use "svg" only for simple labelled structures (e.g. sentence parts).',
+  Accountancy:'Use "steps" for worked ledger/journal entries and "svg" for simple T-accounts (a labelled table drawn with lines).'
+};
+const svgGuide=()=>SUBJVIS[ctx.subject]||SUBJVIS.Science;
 const SYS=()=>`You are Tutor K — a warm, friendly tutor at Kongu Brilliance Tuition Centre, Coimbatore, teaching a ${ctx.cls} student, ${ctx.subject} (CBSE/ICSE/State/Matric/ISC/IGCSE). You TEACH VISUALLY, like a teacher at a whiteboard — not with paragraphs.
 PERSONALITY: warm, cheerful, patient; praise effort; never make the student feel bad about mistakes; use real-life Indian examples (cricket, buses, rupees, sweets).
 LANGUAGE: ${LANGRULE[lang]} Always write mathematics in LaTeX.
 YOU MUST TEACH AS A SEQUENCE OF SHORT VISUAL SCENES. For each scene give a VISUAL plus a short spoken narration and a 1-line caption. Choose the best visual type per scene:
 - "steps": an array of short lines (use LaTeX $...$ for math/units) — for worked solutions, definitions, derivations.
-- "svg": a raw inline <svg viewBox="0 0 320 200">…</svg> string using simple shapes/text/arrows — for diagrams (cells, forces, molecules, geometry, timelines, graphs). Keep it clean, labelled, high-contrast on a dark background (use light strokes/fills like #eceef5, #67d6cf, #e0b25c). No external images.
+- "svg": a raw inline <svg viewBox="0 0 320 200">…</svg> string using clean shapes/text/arrows — real, accurate, well-LABELLED diagrams on a dark background (light strokes/fills like #eceef5, #67d6cf, #e0b25c; font-size 12-14). Draw arrows as a <line> plus a small triangle <polygon> head. Add short text labels next to every important part. No external images, no <image>, no scripts. Make each scene's svg show ONE clear idea, and let the diagram CHANGE across scenes to show the process.
+SUBJECT VISUAL GUIDE (${ctx.subject}): ${svgGuide()}
 Rules: 3 to 5 scenes. Keep each narration to ONE or TWO spoken sentences (numbers/math said in words, no symbols). Never invent fees/results; for admissions say call 95145 24599.
 ALWAYS reply as STRICT JSON only, no extra text:
 {"topic":"short topic name","scenes":[{"type":"steps","data":["line 1","line 2"],"narration":"...","caption":"..."},{"type":"svg","data":"<svg viewBox=\\"0 0 320 200\\">...</svg>","narration":"...","caption":"..."}],"question":"one short encouraging check-question the student answers now","followups":["Explain differently","Give an example","Practice question"]}`;
 let history=[];
 function resetHistory(){history=[{role:'system',content:SYS()}];}
 resetHistory();
-
+ 
 async function callTutor(userText,{seedBoard,seedStatus,image}={}){
   if(busy)return;busy=true;awaitingAnswer=false;qbox&&qbox.classList.remove('on');
   history.push({role:'user',content:userText});
@@ -827,7 +842,7 @@ function parseReply(raw){
   const plain=s.replace(/\$+[^$]*\$+/g,'').replace(/[#*_>`]/g,'').trim();
   return {board:s,speak:plain.slice(0,300),question:'',topic:cxTopic?cxTopic.textContent:''};
 }
-
+ 
 /* ---- public actions ---- */
 function startLesson(topic){
   stopSpeak();resetHistory();
@@ -838,7 +853,7 @@ function startLesson(topic){
 }
 function askTutor(text){if(!text)return;stopSpeak();capText.textContent='“'+text+'”';callTutor(text,{seedStatus:'Understanding'});}
 function submitAnswer(text){if(!text)return;stopSpeak();qbox&&qbox.classList.remove('on');capText.textContent='Your answer: “'+text+'”';callTutor(`My answer: ${text}`,{seedStatus:'Checking your answer'});}
-
+ 
 /* ---- control buttons ---- */
 const CMD={
   start:()=>startLesson(),
@@ -849,11 +864,11 @@ const CMD={
   graph:()=>askTutor('Show and explain a graph or diagram for this concept. Describe the axes and shape clearly.')
 };
 $$('.board-controls .ctrl[data-cmd]').forEach(b=>b.onclick=()=>{const f=CMD[b.dataset.cmd];if(f)f();});
-
+ 
 /* answer box */
 if(qsend)qsend.onclick=()=>{const v=qans&&qans.value.trim();if(!v)return;qans.value='';awaitingAnswer?submitAnswer(v):askTutor(v);};
 if(qans)qans.addEventListener('keydown',e=>{if(e.key==='Enter'){const v=qans.value.trim();if(!v)return;qans.value='';awaitingAnswer?submitAnswer(v):askTutor(v);}});
-
+ 
 /* ---- voice input ---- */
 function startListen(){
   if(!canHear){status('Type instead');capText.textContent='Voice needs a Chromium browser — type your question in the box.';return;}
@@ -866,7 +881,7 @@ function startListen(){
   try{rec.start();}catch(e){listening=false;micBtn&&micBtn.classList.remove('on');}
 }
 if(micBtn)micBtn.onclick=()=>{if(listening){try{rec.stop();}catch(e){}}else if(speaking){stopSpeak();status('Ready');}else{startListen();}};
-
+ 
 /* ============================================================
    LIVE VOICE MODE — hands-free speak/listen conversation loop
    ============================================================ */
@@ -914,7 +929,7 @@ function beginListenLoop(){
     stopSpeak();capText.textContent='“'+t+'”';callTutor(t,{seedStatus:'Thinking…'});}; // reply, then loop continues from callTutor
   try{rec.start();}catch(e){if(callMode)setTimeout(beginListenLoop,500);}
 }
-
+ 
 /* ============================================================
    REALTIME VOICE (OpenAI Realtime API over WebRTC) — true low-latency
    Needs OPENAI_API_KEY in Vercel (see api/realtime-token.js).
@@ -985,7 +1000,7 @@ function endRealtime(){
   capText.textContent='Realtime ended.';
 }
 injectRealtimeBtn();
-
+ 
 /* ---- image (photo of a question) upload ---- */
 (function injectImageBtn(){
   const bc=document.querySelector('.board-controls');if(!bc||document.getElementById('kbImgBtn'))return;
@@ -1000,14 +1015,14 @@ injectRealtimeBtn();
       fi.value='';};rd.readAsDataURL(file);};
   bc.insertBefore(b,bc.firstChild);document.body.appendChild(fi);
 })();
-
+ 
 /* ---- entry points ---- */
 const paperBtn=$('#paperToTutor');if(paperBtn)paperBtn.onclick=()=>{location.hash='#room';setTimeout(()=>startLesson('Solve the linear equation 2x + 5 = 15, and explain the balance method'),700);};
 const talk2=$('#talkK2');if(talk2)talk2.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
 const fab=$('#askfab');if(fab)fab.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
 addEventListener('beforeunload',()=>{if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}});
-
+ 
 </script>
 </body>
 </html>
-Displaying experience-FULL.txt.
+ 
