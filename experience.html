@@ -657,6 +657,88 @@ function stopSpeak(){if(canSpeak){try{speechSynthesis.cancel();}catch(e){}}speak
 
 /* ---- whiteboard render (with KaTeX) ---- */
 const escHtml=s=>String(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+/* ---- caption + player + followup UI (injected once) ---- */
+let capEl=null,ctrlEl=null,followEl=null,ccOn=true,rate=1;
+(function injectLessonUI(){
+  const col=document.querySelector('.board-col');if(!col)return;
+  const css=document.createElement('style');
+  css.textContent='.kb-caption{margin-top:8px;min-height:34px;background:rgba(0,0,0,.55);border:1px solid var(--line,#ffffff22);border-radius:10px;padding:8px 12px;font:600 14px/1.4 system-ui;color:#fff;text-align:center}'+
+    '.kb-player{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}'+
+    '.kb-player button{background:rgba(255,255,255,.07);border:1px solid var(--line,#ffffff22);color:#eceef5;border-radius:8px;padding:6px 10px;font:600 12px system-ui;cursor:pointer}'+
+    '.kb-player button.on{background:var(--brass,#e0b25c);color:#241a06;border-color:transparent}'+
+    '.kb-dots{display:flex;gap:5px;margin-left:auto}.kb-dots i{width:8px;height:8px;border-radius:50%;background:#ffffff33;display:block}.kb-dots i.on{background:var(--brass,#e0b25c)}'+
+    '.kb-follow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}'+
+    '.kb-follow button{background:rgba(103,214,207,.12);border:1px solid rgba(103,214,207,.4);color:#9aeae4;border-radius:20px;padding:7px 13px;font:600 12.5px system-ui;cursor:pointer}'+
+    '.kb-follow button:hover{background:rgba(103,214,207,.22)}#board svg{max-width:100%;height:auto}';
+  document.head.appendChild(css);
+  capEl=document.createElement('div');capEl.className='kb-caption';capEl.id='kbCaption';capEl.textContent='';
+  ctrlEl=document.createElement('div');ctrlEl.className='kb-player';ctrlEl.innerHTML=
+    '<button id="kbPlay">⏸ Pause</button><button id="kbReplay">↻ Replay</button>'+
+    '<button id="kbSpeed">1×</button><button id="kbCC" class="on">CC</button><div class="kb-dots" id="kbDots"></div>';
+  followEl=document.createElement('div');followEl.className='kb-follow';followEl.id='kbFollow';
+  const board=document.querySelector('.board');(board&&board.parentNode||col).insertBefore(capEl,board?board.nextSibling:null);
+  col.insertBefore(ctrlEl,col.querySelector('.board-controls'));
+  col.appendChild(followEl);
+  ctrlEl.querySelector('#kbCC').onclick=e=>{ccOn=!ccOn;e.target.classList.toggle('on',ccOn);capEl.style.visibility=ccOn?'visible':'hidden';};
+  ctrlEl.querySelector('#kbSpeed').onclick=e=>{rate=rate>=1.5?0.75:rate+0.25;e.target.textContent=rate+'×';};
+  ctrlEl.querySelector('#kbReplay').onclick=()=>{if(curLesson)playLesson(curLesson,0);};
+  ctrlEl.querySelector('#kbPlay').onclick=togglePlay;
+})();
+function setCaption(t){if(capEl){capEl.textContent=t||'';capEl.style.visibility=ccOn?'visible':'hidden';}}
+function setDots(n,i){const d=$('#kbDots');if(!d)return;d.innerHTML='';for(let k=0;k<n;k++){const s=document.createElement('i');if(k<=i)s.className='on';d.appendChild(s);}}
+function showFollowups(list){if(!followEl)return;followEl.innerHTML='';(list||['Explain differently','Give an example','Practice question','I am still confused']).forEach(t=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>askTutor(t+' — about '+(cxTopic?cxTopic.textContent:'this topic'));followEl.appendChild(b);});
+  const und=document.createElement('button');und.textContent='✓ I understand';und.onclick=()=>{followEl.innerHTML='';setCaption('Great! Ask me anything else. 😊');status('Ready');};followEl.insertBefore(und,followEl.firstChild);}
+let paused=false;
+function togglePlay(){paused=!paused;const b=$('#kbPlay');if(b)b.textContent=paused?'▷ Play':'⏸ Pause';
+  if(paused){stopSpeak();}else{playLesson(curLesson,curScene);} }
+
+/* ---- scene lesson player ---- */
+let curLesson=null,curScene=0;
+function renderScene(sc){
+  if(!board)return;board.innerHTML='';
+  if(sc.type==='svg'&&typeof sc.data==='string'){
+    const wrap=document.createElement('div');wrap.className='bl';wrap.style.opacity=1;wrap.innerHTML=sc.data;board.appendChild(wrap);
+    if(window.gsap)gsap.fromTo(wrap,{opacity:0,y:8},{opacity:1,y:0,duration:.4});
+  }else{
+    const lines=Array.isArray(sc.data)?sc.data:splitLines(sc.data);
+    lines.map(x=>String(x).trim()).filter(Boolean).forEach(line=>{
+      const d=document.createElement('div');d.className='bl';d.style.opacity=1;
+      d.innerHTML=escHtml(line).replace(/\\*\\*(.+?)\\*\\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<span class="hl">$1</span>');
+      board.appendChild(d);if(window.gsap)gsap.fromTo(d,{opacity:0,y:8},{opacity:1,y:0,duration:.3});
+    });
+  }
+  typesetMath(board,0);if(board.scrollTo)board.scrollTop=board.scrollHeight;
+}
+function playLesson(lesson,from){
+  curLesson=lesson;curScene=from||0;paused=false;const b=$('#kbPlay');if(b)b.textContent='⏸ Pause';
+  followEl&&(followEl.innerHTML='');
+  const scenes=lesson.scenes||[];
+  if(cxTopic&&lesson.topic)cxTopic.textContent=lesson.topic;
+  setDots(scenes.length,curScene-1);
+  const step=()=>{
+    if(paused)return;
+    if(curScene>=scenes.length){endLesson(lesson);return;}
+    const sc=scenes[curScene];setDots(scenes.length,curScene);
+    renderScene(sc);setCaption(sc.caption||'');
+    sayR(sc.narration||sc.caption||'',()=>{curScene++;if(!paused)setTimeout(step,350);});
+  };
+  step();
+}
+function endLesson(lesson){
+  if(lesson.question){setCaption(lesson.question);qtext&&(qtext.textContent=lesson.question);qbox&&qbox.classList.add('on');awaitingAnswer=true;status('Your turn','var(--brass)');}
+  showFollowups(lesson.followups);
+  if(callMode)setTimeout(()=>beginListenLoop(),300);
+}
+/* speak with current rate */
+function sayR(text,onend){
+  if(!text){onend&&onend();return;}
+  setState('speak');orbState('speaking');waveOn();status('Teaching…','var(--ice2)');
+  if(!canSpeak){setTimeout(()=>{waveOff();orbState('');onend&&onend();},Math.min(5000,700+text.length*32));return;}
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);const vc=pickVoice();if(vc)u.voice=vc;u.rate=(lang==='ta'?0.96:1)*rate;u.pitch=1.02;u.lang=(vc&&vc.lang)||speechLang();
+    speaking=true;u.onend=()=>{speaking=false;waveOff();orbState('');onend&&onend();};u.onerror=u.onend;speechSynthesis.speak(u);
+  }catch(e){waveOff();orbState('');onend&&onend();}
+}
+
 function splitLines(text){
   // protect $...$ / $$...$$ so LaTeX like \neq is never mistaken for a newline
   const math=[];
@@ -690,56 +772,51 @@ const LANGRULE={
   ta:'Respond in TAMIL (தமிழ் script). Explain warmly in Tamil. Keep subject/technical terms in English where that is natural for a Coimbatore classroom. The "speak" field must be natural spoken Tamil.',
   tn:'Respond in TANGLISH — Tamil written in English letters, mixed naturally with English, exactly like a friendly Coimbatore tutor talks (e.g. "seri, ithu romba easy, paaru..."). The "speak" field must be spoken Tanglish.'
 };
-const SYS=()=>`You are Tutor K — a warm, friendly, encouraging tutor at Kongu Brilliance Tuition Centre, Coimbatore. You are talking to a ${ctx.cls} student studying ${ctx.subject} (boards: CBSE, ICSE, State, Matric, ISC, IGCSE). You genuinely care and want the student to feel confident and happy while learning. Teach ANY topic they ask, at the right level for their class.
-PERSONALITY: Greet warmly and use a kind, cheerful, patient tone. Praise effort often ("well done!", "super!"). Never make the student feel bad about a mistake — treat every mistake as a normal, welcome step. Use small real-life examples an Indian school child relates to (cricket, buses, rupees, sharing sweets, mobile recharge).
-LANGUAGE: ${LANGRULE[lang]} Whatever the language, ALWAYS write mathematics in LaTeX.
-HOW TO TEACH:
-- Be interactive and Socratic. Explain in small, clear steps. After a step or concept, ask ONE short check-question and STOP so the student can answer.
-- Adapt: if the student is confused or wrong, be gentle, re-explain even more simply with a concrete analogy, then re-ask. If they answer well, praise them and go a little deeper.
-- Keep each turn short and lively: about 3 to 6 short lines. Never dump a whole chapter at once.
-- Use LaTeX for ALL mathematics: inline $...$ and display $$...$$. Wrap units too, like $5\\,\\text{kg}$. Never write formulae in words. Mark a final answer with ==...==.
-- Never invent fees, exam results or statistics. For admissions or fees, tell them to call 95145 24599.
-ALWAYS reply as STRICT JSON only, no extra text, with these keys:
-{"steps":["each line/step as a separate string, LaTeX for math"],"speak":"one or two short, warm spoken sentences in the chosen language, numbers/math said in words (no symbols)","question":"one short, encouraging check-question for the student to answer now (never empty unless the lesson is truly finished)","topic":"short current topic name"}
-Put ONE step per array item. Keep steps short and friendly. Always end with a check-question.`;
+const SYS=()=>`You are Tutor K — a warm, friendly tutor at Kongu Brilliance Tuition Centre, Coimbatore, teaching a ${ctx.cls} student, ${ctx.subject} (CBSE/ICSE/State/Matric/ISC/IGCSE). You TEACH VISUALLY, like a teacher at a whiteboard — not with paragraphs.
+PERSONALITY: warm, cheerful, patient; praise effort; never make the student feel bad about mistakes; use real-life Indian examples (cricket, buses, rupees, sweets).
+LANGUAGE: ${LANGRULE[lang]} Always write mathematics in LaTeX.
+YOU MUST TEACH AS A SEQUENCE OF SHORT VISUAL SCENES. For each scene give a VISUAL plus a short spoken narration and a 1-line caption. Choose the best visual type per scene:
+- "steps": an array of short lines (use LaTeX $...$ for math/units) — for worked solutions, definitions, derivations.
+- "svg": a raw inline <svg viewBox="0 0 320 200">…</svg> string using simple shapes/text/arrows — for diagrams (cells, forces, molecules, geometry, timelines, graphs). Keep it clean, labelled, high-contrast on a dark background (use light strokes/fills like #eceef5, #67d6cf, #e0b25c). No external images.
+Rules: 3 to 5 scenes. Keep each narration to ONE or TWO spoken sentences (numbers/math said in words, no symbols). Never invent fees/results; for admissions say call 95145 24599.
+ALWAYS reply as STRICT JSON only, no extra text:
+{"topic":"short topic name","scenes":[{"type":"steps","data":["line 1","line 2"],"narration":"...","caption":"..."},{"type":"svg","data":"<svg viewBox=\\"0 0 320 200\\">...</svg>","narration":"...","caption":"..."}],"question":"one short encouraging check-question the student answers now","followups":["Explain differently","Give an example","Practice question"]}`;
 let history=[];
 function resetHistory(){history=[{role:'system',content:SYS()}];}
 resetHistory();
 
-async function callTutor(userText,{seedBoard,seedStatus}={}){
+async function callTutor(userText,{seedBoard,seedStatus,image}={}){
   if(busy)return;busy=true;awaitingAnswer=false;qbox&&qbox.classList.remove('on');
   history.push({role:'user',content:userText});
   // keep system + last 14 turns
   if(history.length>15)history=[history[0],...history.slice(-14)];
   setState('think');orbState('thinking');status(seedStatus||'Thinking…','var(--brass)');
   if(seedBoard)capText.textContent=seedBoard;
+  const STAGES=['🧠 Understanding your doubt…','🎯 Planning the lesson…','🎨 Creating the visuals…','🎙️ Preparing the narration…','💬 Synchronising captions…'];
+  let _li=0;setCaption(STAGES[0]);if(board)board.innerHTML='';
+  const _lt=setInterval(()=>{_li=(_li+1)%STAGES.length;setCaption(STAGES[_li]);},1400);
   let data=null,raw='';
   try{
     const ctl=new AbortController();const to=setTimeout(()=>ctl.abort(),22000);
     const r=await fetch('/api/llm',{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
-      body:JSON.stringify({messages:history,temperature:0.5,json:true})});
+      body:JSON.stringify(image?{messages:history,temperature:0.4,json:true,image:image}:{messages:history,temperature:0.5,json:true})});
     clearTimeout(to);
     if(r.ok){const j=await r.json();raw=(j&&j.text)||'';if(modeTag)modeTag.textContent='Live AI · '+((j&&j.model)||'model');}
   }catch(e){}
   if(raw){data=parseReply(raw);}
-  busy=false;
+  clearInterval(_lt);busy=false;
   if(!data){
     say("I could not reach the tutor engine just now. Please check your connection and try again — or call us on 9 5 1 4 5, 2 4 5 9 9.");
-    renderBoard('Connection issue','The AI tutor could not be reached.\nPlease try again in a moment.');
+    renderScene({type:'steps',data:['Connection issue','Please try again in a moment.']});
     status('Offline','var(--bad)');return;
   }
   history.push({role:'assistant',content:raw});
-  if(data.topic&&cxTopic)cxTopic.textContent=data.topic;
-  renderBoard(data.topic||'',data.steps||data.board||'');
-  let spoken=(data.speak||data.board||'').slice(0,600);
-  if(callMode&&data.question)spoken+=' '+data.question; // in a voice call, also speak the question aloud
-  say(spoken,()=>{
-    if(data.question&&!callMode){
-      awaitingAnswer=true;qtext&&(qtext.textContent=data.question);qbox&&qbox.classList.add('on');
-      status('Your turn','var(--brass)');capText.textContent='Your turn — type or speak your answer.';
-    }else{status('Ready');}
-    if(callMode)setTimeout(()=>beginListenLoop(),250); // hands-free: listen for the reply
-  });
+  const lesson=(Array.isArray(data.scenes)&&data.scenes.length)?data:{
+    topic:data.topic||'',question:data.question||'',followups:data.followups,
+    scenes:[{type:'steps',data:data.steps||[String(data.board||data.speak||'')],narration:data.speak||'',caption:data.topic||''}]
+  };
+  capText.textContent='';
+  playLesson(lesson,0);
 }
 function parseReply(raw){
   let s=String(raw).trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
@@ -909,6 +986,21 @@ function endRealtime(){
 }
 injectRealtimeBtn();
 
+/* ---- image (photo of a question) upload ---- */
+(function injectImageBtn(){
+  const bc=document.querySelector('.board-controls');if(!bc||document.getElementById('kbImgBtn'))return;
+  const b=document.createElement('button');b.className='ctrl';b.id='kbImgBtn';b.innerHTML='\ud83d\udcf7 Photo doubt';
+  const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.style.display='none';fi.id='kbImgInput';
+  b.onclick=()=>fi.click();
+  fi.onchange=()=>{const file=fi.files&&fi.files[0];if(!file)return;
+    if(file.size>6*1024*1024){alert('Please use an image under 6 MB.');fi.value='';return;}
+    const rd=new FileReader();rd.onload=()=>{const url=rd.result;stopSpeak();
+      capText.textContent='Reading your question…';
+      callTutor('Here is a photo of my question. Read it, then teach me the answer as a short visual video lesson.',{image:url,seedStatus:'Reading image'});
+      fi.value='';};rd.readAsDataURL(file);};
+  bc.insertBefore(b,bc.firstChild);document.body.appendChild(fi);
+})();
+
 /* ---- entry points ---- */
 const paperBtn=$('#paperToTutor');if(paperBtn)paperBtn.onclick=()=>{location.hash='#room';setTimeout(()=>startLesson('Solve the linear equation 2x + 5 = 15, and explain the balance method'),700);};
 const talk2=$('#talkK2');if(talk2)talk2.onclick=()=>{location.hash='#room';setTimeout(()=>{qans&&qans.focus();},700);};
@@ -918,3 +1010,4 @@ addEventListener('beforeunload',()=>{if(canSpeak){try{speechSynthesis.cancel();}
 </script>
 </body>
 </html>
+Displaying experience-FULL.txt.
