@@ -565,3 +565,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   else boot();
 })();
 
+
+
+  /* ---------- Tap-to-call: auto-link phone numbers ---------- */
+(function(){function telRun(){var g=/(?:\+?91[\s-]?)?([6-9]\d{4})[\s-]?(\d{5})(?!\d)/g;var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),nodes=[],n;while(n=w.nextNode()){var p=n.parentNode;if(!p)continue;var tag=p.nodeName.toLowerCase();if(tag==='a'||tag==='script'||tag==='style'||tag==='textarea'||tag==='input')continue;if(p.closest&&p.closest('a,button,input,textarea,select,[contenteditable]'))continue;g.lastIndex=0;if(g.test(n.nodeValue))nodes.push(n);}nodes.forEach(function(n){var txt=n.nodeValue,frag=document.createDocumentFragment(),last=0,m;g.lastIndex=0;while(m=g.exec(txt)){if(m.index>last)frag.appendChild(document.createTextNode(txt.slice(last,m.index)));var a=document.createElement('a');a.href='tel:+91'+m[1]+m[2];a.className='kb-tel-link';a.style.color='inherit';a.style.textDecoration='inherit';a.textContent=m[0];frag.appendChild(a);last=m.index+m[0].length;}if(last<txt.length)frag.appendChild(document.createTextNode(txt.slice(last)));n.parentNode.replaceChild(frag,n);});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',telRun);}else{telRun();}})();
