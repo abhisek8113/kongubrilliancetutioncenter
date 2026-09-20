@@ -251,6 +251,12 @@ function submitLead(e){
   e.preventDefault();
   var d=collect();
   if(!d.name||!d.phone){ return false; }
+  /* --- Capture lead to Supabase FIRST so no lead is ever lost if WhatsApp isn't completed --- */
+  try{
+    var _SU='https://jpngmqyidbuzbzqbsyhp.supabase.co';
+    var _SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbmdtcXlpZGJ1emJ6cWJzeWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NTk4MDcsImV4cCI6MjA5MjMzNTgwN30.Ol1NDfCM-BNEuI-MTpvl0bHrTPHxwzRuqJ9LTU6d8SA';
+    fetch(_SU+'/rest/v1/enquiries',{method:'POST',headers:{'apikey':_SK,'Authorization':'Bearer '+_SK,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({id:'ENQ_'+Date.now(),name:d.name,phone:d.phone,msg:'Free demo request (demo page / ad)',type:'demo',status:'new',date:new Date().toLocaleDateString('en-IN'),created_at:new Date().toISOString()})}).catch(function(){});
+  }catch(_e){}
   lastMsg=leadMsg();
   trackLead('form_whatsapp');
   // open WhatsApp pre-filled to the centre's number
