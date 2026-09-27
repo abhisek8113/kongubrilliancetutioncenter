@@ -13,9 +13,19 @@ function init() {
     b.innerHTML = `<i><b></b></i><span>${s.dataset.t}</span>`; b.onclick = () => go(i); ch.appendChild(b); return b;
   });
   let cur = 0, t = 0, playing = !reduce, prev = -1, tp = 0, visible = true;
-  pp.onclick = () => { playing = !playing; pp.textContent = playing ? '❚❚' : '▶'; pp.setAttribute('aria-label', playing ? 'Pause' : 'Play'); };
+  pp.onclick = () => { playing = !playing; snd && snd.pause(!playing); pp.textContent = playing ? '❚❚' : '▶'; pp.setAttribute('aria-label', playing ? 'Pause' : 'Play'); };
   if (!playing) pp.textContent = '▶';
-  function go(i) { prev = cur; tp = 0; cur = (i + N) % N; t = 0; }
+  function go(i) { prev = cur; tp = 0; cur = (i + N) % N; t = 0; if (snd.on) snd.say(scenes[cur].dataset.say); }
+  const snd = sound();
+  const sb = root.querySelector('.kbp-snd');
+  if (sb) sb.onclick = () => {
+    snd.toggle();
+    sb.classList.toggle('on', snd.on);
+    sb.querySelector('.ic').textContent = snd.on ? '🔊' : '🔈';
+    sb.querySelector('.tx').textContent = snd.on ? 'Sound on' : 'Tap for sound';
+    sb.setAttribute('aria-label', snd.on ? 'Turn sound off' : 'Turn sound on');
+    if (snd.on) { playing = true; pp.textContent = '❚❚'; go(cur); }
+  };
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const ease = x => 1 - Math.pow(1 - x, 3);
@@ -33,19 +43,100 @@ function init() {
     });
     bars.forEach((b, i) => { b.classList.toggle('on', i === cur); b.firstChild.firstChild.style.width = (i < cur ? 100 : i > cur ? 0 : clamp(t / DUR[i], 0, 1) * 100) + '%'; });
   }
-  new IntersectionObserver(es => visible = es[0].isIntersecting, { threshold: .3 }).observe(root);
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; snd.away(!visible); }, { threshold: .3 }).observe(root);
+  document.addEventListener('visibilitychange', () => snd.away(document.hidden));
   let last = performance.now(), three = null;
   (function loop(now) {
     requestAnimationFrame(loop);
     const dt = Math.min(.1, ((now || performance.now()) - last) / 1000); last = now || performance.now();
     if (!visible || document.hidden) return;
-    if (playing) { t += dt; if (t >= DUR[cur]) go(cur + 1); } else if (t < TR + 2.7) t += dt; // finish the current build even when paused
+    if (playing) { t += dt; if (t >= DUR[cur] && !(snd.on && snd.speaking())) go(cur + 1); } else if (t < TR + 2.7) t += dt; // finish the current build even when paused
     tp += dt;
     render();
     if (three) three(cur + clamp(t / TR, 0, 1) - 1, now / 1000);
   })();
   render();
   if (!reduce) particles().then(f => three = f).catch(() => {});
+
+  /* ── sound: generated background melody + narrator voice ── */
+  function sound() {
+    let ctx = null, master, musicGain, timer = 0, on = false, paused = false, away = false, speakingNow = false, voice = null;
+    const synth = window.speechSynthesis;
+    const pickVoice = () => {
+      const vs = synth ? synth.getVoices() : [];
+      voice = vs.find(v => /en[-_]IN/i.test(v.lang) && /female|heera|veena|neerja|google/i.test(v.name)) || vs.find(v => /en[-_]IN/i.test(v.lang))
+        || vs.find(v => /Google UK English Female|Samantha|Karen|Moira|Serena|Aria|Jenny/i.test(v.name)) || vs.find(v => /^en/i.test(v.lang)) || null;
+    };
+    if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+    const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+    // A minor → F → C → G  (calm, hopeful)
+    const chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+    const arp = [0, 1, 2, 1, 2, 3, 2, 1];
+    const BEAT = 60 / 76 / 2; let step = 0, nextT = 0;
+    function reverb() {
+      const len = ctx.sampleRate * 2.8, buf = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = buf.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+      const cv = ctx.createConvolver(); cv.buffer = buf; return cv;
+    }
+    function note(f, when, dur, type, vol, dest) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + .02); g.gain.exponentialRampToValueAtTime(.0001, when + dur);
+      o.connect(g); g.connect(dest); o.start(when); o.stop(when + dur + .05);
+    }
+    function pad(ch, when, dur) {
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; f.connect(musicGain);
+      ch.forEach(n => [-6, 6].forEach(dt => {
+        const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sawtooth'; o.frequency.value = midi(n - 12); o.detune.value = dt;
+        g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(.022, when + 1.2); g.gain.linearRampToValueAtTime(0, when + dur + .8);
+        o.connect(g); g.connect(f); o.start(when); o.stop(when + dur + 1);
+      }));
+    }
+    function schedule() {
+      while (nextT < ctx.currentTime + .25) {
+        const bar = Math.floor(step / 16), ch = chords[bar % 4], i = step % 16;
+        if (i === 0) { pad(ch, nextT, BEAT * 16); note(midi(ch[0] - 24), nextT, BEAT * 14, 'sine', .16, musicGain); }
+        if (i % 2 === 0) { const k = arp[(i / 2) % 8]; const n = k === 3 ? ch[0] + 12 : ch[k] + 12; note(midi(n), nextT, BEAT * 3.2, 'triangle', .07, musicGain); }
+        if (i === 6 || i === 14) note(midi(ch[2] + 24), nextT, BEAT * 4, 'sine', .03, musicGain);
+        nextT += BEAT; step++;
+      }
+    }
+    function level() {
+      if (!ctx) return;
+      const target = !on || paused || away ? 0 : speakingNow ? .35 : .8;
+      master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(target, ctx.currentTime, .35);
+    }
+    function start() {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (!master) {
+        master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+        const comp = ctx.createDynamicsCompressor(); comp.connect(master);
+        const rv = reverb(), wet = ctx.createGain(); wet.gain.value = .45; rv.connect(wet); wet.connect(comp);
+        musicGain = ctx.createGain(); musicGain.gain.value = .9; musicGain.connect(comp); musicGain.connect(rv);
+        nextT = ctx.currentTime + .1;
+      }
+      ctx.resume(); clearInterval(timer); timer = setInterval(schedule, 100); schedule();
+    }
+    const api = {
+      get on() { return on; },
+      speaking: () => speakingNow,
+      toggle() { on = !on; if (on) start(); else { synth && synth.cancel(); speakingNow = false; } level(); },
+      say(text) {
+        if (!synth || !text) return;
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-IN';
+        u.rate = .96; u.pitch = 1.02; u.volume = 1;
+        u.onstart = () => { speakingNow = true; level(); };
+        u.onend = u.onerror = () => { speakingNow = false; level(); };
+        speakingNow = true; level();
+        setTimeout(() => synth.speak(u), 350);
+      },
+      pause(p) { paused = p; if (synth) p ? synth.pause() : synth.resume(); level(); },
+      away(a) { if (a === away) return; away = a; if (a && synth) { synth.cancel(); speakingNow = false; } if (!a && on && !paused) api.say(scenes[cur].dataset.say); level(); }
+    };
+    return api;
+  }
 
   /* WebGL particle model that re-forms for each scene */
   async function particles() {
