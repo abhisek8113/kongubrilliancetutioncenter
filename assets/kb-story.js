@@ -13,7 +13,7 @@ function init() {
   scenes.forEach((_, i) => {
     const d = document.createElement('i');
     d.title = 'Scene ' + (i + 1);
-    d.onclick = () => scrollTo({ top: root.offsetTop + (i / (N - 1)) * (root.offsetHeight - innerHeight) * 0.96, behavior: 'smooth' });
+    d.onclick = () => { T = i * D; jump = true; };
     prog.appendChild(d);
   });
   const dots = [...prog.children];
@@ -40,14 +40,23 @@ function init() {
   desks.innerHTML = h;
 
   // ── scroll → scene state ──
-  let P = 0, targetP = 0, mx = 0, my = 0;
+  const D = 4.6, HOLD = 0.8;           // seconds per scene, share of time holding
+  let P = -0.3, targetP = -0.3, mx = 0, my = 0, T = 0, playing = true, jump = true;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  function readScroll() {
-    const r = root.getBoundingClientRect();
-    const total = root.offsetHeight - innerHeight;
-    const t = clamp(-r.top / total, 0, 1);
-    targetP = t * (N - 1) * 1.08;
+  const ease = x => x * x * (3 - 2 * x);
+  function timeline() {
+    const total = D * N + 1.5;          // short rest on the final scene, then loop
+    if (T >= total) { T = 0; jump = true; }
+    const i = Math.min(N - 1, Math.floor(T / D)), f = (T - i * D) / D;
+    if (i === N - 1) return Math.min(N - 1 + 0.2, N - 1 - 0.3 + 0.6 * Math.min(1, f / HOLD));
+    return f < HOLD ? i - 0.3 + 0.6 * (f / HOLD) : i + 0.3 + 0.4 * ease((f - HOLD) / (1 - HOLD));
   }
+  const pb = document.createElement('button');
+  pb.className = 'kbs-play'; pb.type = 'button'; pb.setAttribute('aria-label', 'Pause animation'); pb.textContent = '❚❚';
+  pb.onclick = () => { playing = !playing; pb.textContent = playing ? '❚❚' : '▶'; pb.setAttribute('aria-label', playing ? 'Pause animation' : 'Play animation'); };
+  root.querySelector('.st').appendChild(pb);
+  const bar = document.createElement('div'); bar.className = 'kbs-time'; bar.innerHTML = '<b></b>';
+  root.querySelector('.st').appendChild(bar); const barFill = bar.firstChild;
   function apply(p) {
     root.style.setProperty('--p', (p / (N - 1)).toFixed(4));
     scenes.forEach((s, i) => {
@@ -75,20 +84,24 @@ function init() {
 
   if (reduce) { scenes.forEach(s => { s.style.setProperty('--r', 1); s.style.setProperty('--a', 1); }); return; }
 
-  addEventListener('scroll', readScroll, { passive: true });
-  addEventListener('resize', readScroll);
   addEventListener('pointermove', e => { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; }, { passive: true });
-  readScroll(); P = targetP; apply(P);
+  document.addEventListener('visibilitychange', () => { last = performance.now(); });
+  apply(P);
 
   let three = null;
   loadThree().then(t => three = t).catch(() => {});
 
   let visible = true;
   new IntersectionObserver(es => visible = es[0].isIntersecting).observe(root);
+  let last = performance.now();
   (function loop() {
     requestAnimationFrame(loop);
+    const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (!visible) return;
-    P += (targetP - P) * 0.12;
+    if (playing) T += dt;
+    targetP = timeline();
+    if (jump) { P = targetP; jump = false; } else P += (targetP - P) * 0.14;
+    barFill.style.width = (Math.min(1, T / (D * N)) * 100).toFixed(2) + '%';
     apply(P);
     if (three) three(P, mx, my);
   })();
