@@ -1,6 +1,6 @@
 /* Kongu Brilliance — cinematic scroll story (opening of homepage) */
 #kbs{--gold:#F5C842;--gold2:#FFE08A;--teal:#00E5A0;--sky:#5AB8FF;--coral:#FF6B6B;--vio:#8B7CFF;--ink:#050814;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);
-  position:relative;height:100vh;min-height:620px;background:var(--ink);color:#fff;font-family:'Source Sans 3',system-ui,sans-serif;}
+  position:relative;height:calc(100vh * 8);background:var(--ink);color:#fff;font-family:'Source Sans 3',system-ui,sans-serif;}
 #kbs *{box-sizing:border-box}
 #kbs .st{position:sticky;top:0;height:100vh;overflow:hidden;perspective:1400px;perspective-origin:50% 45%;}
 #kbs .bg{position:absolute;inset:-10%;background:
@@ -148,11 +148,11 @@
   #kbs .phone{width:200px}#kbs .ach{display:none}
 }
 @media(max-height:720px){#kbs .cap{margin-bottom:14px}#kbs h2.t{font-size:clamp(24px,3.6vw,44px)}}
-@media(prefers-reduced-motion:reduce){#kbs{height:auto}#kbs .st{position:relative;height:auto}#kbs .sc{position:relative;opacity:1!important;transform:none!important;filter:none!important;min-height:100vh;--r:1;--a:1}#kbs .prog,#kbs .hint{display:none}}
+@media(prefers-reduced-motion:reduce){#kbs{height:auto}#kbs .st{position:relative;height:auto}#kbs .sc{position:relative;opacity:1!important;transform:none!important;filter:none!important;min-height:100vh;--r:1;--a:1}#kbs .prog,}
 
 #kbs .gd,#kbs .tl{text-shadow:none!important}
 #kbs .kbs-play{position:absolute;left:50%;margin-left:-20px;bottom:16px;z-index:6;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.08);color:#fff;font-size:12px;cursor:pointer;backdrop-filter:blur(8px)}
 #kbs .kbs-time{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.08);z-index:6}
 #kbs .kbs-time b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--gold))}
-#kbs .hint{display:none}
+
 

@@ -13,7 +13,7 @@ function init() {
   scenes.forEach((_, i) => {
     const d = document.createElement('i');
     d.title = 'Scene ' + (i + 1);
-    d.onclick = () => { T = i * D; jump = true; };
+    d.onclick = () => scrollTo({ top: root.offsetTop + (i + 0.5) / N * (root.offsetHeight - innerHeight), behavior: 'smooth' });
     prog.appendChild(d);
   });
   const dots = [...prog.children];
@@ -44,19 +44,18 @@ function init() {
   let P = -0.3, targetP = -0.3, mx = 0, my = 0, T = 0, playing = true, jump = true;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const ease = x => x * x * (3 - 2 * x);
-  function timeline() {
-    const total = D * N + 1.5;          // short rest on the final scene, then loop
-    if (T >= total) { T = 0; jump = true; }
-    const i = Math.min(N - 1, Math.floor(T / D)), f = (T - i * D) / D;
-    if (i === N - 1) return Math.min(N - 1 + 0.2, N - 1 - 0.3 + 0.6 * Math.min(1, f / HOLD));
-    return f < HOLD ? i - 0.3 + 0.6 * (f / HOLD) : i + 0.3 + 0.4 * ease((f - HOLD) / (1 - HOLD));
+  let scene = 0, sceneT = 0;
+  function sceneFromScroll() {
+    const total = root.offsetHeight - innerHeight;
+    const t = clamp(-root.getBoundingClientRect().top / total, 0, 0.9999);
+    return Math.floor(t * N);
   }
-  const pb = document.createElement('button');
-  pb.className = 'kbs-play'; pb.type = 'button'; pb.setAttribute('aria-label', 'Pause animation'); pb.textContent = '❚❚';
-  pb.onclick = () => { playing = !playing; pb.textContent = playing ? '❚❚' : '▶'; pb.setAttribute('aria-label', playing ? 'Pause animation' : 'Play animation'); };
-  root.querySelector('.st').appendChild(pb);
-  const bar = document.createElement('div'); bar.className = 'kbs-time'; bar.innerHTML = '<b></b>';
-  root.querySelector('.st').appendChild(bar); const barFill = bar.firstChild;
+  function timeline() {
+    const s2 = sceneFromScroll();
+    if (s2 !== scene) { scene = s2; sceneT = 0; }
+    const build = Math.min(1, sceneT / 2.6);             // each scene animates itself over ~2.6s
+    return scene - 0.3 + 0.5 * ease(build);
+  }
   function apply(p) {
     root.style.setProperty('--p', (p / (N - 1)).toFixed(4));
     scenes.forEach((s, i) => {
@@ -98,10 +97,9 @@ function init() {
     requestAnimationFrame(loop);
     const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (!visible) return;
-    if (playing) T += dt;
+    sceneT += dt;
     targetP = timeline();
-    if (jump) { P = targetP; jump = false; } else P += (targetP - P) * 0.14;
-    barFill.style.width = (Math.min(1, T / (D * N)) * 100).toFixed(2) + '%';
+    if (jump) { P = targetP; jump = false; } else P += (targetP - P) * (Math.abs(targetP - P) > 0.6 ? 0.09 : 0.14);
     apply(P);
     if (three) three(P, mx, my);
   })();
