@@ -1,0 +1,26 @@
+/* Kongu Brilliance — unified premium theme for the whole homepage (sits over the 3D world) */
+html{background:#04060D}
+body{background:transparent!important}
+#kbWorld{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block}
+/* old hero replaced by the new one (kept in DOM for the admin content editor) */
+#hero{display:none!important}
+/* translucent sections so the 3D world shows through, consistent rhythm */
+#courses,#founder,#why,#promo,#fees,#trust,#quotes,#contact,#kbs~section:not(#centum){background:linear-gradient(180deg,rgba(4,6,13,.72),rgba(4,6,13,.82))!important;border:0!important}
+#kbs~section{position:relative}
+#kbs~section:not(#centum)::before{content:"";position:absolute;left:6%;right:6%;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,200,66,.25),transparent);pointer-events:none}
+/* one type system */
+.section-headline{font-family:'Source Sans 3',system-ui,sans-serif!important;font-weight:800!important;letter-spacing:-.03em!important;line-height:1.04!important;font-size:clamp(34px,4.2vw,58px)!important;text-shadow:none!important}
+.section-kicker{color:#2EE6B0!important;letter-spacing:2.5px!important}
+.section-sub{color:rgba(255,255,255,.62)!important}
+#kbs~section h2,#kbs~section h3{font-family:'Source Sans 3',system-ui,sans-serif!important;letter-spacing:-.02em}
+.gold-text{background:linear-gradient(100deg,#FFF1C9 0%,#F5C842 45%,#D8901A 100%)!important;-webkit-background-clip:text!important;background-clip:text!important;animation:none!important;filter:none!important}
+/* glass cards everywhere */
+#kbs~section:not(#centum) [class*="card"]:not([class*="cards"]),#kbs~section .hp-item{background:linear-gradient(155deg,rgba(255,255,255,.07),rgba(255,255,255,.02) 60%)!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:18px!important;box-shadow:0 30px 70px -30px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.07)!important}
+/* buttons match */
+#kbs~section .btn-gold{background:linear-gradient(135deg,#FFE3A0,#F5C842 50%,#E3A21F)!important;animation:none!important;color:#15110a!important;border-radius:999px!important}
+#kbs~section .btn-ghost{border-radius:999px!important}
+/* the second (blue) SEO footer restyled to match */
+footer[style*="1a237e"]{background:rgba(4,6,13,.92)!important;border-top:1px solid rgba(255,255,255,.08);margin-top:0!important}
+footer[style*="1a237e"] h3{color:#F5C842!important;font-family:'Source Sans 3',sans-serif}
+footer{background-color:rgba(4,6,13,.94)}
+@media(prefers-reduced-motion:reduce){#kbWorld{display:none}}
