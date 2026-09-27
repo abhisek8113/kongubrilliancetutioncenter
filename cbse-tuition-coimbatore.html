@@ -205,5 +205,6 @@ function submitLead(e){e.preventDefault();var d=collect();if(!d.name||!d.phone)r
 document.getElementById('emailAlt').addEventListener('click',function(ev){ev.preventDefault();var d=collect();trackLead('cbse_form_email');
   window.location.href="mailto:"+MAIL+"?subject="+encodeURIComponent("Free CBSE demo — "+(d.name||''))+"&body="+encodeURIComponent(leadMsg());});
 </script>
+<script src="/assets/kb-3d.js" defer></script>
 </body>
 </html>
