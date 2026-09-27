@@ -30,7 +30,7 @@
   document.head.appendChild(st);
 
   var CARD = '[class*="card"],.hp-item,.fee-card,.why-card,.course-card,.trust-card,.faq-item,.blog-card,.result-card,.testimonial,.stat,.pillar';
-  var SKIP = 'nav,header,footer,form,dialog,[role="dialog"],.modal,[class*="modal"],[class*="popup"],[class*="drawer"],#kbx,.m-card,.kbx-page';
+  var SKIP = '#kbs,nav,header,footer,form,dialog,[role="dialog"],.modal,[class*="modal"],[class*="popup"],[class*="drawer"],#kbx,.m-card,.kbx-page';
 
   function fixedAncestor(el) {
     for (var n = el.parentElement; n && n !== document.body; n = n.parentElement) {
