@@ -24,3 +24,17 @@ footer[style*="1a237e"]{background:rgba(4,6,13,.92)!important;border-top:1px sol
 footer[style*="1a237e"] h3{color:#F5C842!important;font-family:'Source Sans 3',sans-serif}
 footer{background-color:rgba(4,6,13,.94)}
 @media(prefers-reduced-motion:reduce){#kbWorld{display:none}}
+/* ── cinematic 3D sections ── */
+.kbx3{position:relative;overflow:hidden!important}
+.kbx3>.kbx3-in{transform-origin:50% 0}
+.kbx3-word{position:absolute;left:0;right:0;top:34px;z-index:0;text-align:center;white-space:nowrap;pointer-events:none;
+  font:900 clamp(90px,17vw,300px)/.85 'Source Sans 3',system-ui,sans-serif;letter-spacing:-.05em;
+  background:linear-gradient(180deg,rgba(255,241,201,.16),rgba(245,200,66,.07) 60%,transparent);-webkit-background-clip:text;background-clip:text;color:transparent;will-change:transform}
+.kbx3-word.ol{background:none;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.09)}
+#centum .kbx3-word{background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.04));-webkit-background-clip:text;background-clip:text}
+/* sections: see-through at the edges so each section's 3D object shows, solid behind the content */
+@media(min-width:821px){
+ #kbs~section.kbx3:not(#centum){background:linear-gradient(90deg,rgba(4,6,13,.25) 0%,rgba(4,6,13,.86) 22%,rgba(4,6,13,.86) 78%,rgba(4,6,13,.25) 100%)!important}
+}
+@media(max-width:820px){.kbx3-word{font-size:clamp(70px,26vw,140px);top:22px}}
+@media(prefers-reduced-motion:reduce){.kbx3-word{display:none}}

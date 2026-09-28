@@ -120,22 +120,27 @@ function world() {
   /* placement: hero cluster, then objects drifting down the whole page */
   const items = [];
   const add = (o, x, y, z, s, spin = [.2, .3, 0], tilt = [0, 0, 0]) => { o.position.set(x, y, z); o.scale.setScalar(s); o.rotation.set(...tilt); o.userData.base = { x, y, z, spin, phase: Math.random() * 6 }; scene.add(o); items.push(o); return o; };
-  let heroX = small ? .2 : 5.2, heroY = small ? 2.45 : .2, hs = small ? .5 : 1;
-  add(B.cap(), heroX + .3 * hs, heroY + 1.5 * hs, 1, .85 * hs, [.05, .35, .05], [.35, .5, -.12]);
-  add(B.openBook(), heroX - 1.4 * hs, heroY - 1.6 * hs, 2, .75 * hs, [.08, .2, 0], [.6, -.4, .1]);
-  add(B.atom(), heroX + 2.3 * hs, heroY - 1.2 * hs, -1.5, .8 * hs, [.2, .3, .1]);
-  add(B.pi(), heroX - 2.2 * hs, heroY + 1.9 * hs, -2, .55 * hs, [.1, .5, .05]);
-  add(B.orb(), heroX + .9 * hs, heroY - 2.9 * hs, -3, .7 * hs, [.1, .2, 0]);
-  add(B.pencil(), heroX + 3.1 * hs, heroY + 2.4 * hs, -2.5, .45 * hs, [.3, .2, .2], [0, 0, -.8]);
-
-  const pool = ['stack', 'globe', 'atom', 'trophy', 'openBook', 'bulb'];
-  const docScreens = () => document.documentElement.scrollHeight / innerHeight;
-  const spread = Math.min(8, Math.ceil(docScreens() / 2) + 1);
-  for (let i = 1; i < spread; i++) {
-    const side = i % 2 ? 1 : -1, name = pool[(i - 1) % pool.length];
-    const edge = small ? 2.6 : (innerWidth / innerHeight) * UNIT / 2 - 1.6;
-    add(B[name](), side * (edge - Math.random() * .8), -i * UNIT * 1.05 + (Math.random() - .5) * 2, -2 - Math.random() * 4, (small ? .45 : .7) + Math.random() * .25, [.15 + Math.random() * .2, .25 + Math.random() * .3, .05], [Math.random(), Math.random() * 3, Math.random() * .5]);
+  /* one signature 3D object per homepage section, anchored beside that section */
+  const anchors = [
+    ['courses', 'stack', 1], ['founder', 'trophy', -1], ['why', 'atom', 1], ['promo', 'globe', -1],
+    ['fees', 'bulb', 1], ['trust', 'openBook', -1], ['quotes', 'cap', 1], ['contact', 'globe', -1]
+  ];
+  const edge = (innerWidth / innerHeight) * UNIT / 2;
+  const placed = [];
+  anchors.forEach(([id, name, side], i) => {
+    const el = document.getElementById(id); if (!el || !B[name]) return;
+    const o = add(B[name](), 0, 0, -1.5, .95, [.12, .3, .04], [.3, i, .1]);
+    placed.push({ o, el, side });
+  });
+  function anchor() {
+    const e = (innerWidth / innerHeight) * UNIT / 2;
+    placed.forEach(({ o, el, side }) => {
+      const r = el.getBoundingClientRect(), Y = r.top + scrollY + Math.min(r.height, innerHeight) * .5;
+      const b = o.userData.base; b.y = -(Y - innerHeight / 2) / innerHeight * UNIT; b.x = side * (e - 1.1); o.position.x = b.x;
+    });
   }
+  anchor(); addEventListener('resize', anchor); addEventListener('load', anchor); setTimeout(anchor, 2500);
+  const spread = Math.ceil(document.documentElement.scrollHeight / innerHeight) + 1;
 
   /* sparkle dust */
   const DN = small ? 400 : 900, dp = new Float32Array(DN * 3);
