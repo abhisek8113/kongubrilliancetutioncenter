@@ -4,7 +4,24 @@
 <canvas id="kbWorld" aria-hidden="true"></canvas>
 <!-- ── KB VIDEO PLAYER (source: assets/kb-player.html, injected into index.html) ── -->
 <link rel="stylesheet" href="/assets/kb-player.css?v=3">
-<div id="top"></div><section id="kbp" class="kbp-top" aria-label="How Kongu Brilliance teaches — animated explainer">
+<link rel="stylesheet" href="/assets/kb-hero.css?v=2">
+<div id="top"></div>
+<section id="kbh" aria-label="Kongu Brilliance Tuition Centre">
+ <div class="h-st">
+  <div class="h-bg"></div><div class="h-grid"></div><div class="h-glow"></div>
+  <div class="h-word h-back h-split" aria-hidden="true">KONGU</div>
+  <canvas id="kbh3d" aria-hidden="true"></canvas>
+  <div class="h-word h-front h-split" aria-hidden="true">BRILLIANCE</div>
+  <div class="h-top"><span>● Admissions open 2026/27</span><span>Tuition Centre · Coimbatore</span><span>Class 1–12 · CBSE · ICSE · State</span></div>
+  <div class="h-tag">Class 1–12 tuition,<br><em>powered by AI + expert teachers.</em><small>Centre · Home · Online &nbsp;·&nbsp; Max 12 per batch</small></div>
+  <div class="h-bot">
+   <p><b>Kongu Brilliance</b>: personal AI practice, instant test analysis and experienced teachers, together in one classroom.</p>
+   <div class="h-ctas"><a class="h-btn p" href="/free-demo.html">Book a free demo class</a><a class="h-btn g" href="#kbp">▶ Watch how it works</a></div>
+  </div>
+  <div class="h-scroll">SCROLL</div>
+ </div>
+</section>
+<section id="kbp" class="kbp-top" aria-label="How Kongu Brilliance teaches — animated explainer">
  <canvas id="kbp3d" aria-hidden="true"></canvas>
  <div class="kbp-bg"></div>
 
@@ -161,4 +178,5 @@
 </section>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script src="/assets/kb-story.js?v=9" type="module"></script>
+<script src="/assets/kb-hero.js?v=2" type="module"></script>
 <!-- ── /KB PREMIUM HOME ── -->
