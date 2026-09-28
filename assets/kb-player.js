@@ -15,7 +15,7 @@ function init() {
   let cur = 0, t = 0, playing = !reduce, prev = -1, tp = 0, visible = true;
   pp.onclick = () => { playing = !playing; snd && snd.pause(!playing); pp.textContent = playing ? '❚❚' : '▶'; pp.setAttribute('aria-label', playing ? 'Pause' : 'Play'); };
   if (!playing) pp.textContent = '▶';
-  function go(i) { prev = cur; tp = 0; cur = (i + N) % N; t = 0; if (snd.on) snd.say(scenes[cur].dataset.say); }
+  function go(i) { prev = cur; tp = 0; cur = (i + N) % N; t = 0; if (snd.on) snd.say(cur); }
   const snd = sound();
   const sb = root.querySelector('.kbp-snd');
   if (sb) sb.onclick = () => {
@@ -61,7 +61,12 @@ function init() {
   /* ── sound: generated background melody + narrator voice ── */
   function sound() {
     let ctx = null, master, musicGain, timer = 0, on = false, paused = false, away = false, speakingNow = false, voice = null;
-    const synth = window.speechSynthesis;
+    const voiceEl = new Audio(); voiceEl.preload = 'auto'; voiceEl.volume = 1; voiceEl.setAttribute('playsinline', '');
+    voiceEl.src = '/assets/voice/scene0.mp3?v=1';
+    voiceEl.addEventListener('playing', () => { speakingNow = true; level(); });
+    voiceEl.addEventListener('pause', () => { speakingNow = false; level(); });
+    voiceEl.addEventListener('ended', () => { speakingNow = false; level(); });
+    const synth = null;
     const pickVoice = () => {
       const vs = synth ? synth.getVoices() : [];
       voice = vs.find(v => /en[-_]IN/i.test(v.lang) && /female|heera|veena|neerja|google/i.test(v.name)) || vs.find(v => /en[-_]IN/i.test(v.lang))
@@ -103,7 +108,7 @@ function init() {
     }
     function level() {
       if (!ctx) return;
-      const target = !on || paused || away ? 0 : speakingNow ? .35 : .8;
+      const target = !on || paused || away ? 0 : speakingNow ? .18 : .55;
       master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(target, ctx.currentTime, .35);
     }
     function start() {
@@ -120,20 +125,14 @@ function init() {
     const api = {
       get on() { return on; },
       speaking: () => speakingNow,
-      toggle() { on = !on; if (on) start(); else { synth && synth.cancel(); speakingNow = false; } level(); },
-      say(text) {
-        if (!synth || !text) return;
-        synth.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-IN';
-        u.rate = .96; u.pitch = 1.02; u.volume = 1;
-        u.onstart = () => { speakingNow = true; level(); };
-        u.onend = u.onerror = () => { speakingNow = false; level(); };
-        speakingNow = true; level();
-        setTimeout(() => synth.speak(u), 350);
+      toggle() { on = !on; if (on) { start(); voiceEl.muted = false; voiceEl.play().catch(() => {}); } else { voiceEl.pause(); speakingNow = false; } level(); },
+      say(i) {
+        voiceEl.src = `/assets/voice/scene${i}.mp3?v=1`;
+        voiceEl.currentTime = 0;
+        const pr = voiceEl.play(); if (pr) pr.catch(() => { speakingNow = false; level(); });
       },
-      pause(p) { paused = p; if (synth) p ? synth.pause() : synth.resume(); level(); },
-      away(a) { if (a === away) return; away = a; if (a && synth) { synth.cancel(); speakingNow = false; } if (!a && on && !paused) api.say(scenes[cur].dataset.say); level(); }
+      pause(p) { paused = p; p ? voiceEl.pause() : (on && voiceEl.src && voiceEl.play().catch(() => {})); level(); },
+      away(a) { if (a === away) return; away = a; if (a) { voiceEl.pause(); speakingNow = false; } if (!a && on && !paused) api.say(cur); level(); }
     };
     return api;
   }
