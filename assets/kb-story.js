@@ -23,7 +23,8 @@ if (root) {
 
 /* ── 3D world ── */
 const canvas = document.getElementById('kbWorld');
-if (canvas && !reduce) Promise.all([import('three'), import('three/addons/environments/RoomEnvironment.js')])
+if (canvas && innerWidth < 820) canvas.remove();
+else if (canvas && !reduce) Promise.all([import('three'), import('three/addons/environments/RoomEnvironment.js')])
   .then(([T, R]) => { THREE = T; RoomEnvironment = R.RoomEnvironment; world(); }).catch(() => canvas.remove());
 
 function world() {
@@ -127,9 +128,9 @@ function world() {
   add(B.orb(), heroX + .9 * hs, heroY - 2.9 * hs, -3, .7 * hs, [.1, .2, 0]);
   add(B.pencil(), heroX + 3.1 * hs, heroY + 2.4 * hs, -2.5, .45 * hs, [.3, .2, .2], [0, 0, -.8]);
 
-  const pool = ['stack', 'root', 'globe', 'sigma', 'trophy', 'bulb', 'pencil', 'plus', 'atom', 'pi', 'openBook', 'cap'];
+  const pool = ['stack', 'globe', 'atom', 'trophy', 'openBook', 'bulb'];
   const docScreens = () => document.documentElement.scrollHeight / innerHeight;
-  const spread = Math.min(small ? 10 : 16, Math.ceil(docScreens()) + 2);
+  const spread = Math.min(8, Math.ceil(docScreens() / 2) + 1);
   for (let i = 1; i < spread; i++) {
     const side = i % 2 ? 1 : -1, name = pool[(i - 1) % pool.length];
     const edge = small ? 2.6 : (innerWidth / innerHeight) * UNIT / 2 - 1.6;
@@ -149,9 +150,15 @@ function world() {
   addEventListener('pointermove', e => { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; }, { passive: true });
   const clock = new THREE.Clock();
   canvas.style.opacity = 0; canvas.style.transition = 'opacity 1.4s ease';
+  // pause the background world while the hero or explainer (which have their own 3D) fill the screen
+  let covered = true;
+  const covers = [document.getElementById('kbh'), document.getElementById('kbp')].filter(Boolean);
+  const seen = new Set();
+  const io2 = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? seen.add(e.target) : seen.delete(e.target)); covered = seen.size > 0; }, { threshold: 0.15 });
+  covers.forEach(c => io2.observe(c));
   (function loop() {
     requestAnimationFrame(loop);
-    if (document.hidden) { clock.getDelta(); return; }
+    if (document.hidden || covered) { clock.getDelta(); return; }
     const t = clock.getElapsedTime();
     const sy = scrollY; vel += ((sy - lastY) - vel) * .12; lastY = sy;
     mx += (tx - mx) * .05; my += (ty - my) * .05;

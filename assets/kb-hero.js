@@ -108,14 +108,14 @@ function initHero() {
 
     /* orbiting formulas */
     const label = (txt, col) => { const c = document.createElement('canvas'); c.width = 512; c.height = 128; const g = c.getContext('2d');
-      g.font = '600 64px Georgia'; g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = col; g.shadowBlur = 18; g.fillText(txt, 256, 64);
-      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false })); s.scale.set(2.2, .55, 1); return s; };
+      g.font = 'italic 500 60px Georgia'; g.fillStyle = col; g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = col; g.shadowBlur = 6; g.fillText(txt, 256, 64);
+      const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false })); s.scale.set(1.7, .42, 1); return s; };
     const orbit = new THREE.Group(); rig.add(orbit);
-    const syms = [['π', '#F5C842'], ['√x', '#2EE6B0'], ['Σ', '#F5C842'], ['E=mc²', '#9fd4ff'], ['H₂O', '#2EE6B0'], ['a²+b²', '#FFE3A0'], ['∫', '#9fd4ff'], ['ABC', '#FFE3A0']];
+    const syms = [['π', '#F5C842'], ['E = mc²', '#d7e6ff'], ['√x', '#F5C842'], ['H₂O', '#bfeede'], ['a² + b²', '#F5C842']];
     const sprites = syms.map(([t, c], i) => { const s = label(t, c); s.userData.a = i / syms.length * Math.PI * 2; orbit.add(s); return s; });
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0xF5C842, transparent: true, opacity: .35 });
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xF5C842, transparent: true, opacity: .18 });
     const ring1 = mesh(new THREE.TorusGeometry(4.2, .012, 8, 200), ringMat, [0, .2, 0], [Math.PI / 2 - .25, 0, 0]);
-    const ring2 = mesh(new THREE.TorusGeometry(3.4, .01, 8, 200), M.glow, [0, .2, 0], [Math.PI / 2 + .35, .3, 0]); ring2.material = M.glow.clone(); ring2.material.opacity = .35;
+    const ring2 = mesh(new THREE.TorusGeometry(3.4, .01, 8, 200), M.glow, [0, .2, 0], [Math.PI / 2 + .35, .3, 0]); ring2.material = M.glow.clone(); ring2.material.opacity = .14;
     rig.add(ring1, ring2);
     // soft floor reflection glow
     const halo = mesh(new THREE.CircleGeometry(4, 64), new THREE.MeshBasicMaterial({ color: 0xF5C842, transparent: true, opacity: .08, depthWrite: false }), [0, -2.2, 0], [-Math.PI / 2, 0, 0]); rig.add(halo);
@@ -133,8 +133,8 @@ function initHero() {
       cam.position.z = 13 - ease(clamp(p / .7, 0, 1)) * 3.2; cam.position.y = 1.2 - p * .8; cam.lookAt(0, .2 - p * .6, 0);
       cap.rotation.y = .6 + t * .35; cap.position.y = 1.9 + Math.sin(t * 1.1) * .15 + p * 1.2;
       tassel.rotation.z = Math.sin(t * 2.2) * .18; tassel.rotation.x = Math.cos(t * 1.7) * .12;
-      pages.forEach(pg => { const k = ((t * .18 + pg.userData.ph) % 1); const f = ease(clamp((k - .1) / .6, 0, 1)); pg.rotation.z = .12 + f * (Math.PI - .24); pg.position.y = .27 + Math.sin(f * Math.PI) * .35; });
-      sprites.forEach((s, i) => { const a = s.userData.a + t * .25; const r = 4.2; s.position.set(Math.cos(a) * r, .2 + Math.sin(a * 2 + i) * .5, Math.sin(a) * r); s.material.opacity = .55 + .45 * Math.max(0, Math.sin(a)); });
+      pages.forEach(pg => { const k = ((t * .09 + pg.userData.ph) % 1); const f = ease(clamp((k - .1) / .6, 0, 1)); pg.rotation.z = .12 + f * (Math.PI - .24); pg.position.y = .27 + Math.sin(f * Math.PI) * .35; });
+      sprites.forEach((s, i) => { const a = s.userData.a + t * .25; const r = 4.2; s.position.set(Math.cos(a) * r, .2 + Math.sin(a * 2 + i) * .5, Math.sin(a) * r); s.material.opacity = .25 + .5 * Math.max(0, Math.sin(a)); });
       ring1.rotation.z = t * .1; ring2.rotation.z = -t * .14;
       renderer.render(scene, cam);
     };
