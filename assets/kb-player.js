@@ -62,7 +62,7 @@ function init() {
   function sound() {
     let ctx = null, master, musicGain, timer = 0, on = false, paused = false, away = false, speakingNow = false, voice = null;
     const voiceEl = new Audio(); voiceEl.preload = 'auto'; voiceEl.volume = 1; voiceEl.setAttribute('playsinline', '');
-    voiceEl.src = '/assets/voice/scene0.mp3?v=2';
+    voiceEl.src = '/assets/voice/scene0.mp3?v=3';
     voiceEl.addEventListener('playing', () => { speakingNow = true; level(); });
     voiceEl.addEventListener('pause', () => { speakingNow = false; level(); });
     voiceEl.addEventListener('ended', () => { speakingNow = false; level(); });
@@ -127,7 +127,7 @@ function init() {
       speaking: () => speakingNow,
       toggle() { on = !on; if (on) { start(); voiceEl.muted = false; voiceEl.play().catch(() => {}); } else { voiceEl.pause(); speakingNow = false; } level(); },
       say(i) {
-        voiceEl.src = `/assets/voice/scene${i}.mp3?v=2`;
+        voiceEl.src = `/assets/voice/scene${i}.mp3?v=3`;
         voiceEl.currentTime = 0;
         const pr = voiceEl.play(); if (pr) pr.catch(() => { speakingNow = false; level(); });
       },
