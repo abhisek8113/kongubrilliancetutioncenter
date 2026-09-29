@@ -84,3 +84,4 @@ body[data-t=dark] .dots a{background:rgba(255,255,255,.3)}
 @media(max-width:520px){.progs{grid-template-columns:1fr}.boardrow b{padding:12px 18px}.sp-vis .wbody.two{grid-template-columns:1fr}.sp-vis .ringbox{display:none}.sp-vis .mets{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:reduce){.a{opacity:1;transform:none}}
 #kbp .t{color:#fff}
+.login{font:700 14.5px var(--hf)}body[data-t=dark] .login{color:#fff}@media(max-width:900px){.login{display:none}}
