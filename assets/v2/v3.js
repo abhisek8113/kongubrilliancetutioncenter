@@ -62,7 +62,7 @@ function hero3d(THREE) {
   const ring = mesh(new THREE.TorusGeometry(4, .01, 8, 220), new THREE.MeshBasicMaterial({ color: 0xE7B44A, transparent: true, opacity: .22 }), [0, .1, 0], [Math.PI / 2 - .25, 0, 0]); rig.add(ring);
   const halo = mesh(new THREE.CircleGeometry(3.6, 64), new THREE.MeshBasicMaterial({ color: 0xE7B44A, transparent: true, opacity: .07, depthWrite: false }), [0, -2.3, 0], [-Math.PI / 2, 0, 0]); rig.add(halo);
   function size() { const w = host.clientWidth, h = host.clientHeight; R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
-    const vw = 2 * 14 * Math.tan(THREE.MathUtils.degToRad(16)) * cam.aspect; rig.position.x = 0; rig.scale.setScalar(small ? .5 : .9); rig.userData.y = small ? -2.2 : -1.6; }
+    const vw = 2 * 14 * Math.tan(THREE.MathUtils.degToRad(16)) * cam.aspect; rig.position.x = 0; rig.scale.setScalar(small ? .45 : .75); rig.userData.y = small ? -2.9 : -2.5; }
   size(); addEventListener('resize', size);
   let mx = 0, my = 0, tx = 0, ty = 0, on = true; addEventListener('pointermove', e => { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; }, { passive: true });
   new IntersectionObserver(es => on = es[0].isIntersecting).observe(host);
