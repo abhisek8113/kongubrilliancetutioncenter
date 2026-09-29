@@ -963,23 +963,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="ticker">
   <div class="ticker-track">
     <span>Admissions Open 2026–27</span>
-    <span>Kongu Brilliance Tuition Centre</span>
+    <span>Offline Classes at Our Centre · Kurudampalayam</span>
+    <span>Home Tuition Across Coimbatore</span>
+    <span>Live Online Tuition</span>
     <span>Free Demo Class — Book Now</span>
     <span>📞 95145 24599</span>
-    <span>Classes 1–12 · All Boards</span>
+    <span>Classes 1–12 · CBSE · ICSE · State</span>
     <span>Zero Registration Fee</span>
-    <span>Coimbatore's Rising Star Centre</span>
-    <span>📞 78459 15044</span>
-    <span>Founder: Abhisek · 5 Years of Excellence</span>
     <span>Admissions Open 2026–27</span>
-    <span>Kongu Brilliance Tuition Centre</span>
+    <span>Offline Classes at Our Centre · Kurudampalayam</span>
+    <span>Home Tuition Across Coimbatore</span>
+    <span>Live Online Tuition</span>
     <span>Free Demo Class — Book Now</span>
     <span>📞 95145 24599</span>
-    <span>Classes 1–12 · All Boards</span>
+    <span>Classes 1–12 · CBSE · ICSE · State</span>
     <span>Zero Registration Fee</span>
-    <span>Coimbatore's Rising Star Centre</span>
-    <span>📞 78459 15044</span>
-    <span>Founder: Abhisek · 5 Years of Excellence</span>
   </div>
 </div>
 
@@ -1073,7 +1071,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
  <!-- 0 INTRO -->
  <div class="sc" data-t="Welcome" data-say="What if your learning could think with you? Welcome to Kongu Brilliance, tuition for class one to twelve, for CBSE, ICSE and State Board students in Coimbatore.">
-  <div class="cap"><div class="kick">Kongu Brilliance · Tuition Centre · Coimbatore</div>
+  <div class="cap"><div class="kick">Offline Centre · Home Tuition · Online · Coimbatore</div>
    <h2 class="t">What if your learning<br><span class="gd">could think with you?</span></h2></div>
   <div class="vis"><div class="nb"><div class="q">Q7. Solve: 2x² − 7x + 3 = 0</div>
    <div class="hw">x = <s>7 ± √49 + 24</s> … ?</div>
@@ -12038,13 +12036,13 @@ const CONTENT_DEFAULTS = {
 
 const TICKER_DEFAULTS = [
   'Admissions Open 2026–27',
-  'Kongu Brilliance Tuition Centre',
+  'Offline Classes at Our Centre · Kurudampalayam',
+  'Home Tuition Across Coimbatore',
+  'Live Online Tuition',
   'Free Demo Class — Book Now',
   '📞 95145 24599',
-  'Classes 1\u201312 \u00b7 All Boards',
+  'Classes 1–12 · CBSE · ICSE · State',
   'Zero Registration Fee',
-  "Coimbatore's Rising Star Centre",
-  'Founder: Abhisek \u00b7 5 Years of Excellence',
 ];
 
 const BATCH_DEFAULTS = [
@@ -12060,7 +12058,7 @@ function setContent(key, val) {
   try { localStorage.setItem('kb_content_' + key, val); } catch(e) {}
 }
 function getTickerItems() {
-  try { return JSON.parse(localStorage.getItem('kb_ticker_items') || 'null') || TICKER_DEFAULTS; } catch(e) { return TICKER_DEFAULTS; }
+  try { if (!localStorage.getItem('kb_ticker_v2')) { localStorage.removeItem('kb_ticker_items'); localStorage.setItem('kb_ticker_v2','1'); } return JSON.parse(localStorage.getItem('kb_ticker_items') || 'null') || TICKER_DEFAULTS; } catch(e) { return TICKER_DEFAULTS; }
 }
 function getBatchTimings() {
   try { return JSON.parse(localStorage.getItem('kb_batch_timings') || 'null') || BATCH_DEFAULTS; } catch(e) { return BATCH_DEFAULTS; }
