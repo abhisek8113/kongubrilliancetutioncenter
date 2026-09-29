@@ -56,7 +56,7 @@ function init() {
     if (three) three(cur + clamp(t / TR, 0, 1) - 1, now / 1000);
   })();
   render();
-  if (!reduce) particles().then(f => three = f).catch(() => {});
+  // WebGL particles disabled for speed (saves ~700 KB download + GPU work)
 
   /* ── sound: generated background melody + narrator voice ── */
   function sound() {
