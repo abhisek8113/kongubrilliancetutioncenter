@@ -21,9 +21,8 @@
     '.kb3d-t.kb3d-hov{transition:rotate .08s linear,translate .3s,box-shadow .3s;translate:0 -6px 30px;box-shadow:0 30px 60px -20px rgba(0,0,0,.75),0 0 0 1px rgba(245,200,66,.18),0 0 40px -10px rgba(245,200,66,.25)!important;}',
     '.kb3d-g{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;opacity:0;transition:opacity .35s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.16),rgba(245,200,66,.06) 30%,transparent 60%);mix-blend-mode:screen;}',
     '.kb3d-hov>.kb3d-g{opacity:1;}',
-    '.hero-h1,h1{text-shadow:0 1px 0 rgba(120,80,10,.9),0 2px 0 rgba(100,65,8,.85),0 3px 0 rgba(80,52,6,.8),0 4px 0 rgba(60,40,5,.75),0 6px 1px rgba(0,0,0,.4),0 10px 20px rgba(0,0,0,.55),0 18px 40px rgba(0,0,0,.45);}',
-    '.section-headline,section h2{text-shadow:0 1px 0 rgba(0,0,0,.55),0 2px 0 rgba(0,0,0,.45),0 3px 0 rgba(0,0,0,.35),0 8px 18px rgba(0,0,0,.5);}',
-    '.gold-text,.hero-h2,[class*="grad"],h1 .g,h2 .g{text-shadow:none!important;filter:drop-shadow(0 2px 0 rgba(110,70,8,.95)) drop-shadow(0 4px 0 rgba(70,45,5,.8)) drop-shadow(0 12px 18px rgba(0,0,0,.55));}',
+    '.hero-h1,h1{text-shadow:0 2px 24px rgba(0,0,0,.35);}',
+    '.section-headline,section h2{text-shadow:none;}',
     '.kb3d-d{transition:translate .6s cubic-bezier(.2,.7,.2,1),rotate .6s cubic-bezier(.2,.7,.2,1);}'
   ].join('');
   var st = document.createElement('style'); st.id = 'kb3d-css'; st.textContent = css;

@@ -1,0 +1,45 @@
+/* Kongu Brilliance — premium polish for every homepage section (CSS only, fast) */
+:root{--pg:#F5C842;--pg2:#FFE3A0;--pt:#2EE6B0;--ps:#6CB8FF}
+/* section atmosphere: soft glows, alternating sides */
+#kbs~section:not(#centum){background-image:radial-gradient(ellipse 55% 45% at 12% 0%,rgba(245,200,66,.07),transparent 70%),radial-gradient(ellipse 50% 40% at 90% 100%,rgba(46,230,176,.05),transparent 70%)!important;background-color:#05070F!important}
+#kbs~section:nth-of-type(even):not(#centum){background-image:radial-gradient(ellipse 55% 45% at 88% 0%,rgba(108,184,255,.06),transparent 70%),radial-gradient(ellipse 50% 40% at 10% 100%,rgba(245,200,66,.06),transparent 70%)!important}
+/* kickers as refined pills */
+.section-kicker{display:inline-flex!important;align-items:center;gap:10px!important;padding:7px 14px;border-radius:40px;border:1px solid rgba(46,230,176,.28);background:rgba(46,230,176,.06);font-size:11px!important;letter-spacing:.2em!important}
+.section-kicker::before{width:6px!important;height:6px;border-radius:50%;background:var(--pt)!important;box-shadow:0 0 10px var(--pt)}
+/* headlines: clean, with shimmering gold accent */
+.section-headline{text-shadow:none!important;letter-spacing:-.025em!important}
+.gold-text{background:linear-gradient(90deg,#FFE3A0,#F5C842 30%,#E8A020 50%,#F5C842 70%,#FFE3A0)!important;background-size:220% 100%!important;-webkit-background-clip:text!important;background-clip:text!important;-webkit-text-fill-color:transparent!important;
+ animation:pgShine 7s linear infinite!important;filter:none!important;text-shadow:none!important}
+@keyframes pgShine{to{background-position:-220% 0}}
+.section-sub{font-size:17px!important;line-height:1.7!important}
+/* cards: glass, gradient hover border, gentle lift (3D tilt is added by kb-3d.js on desktop) */
+#kbs~section:not(#centum) :is(.course-card,.why-card,.trust-card,.fee-card,.timing-card,.c-card,.content-section-card,.mat-card){
+ position:relative;background:linear-gradient(160deg,rgba(255,255,255,.065),rgba(255,255,255,.015) 60%)!important;border:1px solid rgba(255,255,255,.09)!important;border-radius:20px!important;
+ box-shadow:0 24px 60px -34px rgba(0,0,0,.9)!important;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s,border-color .35s!important}
+#kbs~section:not(#centum) :is(.course-card,.why-card,.trust-card,.fee-card,.timing-card,.c-card)::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;opacity:0;transition:opacity .35s;
+ background:linear-gradient(135deg,var(--pg),transparent 38%,transparent 62%,var(--pt));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+#kbs~section:not(#centum) :is(.course-card,.why-card,.trust-card,.fee-card,.timing-card,.c-card):hover{border-color:transparent!important;box-shadow:0 30px 70px -30px rgba(245,200,66,.28)!important}
+#kbs~section:not(#centum) :is(.course-card,.why-card,.trust-card,.fee-card,.timing-card,.c-card):hover::before{opacity:1}
+/* line-icon badges replacing emojis */
+.pi-ic{display:grid!important;place-items:center;width:52px!important;height:52px!important;border-radius:14px!important;font-size:0!important;
+ background:rgba(245,200,66,.1)!important;border:1px solid rgba(245,200,66,.3)!important;color:var(--pg)!important;margin-bottom:16px!important;flex-shrink:0}
+.pi-ic svg{width:24px;height:24px}
+.course-card:nth-child(3n+2) .pi-ic,.why-card:nth-child(3n+2) .pi-ic{background:rgba(46,230,176,.1)!important;border-color:rgba(46,230,176,.3)!important;color:var(--pt)!important}
+.course-card:nth-child(3n) .pi-ic,.why-card:nth-child(3n) .pi-ic{background:rgba(108,184,255,.1)!important;border-color:rgba(108,184,255,.3)!important;color:var(--ps)!important}
+.why-card .pi-ic{margin-bottom:0!important;margin-right:4px}
+.course-card .cc-title,.why-card .wc-title{font-family:'Source Sans 3',system-ui,sans-serif!important;font-weight:700!important;letter-spacing:-.01em}
+.cc-level{border-radius:8px!important}
+/* reviews: premium quote cards */
+.trust-stars{letter-spacing:4px;color:var(--pg)!important}
+.trust-quote{font-style:italic;line-height:1.7!important}
+/* buttons: consistent pill + shine */
+#kbs~section :is(.btn-gold,.btn-teal){border-radius:999px!important;position:relative;overflow:hidden}
+#kbs~section .btn-gold::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);animation:pgSweep 3.6s ease-in-out infinite}
+@keyframes pgSweep{0%,60%{left:-60%}100%{left:130%}}
+#kbs~section .btn-ghost{border-radius:999px!important}
+/* the centum banner: richer gold with a moving sheen */
+#centum{background:linear-gradient(120deg,#6B3F00,#A8650A 30%,#D99A1E 55%,#F2C552 75%,#FFE3A0)!important;background-size:200% 100%!important;animation:pgBand 12s ease-in-out infinite}
+@keyframes pgBand{50%{background-position:100% 0}}
+/* quiet the loud extras */
+.boards-strip span,.boards-strip a,.boards-strip div{border-radius:999px!important}
+@media(prefers-reduced-motion:reduce){.gold-text,#centum,#kbs~section .btn-gold::after{animation:none!important}}
