@@ -189,3 +189,7 @@
 #kbs .kx-strip .kx-glance{margin:0 auto;max-width:980px}
 #kbs .kx-strip .kx-ctas{justify-content:center;margin-top:26px}
 #kbs .kx-strip .kx-glance>div{text-align:left}
+#kbs .kx-modes>a{display:block;text-decoration:none;color:#fff;padding:14px;border-radius:14px;background:rgba(10,14,26,.55);border:1px solid rgba(255,255,255,.1);text-align:left;transition:border-color .2s,transform .2s}
+#kbs .kx-modes>a:hover{border-color:rgba(245,200,66,.5);transform:translateY(-2px)}
+#kbs .kx-modes>a svg{font-size:22px;color:var(--gold,#F5C842);display:block;margin-bottom:10px}
+#kbs .kx-modes>a b{display:block;font-size:14.5px;line-height:1.25}#kbs .kx-modes>a span{display:block;font-size:12.5px;color:rgba(255,255,255,.55);margin-top:3px}
