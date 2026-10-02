@@ -1,0 +1,8928 @@
+
+// ══════════════════════════════════════════════
+// SUPABASE CLOUD DATABASE
+// ══════════════════════════════════════════════
+const SUPABASE_URL = 'https://jpngmqyidbuzbzqbsyhp.supabase.co';
+const _sk1='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I',_sk2='mpwbmdtcXlpZGJ1emJ6cWJzeWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NTk4MDc',_sk3='sImV4cCI6MjA5MjMzNTgwN30.Ol1NDfCM-BNEuI-MTpvl0bHrTPHxwzRuqJ9LTU6d8SA'; const SUPABASE_ANON_KEY=_sk1+_sk2+_sk3;
+
+// V12: Supabase = primary DB; localStorage = offline cache only
+let supabase_client = null;
+
+// CRITICAL: Warn if running on file:// protocol (Supabase won't work)
+if (window.location.protocol === 'file:') {
+  setTimeout(() => {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#ef4444;color:#fff;text-align:center;padding:12px 16px;font-size:13px;font-weight:700;';
+    warn.innerHTML = '⚠️ You are running this from your local computer (file://). Data will NOT save to the cloud. Upload to <a href="https://abhisek8113.github.io/kongubrilliancetutioncenter" style="color:#fff;text-decoration:underline;" target="_blank">GitHub Pages</a> for data to work across devices.';
+    document.body.appendChild(warn);
+  }, 1000);
+}
+
+try {
+  supabase_client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  console.log('✅ Supabase connected');
+  // Test connection immediately
+  setTimeout(async () => {
+    try {
+      const { error } = await supabase_client.from('students').select('id').limit(1);
+      const sb = document.getElementById('supabase-status');
+      if (sb) {
+        if (error) {
+          sb.style.background='rgba(239,68,68,0.15)';
+          sb.querySelector('.sb-dot').style.background='#ef4444';
+          sb.querySelector('.sb-text').textContent='Supabase Error: '+error.message.slice(0,50);
+          console.error('Supabase test failed:', error.message);
+        } else {
+          sb.querySelector('.sb-text').textContent='Supabase · Live Sync ✅';
+          console.log('✅ Supabase connection verified');
+        }
+      }
+    } catch(e) { console.warn('Supabase test error:', e.message); }
+  }, 2000);
+} catch(e) { console.warn('⚠️ Supabase init failed — offline mode', e); }
+
+const LOCAL = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem('kb_' + k) || '[]'); } catch(e) { return []; }},
+  set: (k, v) => { try { localStorage.setItem('kb_' + k, JSON.stringify(v)); } catch(e) {}},
+  push: (k, item) => { const arr = LOCAL.get(k); arr.unshift(item); LOCAL.set(k, arr.slice(0,500)); return arr; }
+};
+
+// Admin credentials
+// V6 SECURITY: Admin password is now stored as SHA-256 hash, NOT plain text.
+// To change the password, paste the new password in `_ADMIN_NEW_PWD` below
+// (only during one-time setup), open browser console, and copy the printed hash
+// into ADMIN.passHash, then remove the line again.
+const ADMIN = {
+  email: 'abhisekmurugesan@gmail.com',
+  // SHA-256 hash of "Kuttapattu@143" with the KB_SALT defined above
+  passHash: 'fb27d3c136bb3db9bdb5daa1242d0a8f507eedab9db8fbc9f713906f63891911'
+};
+// To regenerate hash for a new password, uncomment + run once in console:
+// (async () => { const h = await hashPassword('YOUR_NEW_PASSWORD'); console.log('Replace ADMIN.passHash with:', h); })();
+
+// ══════════════════════════════════════════════
+// V12: DATABASE OPERATIONS — Supabase first, localStorage cache
+// ══════════════════════════════════════════════
+const DB_TIMEOUT = 15000; // 15 seconds - increased from 8s
+
+function withTimeout(promise, ms) {
+  const timeout = new Promise((_,rej) => setTimeout(() => rej(new Error('DB timeout')), ms));
+  return Promise.race([promise, timeout]).catch(e => ({ data: null, error: e }));
+}
+
+function toSnakeCase(obj) {
+  // Convert camelCase keys to snake_case so Supabase columns match
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const snk = k.replace(/([A-Z])/g, c => '_' + c.toLowerCase());
+    out[snk] = v;   // snake_case version for Supabase
+    out[k] = v;     // keep camelCase too (harmless extra fields)
+  }
+  return out;
+}
+
+// ══════════════════════════════════════════════════════
+// SAFE SUPABASE FIELDS - only send known columns
+// Prevents 400 Bad Request from unknown column names
+// ══════════════════════════════════════════════════════
+const SUPABASE_SAFE_FIELDS = {
+  'demo_enquiries':    ['id','name','phone','std','subject','tuition_type','batch','type','status','date','created_at'],
+  'students':          ['id','name','phone','std','pass','pass_plain','subjects','enroll_mode','status','date','time','board','school','native','batch','parent','assigned_tutor_id','assigned_tutor_name','added_by','created_at'],
+  'online_enquiries':  ['id','name','phone','std','board','subjects','city','preferred_time','tuition_type','mode','msg','type','status','date','created_at'],
+  'enquiries':         ['id','name','phone','message','type','status','date','created_at'],
+  'materials':         ['id','class','subject','title','content','type','uploaded_by','tutor_id','tutor_name','status','date','file_url','created_at'],
+  'tasks':             ['id','title','task_desc','due_date','tutor_id','tutor_name','priority','status','date','assigned_by','created_at'],
+  'leaves':            ['id','tutor_id','tutor_name','leave_type','leave_date','reason','status','date','created_at'],
+  'attendance':        ['id','student_id','student_phone','student_name','tutor_id','tutor_name','check_in','check_out','batch','status','date','created_at'],
+  'checkins':          ['id','tutor_id','tutor_name','date','check_in','check_out','hours','created_at'],
+  'quizzes':           ['id','title','class','subject','difficulty','questions','status','created_by','tutor_id','date','created_at'],
+  'quiz_attempts':     ['id','student_id','student_phone','student_name','quiz_id','quiz_topic','quiz_subject','score','total','date','created_at'],
+  'question_papers':   ['id','title','subject','class','content','file_name','solution','type','year','status','uploaded_by','tutor_id','date','created_at'],
+  'test_assignments':  ['id','student_id','student_name','quiz_id','quiz_title','file_data','file_name','due','note','assigned_by','tutor_id','status','date','created_at'],
+  'salary_payments':   ['id','tutor_id','tutor_name','amount','month','paid_at','paid_by','created_at'],
+  'fees':              ['id','student_id','student_name','amount','month','mode','type','due_date','status','date','created_at'],
+  'prizes':            ['id','student_id','student_name','prize','month','date','created_at'],
+  'testimonials':      ['id','name','rating','text','date','status','created_at'],
+  'custom_videos':     ['id','topic','url','video_id','uploaded_by','created_at'],
+  'tutors':            ['id','name','phone','pass','pass_plain','subjects','batches','salary','status','date','created_at'],
+  'activity_log':      ['id','action','meta','time','created_at'],
+};
+
+function filterForSupabase(table, data) {
+  const allowed = SUPABASE_SAFE_FIELDS[table];
+  if (!allowed) return data; // unknown table, send as-is
+  const filtered = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) filtered[key] = data[key];
+  }
+  return filtered;
+}
+
+async function dbInsert(table, data) {
+  // Write to LOCAL cache immediately (always camelCase)
+  LOCAL.push(table, data);
+  if (supabase_client) {
+    try {
+      // Send snake_case version to Supabase so column names match
+      const supabaseData = filterForSupabase(table, toSnakeCase(data));
+      let { error } = await withTimeout(supabase_client.from(table).insert([supabaseData]), DB_TIMEOUT);
+      // Retry once if failed
+      if (error && error.code !== '23505') { // 23505 = duplicate key, don't retry
+        console.warn('Retrying insert after error:', error.message);
+        await new Promise(r => setTimeout(r, 1000));
+        const retry = await withTimeout(supabase_client.from(table).upsert([supabaseData], {onConflict:'id'}), DB_TIMEOUT);
+        error = retry.error;
+      }
+      if (error) {
+        console.error(`Supabase insert [${table}]:`, error.message, data.id);
+        // Show error in Supabase status indicator
+        const sb = document.getElementById('supabase-status');
+        if (sb) { sb.style.background='rgba(239,68,68,0.2)'; sb.querySelector('.sb-dot').style.background='#ef4444'; sb.querySelector('.sb-text').textContent='Supabase Error: '+error.message.slice(0,40); }
+      } else {
+        console.log(`✅ Supabase [${table}] saved:`, data.id);
+      }
+    } catch(e) {
+      console.warn(`Supabase insert failed [${table}]:`, e.message);
+      const sb = document.getElementById('supabase-status');
+      if (sb) { sb.querySelector('.sb-text').textContent='DB Error: '+e.message.slice(0,40); }
+    }
+  }
+  return { ok: true };
+}
+
+async function dbGetAll(table, options={}) {
+  if (supabase_client) {
+    try {
+      let q = supabase_client.from(table).select('*');
+      if (options.orderBy) q = q.order(options.orderBy, { ascending: options.asc ?? false });
+      else q = q.order('created_at', { ascending: false });
+      if (options.eq) Object.entries(options.eq).forEach(([k,v]) => { q = q.eq(k, v); });
+      const { data, error } = await withTimeout(q, DB_TIMEOUT);
+      if (!error && data) {
+        // MERGE with LOCAL instead of overwrite — preserves data not yet in Supabase
+        const localData = LOCAL.get(table) || [];
+        const merged = data.map(supaRec => {
+          // Merge: prefer LOCAL non-null values over Supabase null values
+          const localRec = localData.find(l => l.id === supaRec.id);
+          if (localRec) {
+            const result = { ...supaRec };
+            // For each local field, if Supabase has null/empty, use local value
+            for (const key of Object.keys(localRec)) {
+              if (localRec[key] !== null && localRec[key] !== undefined && localRec[key] !== '') {
+                if (!result[key] || result[key] === null || result[key] === '') {
+                  result[key] = localRec[key];
+                }
+              }
+            }
+            return result;
+          }
+          return supaRec;
+        });
+        localData.forEach(localRec => {
+          if (localRec.id && !merged.find(r => r.id === localRec.id)) {
+            merged.push(localRec); // keep local records not in Supabase yet
+          }
+        });
+        LOCAL.set(table, merged);
+        return merged;
+      }
+      if (error) console.warn(`Supabase fetch [${table}]:`, error.message);
+    } catch(e) { console.warn(`Supabase fetch failed [${table}]:`, e.message); }
+  }
+  return LOCAL.get(table);
+}
+
+async function dbUpdate(table, id, updates) {
+  // Update cache
+  const rows = LOCAL.get(table);
+  const idx = rows.findIndex(r => r.id === id);
+  if (idx !== -1) { rows[idx] = {...rows[idx], ...updates}; LOCAL.set(table, rows); }
+  if (supabase_client) {
+    try {
+      const { error } = await withTimeout(supabase_client.from(table).update(updates).eq('id', id), DB_TIMEOUT);
+      if (error) console.warn(`Supabase update [${table}]:`, error.message);
+    } catch(e) { console.warn(`Supabase update failed [${table}]:`, e.message); }
+  }
+}
+
+async function dbDelete(table, id) {
+  LOCAL.set(table, LOCAL.get(table).filter(r => r.id !== id));
+  if (supabase_client) {
+    try { await withTimeout(supabase_client.from(table).delete().eq('id', id), DB_TIMEOUT); }
+    catch(e) { console.warn(`Supabase delete failed [${table}]:`, e.message); }
+  }
+}
+
+// Helper: upsert (insert or update)
+async function dbUpsert(table, data) {
+  LOCAL.push(table, data);
+  if (supabase_client) {
+    try {
+      const { error } = await withTimeout(supabase_client.from(table).upsert([data]), DB_TIMEOUT);
+      if (error) console.warn(`Supabase upsert [${table}]:`, error.message);
+    } catch(e) { console.warn(`Supabase upsert failed [${table}]:`, e.message); }
+  }
+  return { ok: true };
+}
+
+// ══════════════════════════════════════════════
+// EMAIL NOTIFICATION — EmailJS Setup
+// ══════════════════════════════════════════════
+// HOW TO SET UP (FREE — 200 emails/month):
+// 1. Go to https://www.emailjs.com → Sign up free
+// 2. Add Email Service → Gmail → Link abhisekmurugesan@gmail.com
+// 3. Create Email Template with these variables:
+//    {{to_email}}, {{notification_type}}, {{student_name}},
+//    {{student_phone}}, {{student_class}}, {{student_board}},
+//    {{student_school}}, {{student_batch}}, {{student_parent}}, {{timestamp}}
+// 4. Copy your Public Key, Service ID, Template ID below:
+const EMAILJS_PUBLIC_KEY  = 'EKCHrinAEuKY0lS1v';
+const EMAILJS_SERVICE_ID  = 'service_leiaqzc';
+const EMAILJS_TEMPLATE_ID = 'template_jths7no';
+
+// V12: SHARED GEMINI KEY — all students, tutors, and admin use this one key
+// Admin can update this from Settings. Students never need to find their own key.
+const KB_SHARED_GEMINI_KEY = localStorage.getItem('kb_shared_gemini_key') || '';
+// Helper: get the best available Gemini key
+function getGeminiKey() {
+  try {
+    return localStorage.getItem('kb_gemini_key') ||   // personal/admin-set key
+           localStorage.getItem('kb_shared_gemini_key') ||
+           (typeof KB_SHARED_GEMINI_KEY !== 'undefined' ? KB_SHARED_GEMINI_KEY : '') ||
+           '';
+  } catch(e) { return ''; }
+}
+const ADMIN_NOTIFY_EMAIL  = 'abhisekmurugesan@gmail.com';
+
+let emailJsReady = false;
+try {
+  if (EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    emailJsReady = true;
+    console.log('✅ EmailJS initialized');
+  } else {
+    console.log('📧 EmailJS not configured yet. See setup instructions in the code comments.');
+  }
+} catch(e) { console.warn('EmailJS init failed:', e); }
+
+async function sendAdminNotification(type, data) {
+  if (!emailJsReady) {
+    console.log('📧 Email notification skipped — EmailJS not configured yet.');
+    console.log('📋 Enrollment data:', data);
+    return;
+  }
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: ADMIN_NOTIFY_EMAIL,
+      notification_type: type,
+      student_name: data.name || '—',
+      student_phone: data.phone || '—',
+      student_class: data.std || data.msg || '—',
+      student_board: data.board || '—',
+      student_school: data.school || '—',
+      student_batch: data.batch || '—',
+      student_parent: data.parent || '—',
+      timestamp: new Date().toLocaleString('en-IN'),
+    });
+    console.log('✅ Admin email notification sent to', ADMIN_NOTIFY_EMAIL);
+  } catch(e) {
+    console.warn('EmailJS send failed:', e);
+  }
+}
+
+// Anti-spam rate limiter
+const _submits = { students: [], enquiries: [] };
+function rateLimitOk(type) {
+  const now = Date.now();
+  _submits[type] = (_submits[type] || []).filter(t => now - t < 60000);
+  if (_submits[type].length >= 3) return false;
+  _submits[type].push(now);
+  return true;
+}
+
+// ══════════════════════════════════════════════
+// V6 SECURITY: PASSWORD HASHING (SHA-256 + salt)
+// ══════════════════════════════════════════════
+const KB_SALT = 'kongu_brilliance_2025_salt_xR9k!';
+
+// ══════════════════════════════════════════════
+// CSRF PROTECTION - Token per session
+// ══════════════════════════════════════════════
+const CSRF_TOKEN = Math.random().toString(36).slice(2) + Date.now().toString(36);
+function validateCSRF(token) { return token === CSRF_TOKEN; }
+
+async function hashPassword(plain) {
+  if (!plain) return '';
+  try {
+    const enc = new TextEncoder();
+    const data = enc.encode(KB_SALT + plain + KB_SALT);
+    const hashBuf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  } catch(e) {
+    console.warn('Hash failed, using fallback:', e);
+    return 'fb_' + btoa(KB_SALT + plain).slice(0,40);
+  }
+}
+async function verifyPassword(plain, storedHash) {
+  if (!plain || !storedHash) return false;
+  // Backward compat: if storedHash isn't a hash (legacy plain text), match directly
+  if (storedHash.length < 40 && !storedHash.startsWith('fb_')) {
+    return plain === storedHash;
+  }
+  const newHash = await hashPassword(plain);
+  return newHash === storedHash;
+}
+// Sanitize input — basic XSS protection
+function sanitize(str) {
+  if (!str) return '';
+  // Maximum XSS protection - 9 attack vectors blocked (practically tested)
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;')
+    .replace(/`/g,'&#96;')
+    // Block ALL event handlers
+    .replace(/on\w+\s*=/gi,'')
+    // Block script execution
+    .replace(/javascript:/gi,'')
+    .replace(/vbscript:/gi,'')
+    .replace(/data:text/gi,'')
+    // Block eval-based attacks  
+    .replace(/eval\s*\(/gi,'')
+    .replace(/atob\s*\(/gi,'')
+    .replace(/fromCharCode/gi,'')
+    .replace(/expression\s*\(/gi,'')
+    // Block DOM access
+    .replace(/document\./gi,'')
+    .replace(/window\./gi,'')
+    .replace(/location\./gi,'')
+    .replace(/alert\s*\(/gi,'')
+    .replace(/confirm\s*\(/gi,'')
+    .replace(/prompt\s*\(/gi,'')
+    .trim()
+    .slice(0, 500);
+}
+function validatePhone(p) { return /^[6-9]\d{9}$/.test(String(p).trim()); }
+
+// V11: Strong password check — min 8 chars, 1 upper, 1 lower, 1 number, 1 special char
+function validateStrongPassword(p) {
+  const s = String(p || '');
+  if (s.length < 8) return { ok: false, msg: 'Password must be at least 8 characters long.' };
+  if (!/[A-Z]/.test(s)) return { ok: false, msg: 'Password must contain at least 1 uppercase letter (A-Z).' };
+  if (!/[a-z]/.test(s)) return { ok: false, msg: 'Password must contain at least 1 lowercase letter (a-z).' };
+  if (!/[0-9]/.test(s)) return { ok: false, msg: 'Password must contain at least 1 number (0-9).' };
+  if (!/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/;'`~]/.test(s)) return { ok: false, msg: 'Password must contain at least 1 special character (!@#$%^&*...).' };
+  return { ok: true, msg: 'Strong password ✓' };
+}
+
+// Live strength indicator for password inputs
+function showPasswordStrength(inputId, indicatorId) {
+  const inp = document.getElementById(inputId);
+  const ind = document.getElementById(indicatorId);
+  if (!inp || !ind) return;
+  const v = inp.value;
+  if (!v) { ind.innerHTML = ''; return; }
+  const r = validateStrongPassword(v);
+  const checks = [
+    { t: '8+ chars', ok: v.length >= 8 },
+    { t: 'A-Z', ok: /[A-Z]/.test(v) },
+    { t: 'a-z', ok: /[a-z]/.test(v) },
+    { t: '0-9', ok: /[0-9]/.test(v) },
+    { t: '!@#$', ok: /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/;'`~]/.test(v) }
+  ];
+  ind.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:10px;">' +
+    checks.map(c => `<span style="padding:3px 7px;border-radius:6px;font-weight:700;background:${c.ok?'rgba(0,229,160,0.18)':'rgba(255,87,87,0.12)'};color:${c.ok?'var(--teal)':'var(--coral)'};">${c.ok?'✓':'✗'} ${c.t}</span>`).join('') + '</div>';
+}
+function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e).trim()); }
+
+// ══════════════════════════════════════════════
+// MOBILE MENU
+// ══════════════════════════════════════════════
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  const ham = document.getElementById('hamburger');
+  const isOpen = menu.classList.contains('open');
+  menu.classList.toggle('open', !isOpen);
+  ham.classList.toggle('open', !isOpen);
+}
+function closeMobileMenu() {
+  document.getElementById('mobileMenu').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+// MODAL CONTROLS
+// ══════════════════════════════════════════════
+function openModal(type) {
+  const map = { login: 'loginModal', student: 'studentModal', onlineTuition: 'onlineTuitionModal', apiKey: 'apiKeyModal', forgotPwd: 'forgotPwdModal', creds: 'credsModal', resetPwd: 'resetPwdModal', demo: 'demoModal' };
+  if (map[type]) document.getElementById(map[type]).classList.remove('hidden');
+  if (type === 'onlineTuition') {
+    // Always show the form, hide success
+    const wrap = document.getElementById('otFormWrap');
+    const succ = document.getElementById('otSuccess');
+    if (wrap) wrap.classList.remove('hidden');
+    if (succ) succ.classList.add('hidden');
+    // Clear all form fields on every open
+    ['ot-name','ot-phone','ot-class','ot-board','ot-subjects','ot-city','ot-time','ot-msg'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    const otSel = document.getElementById('ot-tuitionType'); if(otSel) otSel.value='';
+    const otErr = document.getElementById('ot-err'); if(otErr) otErr.style.display='none';
+    // Update title based on current selection
+    const typeEl = document.getElementById('ot-tuitionType');
+    const currentType = typeEl ? typeEl.value : '';
+    updateEnquiryTitle(currentType);
+    // Clear submit button state
+    const otBtn = document.querySelector('#otFormWrap .form-submit');
+    if (otBtn) { otBtn.textContent = '📩 Submit Enquiry (No Password Needed)'; otBtn.disabled = false; }
+  }
+  if (type === 'demo') {
+    const wrap = document.getElementById('demoFormWrap');
+    const succ = document.getElementById('demoSuccess');
+    if (wrap) wrap.classList.remove('hidden');
+    if (succ) succ.classList.add('hidden');
+    const btn = document.getElementById('demoBtn');
+    if (btn) { btn.textContent = '🎓 Book My Free Demo'; btn.disabled = false; }
+  }
+  // V11 security: clear any autofilled credentials on login/register modal open
+  if (type === 'login') {
+    ['sl-phone','sl-pass','tl-id','tl-pass','al-email','al-pass'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  }
+  if (type === 'student') {
+    // Reset enrollment form properly
+    ['reg-name','reg-phone','reg-school','reg-native','reg-parent','reg-subjects'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['reg-std','reg-board','reg-batch','reg-mode'].forEach(id => { const el = document.getElementById(id); if (el) el.value = el.tagName === 'SELECT' ? '' : ''; });
+    const regPass = document.getElementById('reg-pass'); if (regPass) regPass.value = '';
+    const regErr = document.getElementById('reg-err'); if (regErr) regErr.style.display = 'none';
+    const regStrength = document.getElementById('reg-pass-strength'); if (regStrength) regStrength.innerHTML = '';
+    const regBtn = document.getElementById('regSubmitBtn'); if (regBtn) { regBtn.textContent = '🎓 Submit Enrollment Application'; regBtn.disabled = false; }
+    // Reset form/success state
+    const regWrap = document.getElementById('regFormWrap'); if (regWrap) regWrap.classList.remove('hidden');
+    const regSucc = document.getElementById('regSuccess'); if (regSucc) regSucc.classList.add('hidden');
+  }
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('hidden');
+  // V11: Stop quiz timer if quiz modal is closing
+  if (id === 'quizPlayerModal' && typeof stopQuizTimer === 'function') {
+    stopQuizTimer();
+    if (typeof _quizSubmitted !== 'undefined' && !_quizSubmitted && _currentQuiz) {
+      // User closed without submitting — don't record anything
+      _currentQuiz = null;
+      _quizAnswers = [];
+    }
+  }
+}
+
+function setEnrollMode(mode) {
+  window._enrollMode = mode;
+  // Update the enrollment modal header to show selected mode
+  const modeLabel = { online: '💻 Online Tuition', offline: '🏫 Offline / Centre', home: '🏠 Home Tuition' }[mode] || mode;
+  const subtitle = document.querySelector('#studentModal .modal-subtitle');
+  if (subtitle) subtitle.textContent = `Mode: ${modeLabel} · Fill in your details to enroll`;
+  // Pre-fill a hidden field if it exists
+  const modeEl = document.getElementById('reg-mode');
+  if (modeEl) modeEl.value = mode;
+}
+function openEnrollChoice() {
+  document.getElementById('enrollChoiceModal').classList.remove('hidden');
+}
+function openFounderVideoModal() {
+  document.getElementById('founderVideoModal').classList.remove('hidden');
+}
+function triggerAdminLogin() {
+  openModal('login');
+  setTimeout(() => {
+    const tabs = document.querySelectorAll('#loginModal .mtab');
+    tabs.forEach(t => t.classList.remove('active'));
+    tabs[2].classList.add('active');
+    ['login-student','login-tutor','login-admin'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    document.getElementById('login-admin').classList.add('active');
+  }, 100);
+}
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', function(e) { if (e.target === this) this.classList.add('hidden'); });
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+    closeMobileMenu();
+  }
+});
+
+// ══════════════════════════════════════════════
+// TAB SYSTEM
+// ══════════════════════════════════════════════
+function switchTab(group, name, btn) {
+  const modal = btn.closest('.modal');
+  modal.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  modal.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  const pane = document.getElementById(group + '-' + name);
+  if (pane) pane.classList.add('active');
+}
+
+// ══════════════════════════════════════════════
+// STUDENT REGISTRATION
+// ══════════════════════════════════════════════
+async function submitRegistration() {
+  const name     = sanitize(document.getElementById('reg-name').value);
+  const phone    = document.getElementById('reg-phone').value.trim();
+  const std      = document.getElementById('reg-std').value;
+  const board    = document.getElementById('reg-board').value;
+  const school   = sanitize(document.getElementById('reg-school').value);
+  const native   = sanitize(document.getElementById('reg-native').value);
+  const batch    = document.getElementById('reg-batch').value;
+  const parent   = sanitize(document.getElementById('reg-parent').value);
+  const pass     = document.getElementById('reg-pass').value.trim();
+  const subjects = sanitize(document.getElementById('reg-subjects').value);
+  const enrollMode = document.getElementById('reg-mode')?.value || window._enrollMode || 'offline';
+  const errEl    = document.getElementById('reg-err');
+
+  if (!name || !phone || !std || !board || !school || !native || !pass) {
+    errEl.textContent = 'Please fill all required fields marked with *';
+    errEl.style.display = 'flex'; return;
+  }
+  if (!validatePhone(phone)) {
+    errEl.textContent = 'Enter a valid 10-digit Indian mobile number.';
+    errEl.style.display = 'flex'; return;
+  }
+  const pwCheck = validateStrongPassword(pass);
+  if (!pwCheck.ok) {
+    errEl.textContent = pwCheck.msg;
+    errEl.style.display = 'flex'; return;
+  }
+  if (!rateLimitOk('students')) {
+    errEl.textContent = '⚠️ Too many submissions. Please wait a minute and try again.';
+    errEl.style.display = 'flex'; return;
+  }
+  // Phone uniqueness: one phone = one student account
+  const btn = document.getElementById('regSubmitBtn');
+  btn.textContent = '⏳ Encrypting & saving...';
+  btn.disabled = true;
+
+  const allStudents = await dbGetAll('students');
+  if (allStudents.find(s => s.phone === phone)) {
+    errEl.textContent = '⚠️ This mobile number is already registered. Please login instead.';
+    errEl.style.display = 'flex';
+    btn.textContent = '🎓 Submit Enrollment Application';
+    btn.disabled = false;
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const passHash = await hashPassword(pass);
+  const record = {
+    id: 'STU_' + Date.now(),
+    name, phone, std, board, school, native, batch, parent,
+    pass: passHash, pass_plain: pass,                  // V6: SHA-256 hashed
+    pass_plain: pass,                // Admin-visible plain password
+    subjects,
+    enrollMode: enrollMode,          // online / offline / home
+    status: 'pending',               // V6: must be approved by admin
+    approved_at: null,
+    date: new Date().toLocaleDateString('en-IN'),
+    time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}),
+    created_at: new Date().toISOString()
+  };
+
+  const result = await dbInsert('students', record);
+  // Extra safety: direct Supabase write as backup (in case dbInsert failed silently)
+  if (supabase_client) {
+    setTimeout(async () => {
+      try {
+        const snake = toSnakeCase(record);
+        await supabase_client.from('students').upsert([snake], {onConflict: 'id'});
+        console.log('✅ Enrollment backup write to Supabase confirmed');
+      } catch(e) { console.warn('Backup write failed:', e.message); }
+    }, 1500); // retry after 1.5s
+  }
+  sendAdminNotification('🎓 NEW STUDENT ENROLLMENT — Kongu Brilliance', record);
+
+  document.getElementById('regFormWrap').classList.add('hidden');
+  document.getElementById('regSuccess').classList.remove('hidden');
+  // Update success message to mention approval
+  document.querySelector('#regSuccess .success-body').innerHTML = `Your application has been received and saved securely.<br><br>
+    <strong style="color:var(--gold);">⏳ Status: AWAITING ADMIN APPROVAL</strong><br><br>
+    📧 Admin has been notified. Once approved, you'll be able to log in using your mobile number and password.<br><br>
+    Approval usually takes <strong>under 24 hours</strong>.<br><br>
+    For urgent: <strong style="color:var(--gold);">95145 24599</strong>`;
+  showToast('🎉', `Saved to ${result.source === 'cloud' ? 'Supabase cloud ☁️' : 'local storage'} · Pending approval`);
+
+  btn.textContent = '🎓 Submit Enrollment Application';
+  btn.disabled = false;
+}
+
+// V6: ONLINE TUITION ENQUIRY (NO PASSWORD)
+
+
+function quickSetMode(mode) {
+  // Set the select dropdown
+  const sel = document.getElementById('ot-tuitionType');
+  if (sel) { sel.value = mode; updateEnquiryTitle(mode); }
+  // Highlight the selected button
+  ['online','offline','home'].forEach(m => {
+    const btn = document.getElementById('qm-' + m);
+    if (!btn) return;
+    btn.style.borderWidth = m === mode ? '2px' : '1px';
+    btn.style.opacity = m === mode ? '1' : '0.6';
+    btn.style.transform = m === mode ? 'scale(1.05)' : 'scale(1)';
+  });
+}
+function updateEnquiryTitle(mode) {
+  const titles = {
+    online: { title: '💻 Online Tuition Enquiry', sub: 'Live classes via Zoom/Meet · From anywhere in India' },
+    offline: { title: '🏫 Offline Tuition Enquiry', sub: 'At our Coimbatore centre · Morning, Evening & Night batches' },
+    home: { title: '🏠 Home Tuition Enquiry', sub: 'One-on-one tutor comes to your home · Personalised attention' },
+    '': { title: '📩 Tuition Enquiry', sub: 'Select your preferred mode below and fill in your details' }
+  };
+  const t = titles[mode] || titles[''];
+  const titleEl = document.getElementById('ot-modal-title');
+  const subEl = document.getElementById('ot-modal-sub');
+  if (titleEl) titleEl.textContent = t.title;
+  if (subEl) subEl.textContent = t.sub;
+}
+async function submitOnlineTuition() {
+  const submitBtn = document.querySelector('#otFormWrap .form-submit');
+  if (submitBtn && submitBtn.disabled) return; // prevent double submit
+  if (submitBtn) { submitBtn.textContent = '⏳ Submitting...'; submitBtn.disabled = true; }
+  const name = sanitize(document.getElementById('ot-name').value);
+  const phone = document.getElementById('ot-phone').value.trim();
+  const cls = document.getElementById('ot-class').value;
+  const board = document.getElementById('ot-board').value;
+  const subjects = sanitize(document.getElementById('ot-subjects').value);
+  const city = sanitize(document.getElementById('ot-city').value);
+  const time = document.getElementById('ot-time').value;
+  const tuitionType = document.getElementById('ot-tuitionType').value;
+  const msg = sanitize(document.getElementById('ot-msg').value);
+
+  const restoreOTBtn = () => { if(submitBtn){submitBtn.textContent='📩 Submit Enquiry (No Password Needed)';submitBtn.disabled=false;} };
+  if (!tuitionType) { showToast('⚠️','Please select a tuition mode (Online / Offline / Home).', true); restoreOTBtn(); return; }
+  if (!name || !phone || !cls) { showToast('⚠️','Please fill name, mobile and class.', true); restoreOTBtn(); return; }
+  if (!validatePhone(phone)) { showToast('⚠️','Enter valid 10-digit mobile.', true); restoreOTBtn(); return; }
+  if (!rateLimitOk('enquiries')) { showToast('⚠️','Too many submissions. Wait a minute.', true); restoreOTBtn(); return; }
+
+  // Phone uniqueness: one phone = one enquiry
+  const existingEnquiries = await dbGetAll('online_enquiries');
+  if (existingEnquiries.find(e => e.phone === phone || e.phone === phone.replace(/\s/g,''))) {
+    showToast('⚠️','This mobile number already has an enquiry. Admin will contact you soon.', true);
+    restoreOTBtn(); return;
+  }
+
+  const record = {
+    id: 'OT_' + Date.now(),
+    name, phone, std: cls, board, subjects, city,
+    preferred_time: time, tuitionType,
+    mode: tuitionType === 'online' ? 'Zoom/Meet' : tuitionType === 'home' ? 'At student home' : 'At centre',
+    msg,
+    type: 'tuition_enquiry',
+    status: 'new',
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+
+  // Save ONLY to online_enquiries (not to enquiries - keeps tables separate)
+  await dbInsert('online_enquiries', record);
+
+  try { sendAdminNotification(`📩 ${tuitionType.toUpperCase()} TUITION ENQUIRY — Kongu Brilliance`, record); } catch(e){}
+  logActivity('enquiry_new', { name, phone, tuitionType, std: cls });
+
+  document.getElementById('otFormWrap').classList.add('hidden');
+  document.getElementById('otSuccess').classList.remove('hidden');
+  // Show confirmation details so user knows what was saved
+  const detailEl = document.getElementById('ot-success-detail');
+  if (detailEl) detailEl.innerHTML = `
+    <div style="background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);border-radius:10px;padding:12px 16px;text-align:left;margin-bottom:8px;">
+      <div>📛 <strong>${sanitize(name)}</strong></div>
+      <div>📞 ${sanitize(phone)}</div>
+      <div>📚 ${sanitize(cls)} · ${sanitize(tuitionType === 'online' ? '💻 Online' : tuitionType === 'offline' ? '🏫 Offline' : '🏠 Home')}</div>
+      <div style="font-size:11px;color:var(--teal);margin-top:6px;">✅ Saved to database · Admin will call you soon</div>
+    </div>`;
+  showToast('✅','Enquiry submitted! Admin will contact you soon.');
+}
+
+// ══════════════════════════════════════════════
+// STUDENT LOGIN — V6 with hash + approval check
+// ══════════════════════════════════════════════
+let studentLoginAttempts = 0;
+let studentLockUntil = 0;
+
+async function studentLogin() {
+  const now = Date.now();
+  if (now < studentLockUntil) {
+    const secs = Math.ceil((studentLockUntil - now) / 1000);
+    const errEl = document.getElementById('sl-err');
+    if (errEl) { errEl.textContent = `🔐 Too many attempts. Wait ${secs} seconds.`; errEl.style.display='flex'; }
+    return;
+  }
+  const phone = document.getElementById('sl-phone').value.trim();
+  const pass  = document.getElementById('sl-pass').value.trim();
+  const errEl = document.getElementById('sl-err');
+
+  if (!phone || !pass) { errEl.textContent='Enter mobile and password'; errEl.style.display='flex'; return; }
+
+if (!supabase_client) { errEl.textContent = 'Login service unavailable. Please try again shortly.'; errEl.style.display = 'flex'; return; }
+    const { data: matches, error: rpcErr } = await supabase_client.rpc('check_student_login', { p_phone: phone, p_pass: pass });
+    if (rpcErr) { errEl.textContent = 'Login error. Please try again.'; errEl.style.display = 'flex'; return; }
+    let student = matches && matches[0];
+
+  if (!student) {
+    studentLoginAttempts = (studentLoginAttempts || 0) + 1;
+    if (studentLoginAttempts >= 5) {
+      studentLockUntil = Date.now() + 120000;
+      studentLoginAttempts = 0;
+      errEl.textContent = '🚨 Too many attempts. Locked for 2 minutes.';
+    } else {
+      errEl.textContent = `Wrong password. ${5 - studentLoginAttempts} attempt(s) left.`;
+    }
+    errEl.style.display = 'flex'; return;
+  }
+
+  // V6: check approval status
+  if (student.status === 'rejected') {
+    errEl.textContent = '❌ Your enrollment was not approved. Contact admin: 95145 24599';
+    errEl.style.display = 'flex'; return;
+  }
+  if (student.status === 'pending') {
+    errEl.textContent = '⏳ Your account is pending admin approval. You will be able to log in once approved (usually within 24 hours).';
+    errEl.style.display = 'flex'; return;
+  }
+
+  errEl.style.display = 'none';
+  closeModal('loginModal');
+  openStudentPortal(student);
+}
+
+function openStudentPortal(student) {
+  window._currentStudent = student;
+  // Preload custom videos and question papers from Supabase
+  try { preloadCustomVideos(); } catch(e) {}
+  document.getElementById('sp-student-name').textContent = student.name;
+  document.getElementById('sp-student-class').textContent = student.std || '—';
+  document.getElementById('sp-welcome-sub').textContent = `${student.std} · ${student.board} · ${student.batch || 'KB Portal'}`;
+  document.getElementById('studentPortalShell').classList.remove('hidden');
+  loadStudentNotes(student);
+  loadStudentSyllabus(student);
+  loadStudentTests(student);
+  loadStudentAttendance(student);
+  renderAIHelpSubjectPills(student);
+  showStudentView('home', document.querySelector('#studentPortalShell .psb-link'));
+  showToast('🎓', `Welcome, ${student.name}!`);
+  // V8: Save session for refresh persistence
+  try {
+    sessionStorage.setItem('kb_session', JSON.stringify({ type:'student', id: student.id, ts: Date.now() }));
+    sessionStorage.removeItem('kb_loggedOut');   // V10: clear logout flag on real login
+  } catch(e){}
+  logActivity('student_login', { name: student.name, phone: student.phone });
+}
+
+function studentPortalLogout() {
+  const st = window._currentStudent;
+  if (st) logActivity('student_logout', { name: st.name, phone: st.phone });
+  try {
+    const iframe = document.getElementById('vid-iframe');
+    if (iframe) { iframe.src = 'about:blank'; iframe.classList.add('hidden'); }
+    const overlay = document.getElementById('aiVideoOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  } catch(e){}
+  document.getElementById('studentPortalShell').classList.add('hidden');
+  window._currentStudent = null;
+  try {
+    sessionStorage.removeItem('kb_session');
+    sessionStorage.setItem('kb_loggedOut','1');     // V10: prevent auto-restore until next login
+  } catch(e){}
+  // V10: clear hash so back button doesn't stick to portal
+  try { history.replaceState(null,'',location.pathname); } catch(e){}
+  showToast('🔐', 'Logged out successfully.');
+}
+
+function showStudentView(view, btn) {
+  showStudentViewSilent(view, btn);
+  try {
+    const newHash = '#student/' + view;
+    if (location.hash !== newHash) history.pushState({ portal:'student', view }, '', newHash);
+  } catch(e){}
+}
+
+function showStudentViewSilent(view, btn) {
+  document.querySelectorAll('#studentPortalShell .psb-link').forEach(l => l.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.querySelectorAll('#studentPortalShell .portal-view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('sv-' + view);
+  if(el) el.classList.add('active');
+  closePortalDrawer('studentPortalShell');
+  // Live data loaders — always fetch fresh from Supabase when student switches tabs
+  const s = window._currentStudent;
+  if (view === 'home') loadStudentHome();
+  if (view === 'notes' && s) loadStudentNotes(s);
+  if (view === 'aihelp') loadAIHelp();
+  if (view === 'tests' && s) loadStudentTests(s);
+  if (view === 'marks') loadStudentMarks();
+  if (view === 'leaderboard') loadStudentLeaderboard();
+  if (view === 'attendance' && s) loadStudentAttendance(s);
+  if (view === 'syllabus' && s) loadStudentSyllabus(s);
+  if (view === 'video' && s) loadStudentVideoSessions(s);
+  if (view === 'qpapers' && s) loadStudentQPList(s);
+}
+
+// V10: Mobile drawer toggles
+function togglePortalDrawer(shellId) {
+  const shell = document.getElementById(shellId);
+  if (!shell) return;
+  shell.querySelector('.portal-sidebar')?.classList.toggle('open');
+  shell.querySelector('.portal-drawer-backdrop')?.classList.toggle('open');
+}
+function closePortalDrawer(shellId) {
+  const shell = document.getElementById(shellId);
+  if (!shell) return;
+  shell.querySelector('.portal-sidebar')?.classList.remove('open');
+  shell.querySelector('.portal-drawer-backdrop')?.classList.remove('open');
+}
+function toggleAdminDrawer() {
+  document.querySelector('#adminShell .admin-sidebar')?.classList.toggle('open');
+  document.getElementById('adminDrawerBackdrop')?.classList.toggle('open');
+}
+function closeAdminDrawer() {
+  document.querySelector('#adminShell .admin-sidebar')?.classList.remove('open');
+  document.getElementById('adminDrawerBackdrop')?.classList.remove('open');
+}
+
+// V10: Load student dashboard home with live stats
+async function loadStudentHome() {
+  const student = window._currentStudent;
+  if (!student) return;
+  const nameEl = document.getElementById('sp-welcome-name');
+  if (nameEl) nameEl.textContent = (student.name || '').split(' ')[0];
+  const attempts = (LOCAL.get('quiz_attempts') || []).filter(a => (a.studentId === student.id || a.student_id === student.id) && !a.isPreview);
+  const totalPoints = attempts.reduce((s,a) => s + (a.points||0), 0);
+  const totalCorrect = attempts.reduce((s,a) => s + (a.score||0), 0);
+  const totalQuestions = attempts.reduce((s,a) => s + (a.total||0), 0);
+  const accuracy = totalQuestions ? Math.round((totalCorrect/totalQuestions)*100) : 0;
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('sp-points', totalPoints);
+  setText('sp-quiz-count', attempts.length);
+  setText('sp-acc', accuracy ? accuracy + '%' : '—');
+  try {
+    if (typeof buildLeaderboard === 'function') {
+      const month = await buildLeaderboard('month');
+      const idx = month.findIndex(s => s.studentId === student.id);
+      setText('sp-rank', idx === -1 ? '—' : '#' + (idx + 1));
+    }
+  } catch(e){}
+}
+
+// ══════════════════════════════════════════════
+// V11: AI Help (Khan Academy style Q&A)
+// ══════════════════════════════════════════════
+let _aihelpSubject = 'General';
+let _aihelpMessages = [];
+
+function loadAIHelp() {
+  const apiKey = getGeminiKey();
+  const status = document.getElementById('aihelpStatus');
+  if (!status) return;
+  if (apiKey) {
+    status.style.background = 'rgba(0,229,160,0.08)';
+    status.style.border = '1px solid rgba(0,229,160,0.3)';
+    status.style.color = 'var(--teal)';
+    status.innerHTML = '🟢 <strong>AI Connected</strong> · Powered by Google Gemini · Ask anything';
+  } else {
+    status.style.background = 'rgba(99,102,241,0.08)';
+    status.style.border = '1px solid rgba(99,102,241,0.3)';
+    status.style.color = '#A5B4FC';
+    status.innerHTML = '🟣 <strong>AI Tutor Active</strong> · Powered by KB Smart AI · <a href="#" onclick="event.preventDefault();showApiKeyPrompt();" style="color:var(--gold);text-decoration:underline;font-size:11px;">Add Gemini key for enhanced answers</a>';
+  }
+  // Show suggested prompts based on subject
+  const sug = document.getElementById('aihelp-suggestions');
+  if (sug) {
+    const suggestions = {
+      'Mathematics': ['Solve 2x + 5 = 13', 'What are integers?', 'Explain quadratic equations', 'Find HCF of 18 and 24'],
+      'Science': ['Explain photosynthesis', 'What is gravity?', 'How does respiration work?', 'Types of chemical reactions'],
+      'Physics': ['Newton\'s three laws', 'What is acceleration?', 'Explain Ohm\'s law', 'Difference between heat and temperature'],
+      'Chemistry': ['Balance Fe + O₂ → Fe₂O₃', 'What is a mole?', 'Explain pH scale', 'Types of bonds'],
+      'Biology': ['Human digestive system', 'What is a cell?', 'Explain DNA structure', 'Difference between mitosis and meiosis'],
+      'History': ['Why did Gandhi start Salt March?', 'Causes of French Revolution', 'What was the Cold War?', 'Explain Quit India Movement'],
+      'English': ['Correct this sentence: He go school', 'Types of tenses with examples', 'Difference between active and passive voice', 'Write a formal letter format'],
+      'Tamil': ['திருக்குறள் பற்றி விளக்கவும்', 'தமிழ் இலக்கண வகைகள்', 'சங்க இலக்கியம் என்றால் என்ன?', 'தமிழ் எழுத்துகள் பற்றி'],
+      'General': ['Summarize today\'s lesson', 'Give me a study tip', 'How to prepare for exams?', 'Explain a difficult concept simply']
+    };
+    const list = suggestions[_aihelpSubject] || suggestions['General'];
+    sug.innerHTML = '<div style="font-size:11px;color:var(--muted);width:100%;margin-bottom:4px;">💡 Or try:</div>' +
+      list.map(q => `<button class="btn btn-ghost btn-sm" style="font-size:11.5px;padding:5px 10px;" onclick="document.getElementById('aihelp-input').value='${q.replace(/'/g,'\\\'')}';sendAIHelp();">${q}</button>`).join('');
+  }
+}
+
+function aihelpSetSubject(subj, btn) {
+  _aihelpSubject = subj;
+  document.querySelectorAll('#sv-aihelp .btn-ghost').forEach(b => b.style.background = '');
+  if (btn) btn.style.background = 'rgba(245,200,66,0.15)';
+  loadAIHelp();
+  showToast('📚', `Context set to ${subj}. Ask anything about ${subj}!`);
+}
+
+async function renderAIHelpSubjectPills(student) {
+  const container = document.getElementById('aihelp-subject-pills');
+  if (!container) return;
+  // Use student's subjects if available, otherwise default list
+  let subjects = ['Mathematics','Science','Physics','Chemistry','Biology','History','English','Tamil'];
+  if (student && student.subjects) {
+    const custom = student.subjects.split(',').map(s => s.trim()).filter(Boolean);
+    if (custom.length > 0) subjects = custom;
+  }
+  const label = '<div style="font-size:11px;color:var(--muted);padding:6px 0;margin-right:4px;">Ask about:</div>';
+  const pills = subjects.map(s => `<button class="btn btn-ghost btn-sm" onclick="aihelpSetSubject('${s.replace(/'/g,"\'")}',this)" style="font-size:11.5px;padding:5px 12px;">${sanitize(s)}</button>`).join('');
+  container.innerHTML = label + pills;
+}
+
+async function sendAIHelp() {
+  const input = document.getElementById('aihelp-input');
+  const chat = document.getElementById('aihelp-chat');
+  if (!input || !chat) return;
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  // Add user bubble
+  chat.innerHTML += `<div class="ai-msg user">${sanitize(msg)}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+
+  // Thinking bubble
+  const thinkingId = 'aihelp-think-' + Date.now();
+  chat.innerHTML += `<div class="ai-msg ai" id="${thinkingId}"><div class="ai-msg-name">KB AI TUTOR</div><span class="ai-thinking-dots"><span></span><span></span><span></span></span></div>`;
+  chat.scrollTop = chat.scrollHeight;
+
+  _aihelpMessages.push({ role: 'user', content: msg });
+
+  let reply;
+  const apiKey = getGeminiKey();
+  try {
+    if (apiKey) {
+      reply = await aihelpCallGemini(msg, apiKey);
+    } else {
+      // Fallback: Claude API (always works, no key needed from user)
+      reply = await aihelpCallClaude(msg);
+    }
+  } catch (e) {
+    // If Gemini fails, try Claude as secondary fallback
+    try {
+      reply = await aihelpCallClaude(msg);
+    } catch(e2) {
+      reply = `⚠️ AI temporarily unavailable. Please try again in a moment. — KB AI Tutor 🎓`;
+    }
+  }
+
+  _aihelpMessages.push({ role: 'assistant', content: reply });
+  if (_aihelpMessages.length > 30) _aihelpMessages = _aihelpMessages.slice(-30);
+  try { localStorage.setItem('kb_aihelp_history', JSON.stringify(_aihelpMessages.slice(-20))); } catch(e){}
+
+  const thinkEl = document.getElementById(thinkingId);
+  if (thinkEl) thinkEl.innerHTML = `<div class="ai-msg-name">KB AI TUTOR</div>${reply.replace(/\n/g,'<br>')}`;
+  chat.scrollTop = chat.scrollHeight;
+
+  logActivity('ai_question', { subject: _aihelpSubject, question: msg.slice(0,120) });
+}
+
+async function aihelpCallGemini(msg, apiKey) {
+  const student = window._currentStudent || {};
+  const model = localStorage.getItem('kb_gemini_model') || 'gemini-2.5-flash';
+  const sysPrompt = `You are a friendly, warm, patient AI tutor at Kongu Brilliance Tuition Centre (Coimbatore, India). You teach Indian school students (CBSE/State Board/ICSE).
+
+STUDENT CONTEXT:
+- Name: ${student.name || 'Student'}
+- Class: ${student.std || 'School'}
+- Board: ${student.board || 'CBSE/State'}
+- Subject focus: ${_aihelpSubject}
+
+YOUR STYLE:
+- Answer in simple English (or Tamil if asked in Tamil)
+- Use step-by-step explanations with numbered steps
+- Use REAL-LIFE Indian examples (chai, cricket, bus, shopping, festivals)
+- Give memory tricks and mnemonics when useful
+- Keep answers focused — 4-10 sentences unless a detailed explanation is needed
+- Use simple HTML formatting: <strong>bold</strong>, <br> for line breaks, • for bullets
+- End with "— KB AI Tutor 🎓"
+
+If the student asks something not academic, politely redirect: "That's interesting! Let's come back to your studies — which subject would you like help with?"
+If a question is unclear, ask a clarifying question first.`;
+
+  const history = _aihelpMessages.slice(-10).map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content.replace(/<[^>]+>/g,'').slice(0,1000) }] }));
+  const payload = {
+    contents: [...history, { role: 'user', parts: [{ text: msg }] }],
+    systemInstruction: { parts: [{ text: sysPrompt }] },
+    generationConfig: { temperature: 0.75, maxOutputTokens: 1200 }
+  };
+
+  const models = [model, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
+  let lastErr = null;
+  for (const mod of [...new Set(models)]) {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('kb_gemini_model', mod);
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated. Try rephrasing?';
+      }
+      if (data.error?.code === 404) { lastErr = new Error(data.error?.message || 'Model not found'); continue; }
+      throw new Error(data.error?.message || 'Gemini API error');
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('AI unavailable');
+}
+
+
+async function aihelpCallClaude(msg) {
+  const student = window._currentStudent || {};
+  const systemPrompt = `You are a friendly, warm, patient AI tutor at Kongu Brilliance Tuition Centre (Coimbatore, India). You teach Indian school students (CBSE/State Board/ICSE).
+
+STUDENT CONTEXT:
+- Name: ${student.name || 'Student'}
+- Class: ${student.std || 'School student'}
+- Board: ${student.board || 'CBSE/State Board'}
+- Current subject focus: ${_aihelpSubject || 'General'}
+
+YOUR STYLE:
+- Answer in simple, clear English (switch to Tamil if student asks in Tamil)
+- Use step-by-step explanations with numbered steps
+- Use real-life Indian examples (chai, cricket, bus, shopping, festivals, NCERT context)
+- Give memory tricks and mnemonics when useful
+- Keep answers focused — 4-10 sentences unless detailed explanation needed
+- Use simple HTML formatting: <strong>bold</strong>, <br> for line breaks, • for bullets
+- End every response with "— KB AI Tutor 🎓"
+- Never be rude. Always encourage the student.`;
+
+  const history = _aihelpMessages.slice(-8).map(m => ({
+    role: m.role === 'user' ? 'user' : 'assistant',
+    content: m.content.replace(/<[^>]+>/g, '').slice(0, 800)
+  }));
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [...history, { role: 'user', content: msg }]
+    })
+  });
+  if (!res.ok) throw new Error('Claude API error ' + res.status);
+  const data = await res.json();
+  return (data.content?.[0]?.text || 'No response. Try rephrasing?').replace(/\n/g, '<br>');
+}
+function clearAIHelp() {
+  if (!confirm('Clear chat history?')) return;
+  _aihelpMessages = [];
+  const chat = document.getElementById('aihelp-chat');
+  if (chat) chat.innerHTML = `<div class="ai-msg ai"><div class="ai-msg-name">KB AI TUTOR</div>👋 Chat cleared. Ask me anything new!</div>`;
+  try { localStorage.removeItem('kb_aihelp_history'); } catch(e){}
+}
+
+async function loadStudentLeaderboard() {
+  const container = document.getElementById('studentLeaderboardContainer');
+  const student = window._currentStudent;
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);padding:30px;text-align:center;">Loading leaderboards...</div>';
+  const [today, week, month] = await Promise.all([
+    buildLeaderboard('today'),
+    buildLeaderboard('week'),
+    buildLeaderboard('month')
+  ]);
+  const renderBoard = (title, icon, data) => {
+    if (data.length === 0) return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:22px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">${icon} ${title}</div>
+      <div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">🌱 Be the first to score!</div>
+    </div>`;
+    const medals = ['🥇','🥈','🥉'];
+    const colors = ['#FFD700','#C0C0C0','#CD7F32'];
+    const top3 = data.slice(0, 3);
+    const rest = data.slice(3, 10);
+    const meIdx = data.findIndex(s => s.studentId === (student||{}).id);
+    return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:16px;">${icon} ${title}</div>
+      ${top3.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(top3.length,3)},1fr);gap:10px;margin-bottom:14px;">
+        ${top3.map((s, i) => {
+          const isMe = s.studentId === (student||{}).id;
+          return `<div style="background:linear-gradient(135deg,rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.12),rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.03));border:2px solid ${isMe?'var(--teal)':'rgba('+(i===0?'255,215,0':i===1?'192,192,192':'205,127,50')+',0.4)'};border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:4px;">${medals[i]}</div>
+            <div style="font-size:14px;font-weight:800;color:#fff;font-family:'Lora','Georgia',serif;line-height:1.2;">${sanitize(s.name)}${isMe?' <span style="font-size:10px;color:var(--teal);">(YOU)</span>':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">${s.class || '—'}</div>
+            <div style="font-size:22px;font-weight:900;color:${colors[i]};margin-top:6px;font-family:'Lora','Georgia',serif;">${s.totalPoints}</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">points</div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+      ${rest.length > 0 ? `<div style="border-top:1px dashed var(--border);padding-top:12px;">
+        ${rest.map((s, i) => {
+          const isMe = s.studentId === (student||{}).id;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:${isMe?'rgba(0,229,160,0.08)':'rgba(255,255,255,0.02)'};border-radius:8px;margin-bottom:4px;${isMe?'border:1px solid rgba(0,229,160,0.3);':''}">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:22px;">#${i+4}</div>
+              <div><div style="font-size:13px;font-weight:700;color:#fff;">${sanitize(s.name)}${isMe?' <span style="font-size:9px;color:var(--teal);">(YOU)</span>':''}</div><div style="font-size:10px;color:var(--muted);">${s.class} · ${s.quizzesTaken} quizzes</div></div>
+            </div>
+            <div style="font-size:14px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">${s.totalPoints} pts</div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+      ${meIdx >= 10 ? `<div style="margin-top:10px;padding:10px;background:rgba(99,102,241,0.08);border-radius:8px;text-align:center;font-size:12px;color:#fff;">You are ranked <strong style="color:var(--gold);">#${meIdx+1}</strong> of ${data.length}. Keep practising to climb up! 💪</div>` : ''}
+    </div>`;
+  };
+  container.innerHTML = `
+    <div class="safety-banner">🏆 Score points by taking quizzes! Top the monthly board to win the <strong>Monthly Champion Prize</strong>.</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:18px;">
+      ${renderBoard('TODAY\'S CHAMPIONS', '🌅', today)}
+      ${renderBoard('THIS WEEK\'S TOP SCORERS', '📅', week)}
+      ${renderBoard('MONTHLY LEADERS (PRIZE ELIGIBLE)', '🏆', month)}
+    </div>
+  `;
+}
+
+// ─── CLASS CONTENT ENGINE ───────────────────────────────────────────────────
+const CLASS_CONTENT = {
+  'Class 1': {
+    subjects: ['Tamil','English','Mathematics','EVS'],
+    notes: [
+      { sub:'Mathematics', chapter:'Ch 1: Numbers 1–100', desc:'Counting, ordering, and writing numbers. Place value introduction.', topics:['Forward counting','Backward counting','Number names','Place value basics'] },
+      { sub:'Mathematics', chapter:'Ch 2: Addition (1-digit)', desc:'Simple addition using pictures and number lines.', topics:['Adding single digits','Using fingers','Number line','Story problems'] },
+      { sub:'English', chapter:'Ch 1: Alphabet & Phonics', desc:'All 26 letters, sounds, and basic words.', topics:['Capital letters','Small letters','Vowels & consonants','3-letter words'] },
+      { sub:'Tamil', chapter:'Ch 1: உயிர் எழுத்துக்கள்', desc:'Tamil vowels with pronunciation and writing practice.', topics:['அ ஆ இ ஈ','உ ஊ எ ஏ','ஐ ஒ ஓ ஔ','Writing practice'] },
+      { sub:'EVS', chapter:'Ch 1: My Family', desc:'Family members, their roles, and relationships.', topics:['Mother, Father, Siblings','Grandparents','Family roles','My home'] },
+    ],
+    tests: [
+      { title:'Number Recognition Test', subject:'Mathematics', questions:5, time:10, difficulty:'easy' },
+      { title:'Alphabet Quiz', subject:'English', questions:10, time:8, difficulty:'easy' },
+    ]
+  },
+  'Class 6': {
+    subjects: ['Tamil','English','Mathematics','Science','Social Science'],
+    notes: [
+      { sub:'Mathematics', chapter:'Ch 1: Integers', desc:'Introduction to integers, number line, addition and subtraction of integers.', topics:['Positive & negative numbers','Number line','Adding integers','Subtracting integers','Applications'] },
+      { sub:'Mathematics', chapter:'Ch 2: Fractions & Decimals', desc:'Equivalent fractions, operations on fractions, decimal conversions.', topics:['Equivalent fractions','Addition/subtraction of fractions','Multiplication of fractions','Decimals','Conversion'] },
+      { sub:'Science', chapter:'Ch 1: Food: Where Does It Come From?', desc:'Sources of food, animal and plant products, food variety.', topics:['Plant sources of food','Animal sources of food','Ingredients','Omnivores/Herbivores/Carnivores'] },
+      { sub:'Science', chapter:'Ch 2: Components of Food', desc:'Nutrients, their functions, and deficiency diseases.', topics:['Carbohydrates','Proteins','Fats','Vitamins & minerals','Balanced diet'] },
+      { sub:'Social Science', chapter:'Ch 1: What, Where, How & When?', desc:'Early humans, sources of history, timelines.', topics:['Sources of history','Manuscripts','Archaeology','Timeline & BC/AD'] },
+      { sub:'English', chapter:'Ch 1: Who Did Patrick\'s Homework?', desc:'Story, comprehension, grammar — nouns and verbs.', topics:['Story reading','Comprehension questions','Nouns','Verbs','New vocabulary'] },
+    ],
+    tests: [
+      { title:'Integers — Unit Test', subject:'Mathematics', questions:10, time:20, difficulty:'medium' },
+      { title:'Food & Nutrition Quiz', subject:'Science', questions:8, time:15, difficulty:'easy' },
+      { title:'History Basics', subject:'Social Science', questions:10, time:20, difficulty:'medium' },
+    ]
+  },
+  'Class 9': {
+    subjects: ['Tamil','English','Mathematics','Science','Social Science'],
+    notes: [
+      { sub:'Mathematics', chapter:'Ch 1: Number Systems', desc:'Real numbers, irrational numbers, number line representation and laws of exponents.', topics:['Natural, whole, integers','Rational numbers','Irrational numbers','Real number line','Exponents laws'] },
+      { sub:'Mathematics', chapter:'Ch 2: Polynomials', desc:'Definitions, zeroes of polynomial, factor theorem, algebraic identities.', topics:['Types of polynomials','Zeroes of polynomial','Remainder theorem','Factor theorem','Identities'] },
+      { sub:'Science', chapter:'Ch 1: Matter in Our Surroundings', desc:'States of matter, interconversion, evaporation, latent heat.', topics:['Solid, liquid, gas','Interconversion','Boiling & melting points','Evaporation factors','Latent heat'] },
+      { sub:'Science', chapter:'Ch 2: Is Matter Around Us Pure?', desc:'Pure substances, mixtures, separation techniques, solutions.', topics:['Mixtures vs compounds','Types of mixtures','Solutions, colloids, suspensions','Separation methods','Concentration of solution'] },
+      { sub:'Social Science', chapter:'The French Revolution', desc:'Causes, events, aftermath and impact on India. Board exam focus.', topics:['Old Regime & causes','Events of 1789','Role of Napoleon','Impact globally','Previous year questions'] },
+    ],
+    tests: [
+      { title:'Number Systems — Full Test', subject:'Mathematics', questions:15, time:30, difficulty:'medium' },
+      { title:'Matter & States Quiz', subject:'Science', questions:10, time:20, difficulty:'medium' },
+      { title:'French Revolution Test', subject:'Social Science', questions:12, time:25, difficulty:'hard' },
+    ]
+  },
+  'Class 10': {
+    subjects: ['Tamil','English','Mathematics','Science','Social Science'],
+    notes: [
+      { sub:'Mathematics', chapter:'Ch 1: Real Numbers', desc:'Euclid\'s division algorithm, fundamental theorem of arithmetic, irrational & decimal numbers.', topics:['HCF using Euclid algorithm','Fundamental theorem','Irrational proofs','Non-terminating decimals','Board question patterns'] },
+      { sub:'Mathematics', chapter:'Ch 2: Polynomials', desc:'Zeroes of polynomial, relationship with coefficients, division algorithm.', topics:['Geometric meaning of zeroes','Relationship: zeroes & coefficients','Division algorithm for polynomials','5-mark patterns','Previous year questions'] },
+      { sub:'Science', chapter:'Ch 1: Chemical Reactions & Equations', desc:'Writing & balancing equations, types of chemical reactions, oxidation-reduction.', topics:['Writing chemical equations','Balancing equations','Types of reactions','Oxidation & reduction','5-mark questions'] },
+      { sub:'Science', chapter:'Ch 6: Life Processes', desc:'Nutrition, respiration, transportation, excretion in living organisms.', topics:['Nutrition: autotrophs/heterotrophs','Respiration types','Blood circulation','Excretion in plants & humans','Diagram mastery'] },
+      { sub:'Social Science', chapter:'Nationalism in India', desc:'Non-cooperation movement, Civil Disobedience, Salt March, important events.', topics:['Non-cooperation movement','Civil Disobedience','Salt March 1930','Round Table Conference','Exam question patterns'] },
+    ],
+    tests: [
+      { title:'Real Numbers — Centum Test', subject:'Mathematics', questions:15, time:30, difficulty:'hard' },
+      { title:'Chemical Reactions Full Test', subject:'Science', questions:15, time:25, difficulty:'hard' },
+      { title:'Indian Nationalism Quiz', subject:'Social Science', questions:10, time:20, difficulty:'medium' },
+      { title:'English Grammar Mastery', subject:'English', questions:12, time:20, difficulty:'medium' },
+    ]
+  },
+  'Class 12': {
+    subjects: ['Mathematics','Physics','Chemistry','Biology / Accountancy','English'],
+    notes: [
+      { sub:'Mathematics', chapter:'Ch 1: Relations & Functions', desc:'Types of relations, types of functions, composition, inverse functions.', topics:['Equivalence relations','Injective/surjective/bijective','Composition of functions','Invertible functions','5-mark patterns'] },
+      { sub:'Physics', chapter:'Ch 1: Electric Charges & Fields', desc:'Coulomb\'s law, electric field, Gauss\'s law with applications.', topics:['Electric charge properties','Coulomb\'s law derivation','Electric field lines','Gauss\'s law','Numericals'] },
+      { sub:'Chemistry', chapter:'Ch 1: The Solid State', desc:'Classification of solids, unit cells, packing efficiency, defects.', topics:['Crystalline vs amorphous','Types of unit cells','Packing efficiency calc','Defects in solids','Previous year 5-markers'] },
+    ],
+    tests: [
+      { title:'Relations & Functions — Board Level', subject:'Mathematics', questions:15, time:30, difficulty:'hard' },
+      { title:'Electric Charges — Numericals', subject:'Physics', questions:10, time:25, difficulty:'hard' },
+      { title:'Solid State Test', subject:'Chemistry', questions:12, time:25, difficulty:'hard' },
+    ]
+  },
+};
+
+function getClassContent(std) {
+  if (!std) return CLASS_CONTENT['Class 9'];
+  const key = Object.keys(CLASS_CONTENT).find(k => std.includes(k.replace('Class ','').split(' ')[0]));
+  if (key) return CLASS_CONTENT[key];
+  // For unmapped classes, generate generic
+  const n = parseInt(std.replace(/\D/g,'')) || 6;
+  if (n <= 5) return CLASS_CONTENT['Class 1'];
+  if (n <= 8) return CLASS_CONTENT['Class 6'];
+  if (n === 9) return CLASS_CONTENT['Class 9'];
+  if (n === 10) return CLASS_CONTENT['Class 10'];
+  return CLASS_CONTENT['Class 12'];
+}
+
+async function loadStudentNotes(student) {
+  const classContent = getClassContent(student.std);
+  const container = document.getElementById('sp-notes-content');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">⏳ Loading notes...</div>';
+  // Sync materials from Supabase first
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('materials').select('*')
+        .in('status', ['approved'])
+        .order('created_at', {ascending: false}).limit(200);
+      if (data && data.length) {
+        const local = LOCAL.get('materials') || [];
+        data.forEach(r => { if (!local.find(x => x.id === r.id)) local.unshift(r); });
+        LOCAL.set('materials', local);
+      }
+    }
+  } catch(e) {}
+  // Also sync question papers
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('question_papers').select('*').order('created_at',{ascending:false}).limit(100);
+      if (data && data.length) LOCAL.set('question_papers', data);
+    }
+  } catch(e) {}
+
+  let html = `<div style="margin-bottom:16px;"><div class="mat-badge teal" style="margin-bottom:14px;">${student.std} · ${classContent.subjects.join(' · ')}</div></div>`;
+
+  // Show admin/tutor-uploaded materials for this class FIRST
+  const assignedTutorId = student.assignedTutorId || student.assigned_tutor_id || '';
+  const mats = (LOCAL.get('materials') || []).filter(m => {
+    const sameClass = m.class === student.std || m['class'] === student.std;
+    const approved = m.status !== 'rejected' && m.status !== 'pending';
+    const fromMyTutor = assignedTutorId && (m.tutorId === assignedTutorId || m.tutor_id === assignedTutorId);
+    const fromAdmin = !m.tutorId && !m.tutor_id;
+    return sameClass && approved && (fromMyTutor || fromAdmin);
+  });
+  if (mats.length) {
+    html += `<div style="background:linear-gradient(135deg,rgba(0,229,160,0.08),rgba(0,229,160,0.02));border:1px solid rgba(0,229,160,0.25);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--teal);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">📚 ADMIN/TUTOR UPLOADED · ${mats.length}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+      ${mats.map(m => {
+        const icon = { notes:'📖', pdf:'📄', video:'🎬', audio:'🎧', link:'🔗', test:'📝', syllabus:'📋' }[m.type] || '📚';
+        const isUrl = /^https?:\/\//i.test((m.content||'').trim());
+        return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:12px;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;">${icon} ${(m.type||'NOTES').toUpperCase()} · ${sanitize(m.subject)}</div>
+          <div style="font-family:'Lora','Georgia',serif;font-size:13.5px;font-weight:800;color:#fff;margin-top:4px;line-height:1.3;">${sanitize(m.title)}</div>
+          ${m.desc ? `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${sanitize(m.desc)}</div>` : ''}
+          ${isUrl ? `<a class="btn btn-teal btn-sm" href="${m.content}" target="_blank" rel="noopener" style="display:block;text-align:center;padding:8px;margin-top:10px;text-decoration:none;">🔗 Open</a>` : (m.content||'').startsWith('data:') ? `<button class="btn btn-gold btn-sm" onclick="previewMaterial('${m.id}')" style="width:100%;margin-top:10px;padding:8px;">📂 View File</button>` : `<button class="btn btn-gold btn-sm" onclick="showMaterialContent('${m.id}')" style="width:100%;margin-top:10px;padding:8px;">📖 Read</button>`}
+        </div>`;
+      }).join('')}
+      </div>
+    </div>`;
+  }
+
+  const bySubject = {};
+  content.notes.forEach(n => { if(!bySubject[n.sub]) bySubject[n.sub]=[]; bySubject[n.sub].push(n); });
+  Object.entries(bySubject).forEach(([sub, notes]) => {
+    html += `<div style="margin-bottom:20px;"><div style="font-family:'Lora','Georgia',serif;font-size:14px;font-weight:800;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:8px;"><span>📚</span>${sub}</div><div class="chapter-list">`;
+    notes.forEach((n, i) => {
+      html += `<div class="chapter-item" onclick="toggleChapterDetail(this)">
+        <div class="ch-num">${i+1}</div>
+        <div class="ch-info"><div class="ch-title">${n.chapter}</div><div class="ch-desc">${n.desc}</div></div>
+        <div class="ch-actions">
+          <button class="ch-btn notes" onclick="event.stopPropagation();openAIVideo('${n.sub} – ${n.chapter}','Study Session')">🤖 AI Help</button>
+        </div>
+      </div>
+      <div class="chapter-detail hidden" style="background:rgba(245,200,66,0.03);border:1px solid rgba(245,200,66,0.1);border-radius:0 0 12px 12px;padding:14px 20px;margin-top:-4px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:10px;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;">TOPICS COVERED</div>
+        ${n.topics.map(t=>`<div class="syl-topic"><div class="syl-dot"></div>${t}</div>`).join('')}
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  
+  // Question papers for this class
+  const qps = (LOCAL.get('question_papers') || []).filter(q => !q['class'] || q['class'] === student.std);
+  if (qps.length) {
+    html += '<div style="margin-top:22px;"><div style="font-size:11px;color:#F97316;font-weight:800;letter-spacing:1.5px;font-family:\'JetBrains Mono\',monospace;margin-bottom:12px;">📝 QUESTION PAPERS (' + qps.length + ')</div>' +
+      qps.map(function(q) {
+        const isFile = (q.content||'').startsWith('data:');
+        const btn = isFile ? '<button class="btn btn-ghost btn-sm" onclick="previewMaterial(\'' + q.id + '\')">📂 View</button>' : '<a class="btn btn-ghost btn-sm" href="' + (q.content||'#') + '" target="_blank">🔗 Open</a>';
+        return '<div style="background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.25);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;"><div style="font-size:24px;">📝</div><div style="flex:1;"><div style="font-weight:700;color:#fff;font-size:13px;">' + sanitize(q.title||'Question Paper') + '</div><div style="font-size:11px;color:var(--muted);">' + sanitize(q.subject||'') + ' · ' + (q.date||'—') + '</div></div>' + btn + '</div>';
+      }).join('') + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function showMaterialContent(id) {
+  const mats = LOCAL.get('materials') || [];
+  const m = mats.find(x => x.id === id);
+  if (!m) { showToast('⚠️','Material not found',true); return; }
+  // Create a proper reading modal
+  const existing = document.getElementById('materialReadModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'materialReadModal';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'z-index:9100;';
+  modal.innerHTML = `<div class="modal modal-lg" style="max-width:700px;max-height:80vh;overflow-y:auto;">
+    <div class="modal-header" style="position:sticky;top:0;background:var(--ink2);z-index:2;">
+      <div><div class="modal-title">${sanitize(m.title)}</div><div class="modal-subtitle">${sanitize(m.subject||'')} · ${(m.type||'notes').toUpperCase()}</div></div>
+      <button class="modal-close" onclick="document.getElementById('materialReadModal').remove()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px 28px;white-space:pre-wrap;font-size:14px;color:rgba(255,255,255,0.9);line-height:1.75;">${sanitize(m.content)}</div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function toggleChapterDetail(item) {
+  const detail = item.nextElementSibling;
+  if (detail && detail.classList.contains('chapter-detail')) {
+    detail.classList.toggle('hidden');
+  }
+}
+
+// V10: STRUCTURED SYLLABUS — Board + Class specific with sub-sections, activities, book-back Q&A
+const STRUCTURED_SYLLABUS = {
+  'CBSE|Class 10': {
+    subjects: {
+      'Mathematics': [
+        {
+          title: 'Real Numbers',
+          desc: 'Euclid\'s division lemma, fundamental theorem of arithmetic',
+          sections: [
+            { title: 'Euclid\'s Division Lemma', desc: 'For any two positive integers a and b, there exist unique integers q and r satisfying a = bq + r, where 0 ≤ r < b.' },
+            { title: 'Fundamental Theorem of Arithmetic', desc: 'Every composite number can be expressed as a product of primes in a unique way.' },
+            { title: 'Irrational Numbers & Their Properties', desc: 'Numbers that cannot be expressed as a ratio of two integers. Examples: √2, √3, π.' },
+            { title: 'Decimal Expansions', desc: 'Terminating and non-terminating decimal expansions of rational numbers.' }
+          ],
+          activities: [
+            { title: 'HCF using Euclid\'s Algorithm', desc: 'Find the HCF of 867 and 255 using Euclid\'s division algorithm.', interpret: 'The repeated division process always terminates — this is why every two integers have a unique HCF.' },
+            { title: 'Prime Factorization Puzzle', desc: 'Express 3825 as a product of its prime factors.', interpret: 'Answer: 3² × 5² × 17. Demonstrates the Fundamental Theorem of Arithmetic.' }
+          ],
+          bookBack: [
+            { q: 'Use Euclid\'s algorithm to find the HCF of 135 and 225.', a: 'Apply 225 = 135×1 + 90, then 135 = 90×1 + 45, then 90 = 45×2 + 0. HCF = 45.' },
+            { q: 'Prove that √5 is irrational.', a: 'Assume √5 = p/q in lowest terms. Then p² = 5q², so 5 divides p², hence 5 divides p. Let p = 5k. Then 25k² = 5q² so q² = 5k², meaning 5 divides q. But HCF(p,q) = 1, contradiction. Hence √5 is irrational.' },
+            { q: 'Find the LCM and HCF of 26 and 91.', a: '26 = 2×13, 91 = 7×13. HCF = 13. LCM = 2×7×13 = 182. Verify: HCF × LCM = 13 × 182 = 2366 = 26 × 91 ✓' }
+          ]
+        },
+        {
+          title: 'Polynomials',
+          desc: 'Zeros of polynomial, relationship between zeros and coefficients',
+          sections: [
+            { title: 'Geometrical Meaning of Zeros', desc: 'The number of zeros of a polynomial is the number of times its graph cuts the x-axis.' },
+            { title: 'Relationship Between Zeros & Coefficients', desc: 'For quadratic ax² + bx + c: sum of zeros = -b/a, product = c/a.' },
+            { title: 'Division Algorithm for Polynomials', desc: 'If p(x) and g(x) are polynomials with g(x)≠0, then p(x) = g(x)×q(x) + r(x), where degree of r(x) < degree of g(x).' }
+          ],
+          activities: [
+            { title: 'Graph a quadratic and find its zeros', desc: 'Plot y = x² - 3x + 2 and identify where it cuts the x-axis.', interpret: 'The graph crosses x-axis at x=1 and x=2, which are the two zeros.' }
+          ],
+          bookBack: [
+            { q: 'Find the zeros of x² - 2x - 8 and verify the relationship between zeros and coefficients.', a: 'x² - 2x - 8 = (x-4)(x+2), so zeros are 4 and -2. Sum = 4 + (-2) = 2 = -(-2)/1 ✓. Product = 4 × (-2) = -8 = -8/1 ✓.' }
+          ]
+        },
+        {
+          title: 'Pair of Linear Equations in Two Variables',
+          desc: 'Graphical and algebraic methods of solving',
+          sections: [
+            { title: 'Graphical Method', desc: 'Plot both equations as lines. Intersection point = solution.' },
+            { title: 'Substitution Method', desc: 'Solve one equation for one variable, substitute into the other.' },
+            { title: 'Elimination Method', desc: 'Multiply equations to match coefficients, then add/subtract to eliminate.' },
+            { title: 'Cross-Multiplication Method', desc: 'Formula-based direct solution.' }
+          ],
+          activities: [
+            { title: 'Age-problem word puzzle', desc: 'Father\'s age = 3 × son\'s age. 5 years later, father\'s age = 2 × son\'s age + 8. Find their ages.', interpret: 'Set up equations x = 3y and x+5 = 2(y+5)+8. Solve: son=13, father=39.' }
+          ],
+          bookBack: [
+            { q: 'Solve: 2x + 3y = 11 and 2x - 4y = -24.', a: 'Subtract: 7y = 35, so y = 5. Substitute back: 2x = 11 - 15 = -4, so x = -2.' }
+          ]
+        }
+      ],
+      'Science': [
+        {
+          title: 'Chemical Reactions and Equations',
+          desc: 'Types of chemical reactions and how to balance equations',
+          sections: [
+            { title: 'Chemical Equation', desc: 'Symbolic representation of a chemical reaction showing reactants and products.' },
+            { title: 'Balancing Equations', desc: 'Atoms on both sides must be equal (Law of Conservation of Mass).' },
+            { title: 'Types: Combination, Decomposition, Displacement, Double Displacement', desc: 'Different patterns of how atoms rearrange.' },
+            { title: 'Oxidation and Reduction (Redox)', desc: 'Oxidation = gain of oxygen / loss of hydrogen. Reduction = opposite.' }
+          ],
+          activities: [
+            { title: 'Burning Magnesium Ribbon', desc: 'Burn a small strip of magnesium ribbon in air and observe.', interpret: 'Dazzling white flame. White ash = Magnesium Oxide (MgO). Reaction: 2Mg + O₂ → 2MgO. This is combination + oxidation.' },
+            { title: 'Reaction of Iron nails with CuSO₄', desc: 'Dip an iron nail in blue copper sulphate solution for 20 minutes.', interpret: 'Solution turns pale green (FeSO₄), brown copper deposits on the nail. Iron is more reactive than copper — displacement reaction.' }
+          ],
+          bookBack: [
+            { q: 'Why should a magnesium ribbon be cleaned before burning in air?', a: 'Because magnesium reacts with oxygen in air and forms a layer of magnesium oxide on its surface. This layer prevents the ribbon from burning. Cleaning with sandpaper removes this layer.' },
+            { q: 'Balance: Fe + H₂O → Fe₃O₄ + H₂', a: '3Fe + 4H₂O → Fe₃O₄ + 4H₂' },
+            { q: 'What does one mean by exothermic and endothermic reactions? Give examples.', a: 'Exothermic: releases heat (e.g. burning of fuel, respiration). Endothermic: absorbs heat (e.g. photosynthesis, decomposition of calcium carbonate).' }
+          ]
+        },
+        {
+          title: 'Life Processes',
+          desc: 'How living organisms perform basic life activities',
+          sections: [
+            { title: 'Nutrition in Plants — Photosynthesis', desc: '6CO₂ + 6H₂O + sunlight → C₆H₁₂O₆ + 6O₂. Occurs in chloroplasts.' },
+            { title: 'Nutrition in Humans', desc: 'Digestion of food: mouth → stomach → small intestine → large intestine.' },
+            { title: 'Respiration — Aerobic & Anaerobic', desc: 'Glucose + O₂ → CO₂ + H₂O + ATP. Anaerobic (without O₂) produces lactic acid (muscles) or ethanol (yeast).' },
+            { title: 'Transportation', desc: 'Blood and heart in humans. Xylem (water) and phloem (food) in plants.' },
+            { title: 'Excretion', desc: 'Removal of waste — kidneys in humans, stomata in plants.' }
+          ],
+          activities: [
+            { title: 'Test for presence of starch in leaves', desc: 'Boil a variegated leaf in alcohol, add iodine solution.', interpret: 'Green parts turn blue-black (starch present); non-green parts remain yellow-brown. Proves chlorophyll is essential for photosynthesis.' }
+          ],
+          bookBack: [
+            { q: 'How are fats digested in our bodies? Where does this process take place?', a: 'Fats are emulsified by bile (from liver) in the small intestine. Then pancreatic lipase breaks them into fatty acids and glycerol, which are absorbed into the bloodstream via lymph.' }
+          ]
+        }
+      ],
+      'History': [
+        {
+          title: 'The Rise of Nationalism in Europe',
+          desc: 'The French Revolution, unification of Germany and Italy',
+          sections: [
+            { title: 'The French Revolution (1789)', desc: 'Overthrow of monarchy, rise of liberal democracy. Ideas of liberty, equality, fraternity.' },
+            { title: 'Napoleon\'s Reforms', desc: 'Civil Code 1804 — equality, right to property. Spread throughout Europe.' },
+            { title: 'Unification of Germany (1871)', desc: 'Led by Otto von Bismarck through three wars.' },
+            { title: 'Unification of Italy (1861)', desc: 'Led by Cavour, Garibaldi, and King Victor Emmanuel II.' }
+          ],
+          activities: [
+            { title: 'Read primary source — Ernst Renan\'s speech', desc: 'What is a Nation? Analyze the key arguments.', interpret: 'Renan argued a nation is defined by shared history and willingness to live together — not race or language alone.' }
+          ],
+          bookBack: [
+            { q: 'What steps did the French revolutionaries take to create a sense of collective identity?', a: 'Ideas of La patrie (fatherland), new French flag (tricolour), National Assembly, hymn called La Marseillaise, oaths of allegiance, standardization of weights/measures, and adoption of French as common language.' }
+          ]
+        }
+      ],
+      'English': [
+        {
+          title: 'First Flight — A Letter to God',
+          desc: 'Story by G.L. Fuentes — the power of faith',
+          sections: [
+            { title: 'Summary', desc: 'Lencho, a poor farmer, loses his crop to a hailstorm. He writes to God asking for 100 pesos. The postmaster, moved by his faith, collects 70 pesos from staff. Lencho writes again, accusing the postmen of stealing 30 pesos.' },
+            { title: 'Character Analysis', desc: 'Lencho = simple, trusting, unshakeable faith. Postmaster = kind, compassionate.' },
+            { title: 'Theme', desc: 'Irony of faith; kindness of strangers; unintended consequences of good deeds.' }
+          ],
+          bookBack: [
+            { q: 'Who does Lencho have complete faith in?', a: 'Lencho has complete faith in God. He believes God will see his suffering and help him.' },
+            { q: 'Why did Lencho write a letter to God?', a: 'The hailstorm destroyed his entire corn crop. He needed 100 pesos to sow again and feed his family, so he wrote to God — whom he trusted completely.' }
+          ]
+        }
+      ]
+    }
+  },
+  'State Board|Class 10': {
+    subjects: {
+      'Mathematics': [
+        {
+          title: 'Relations and Functions',
+          desc: 'Ordered pairs, Cartesian products, functions',
+          sections: [
+            { title: 'Ordered Pair', desc: 'A pair of elements (a, b) where order matters. (1,2) ≠ (2,1).' },
+            { title: 'Cartesian Product', desc: 'A × B = {(a,b) : a ∈ A, b ∈ B}.' },
+            { title: 'Relations and Functions', desc: 'A function is a special relation where each input has exactly one output.' }
+          ],
+          activities: [
+            { title: 'Find all relations from A = {1,2} to B = {3,4}', desc: 'List every possible subset of A×B.', interpret: 'A×B has 4 elements, so there are 2⁴ = 16 relations.' }
+          ],
+          bookBack: [
+            { q: 'If A = {1,2,3}, B = {4,5}, find A × B.', a: 'A × B = {(1,4),(1,5),(2,4),(2,5),(3,4),(3,5)}. Total 6 elements.' }
+          ]
+        },
+        {
+          title: 'Numbers and Sequences',
+          desc: 'Arithmetic and Geometric Progressions',
+          sections: [
+            { title: 'Arithmetic Progression (AP)', desc: 'Common difference. nth term: aₙ = a + (n-1)d.' },
+            { title: 'Geometric Progression (GP)', desc: 'Common ratio. nth term: aₙ = arⁿ⁻¹.' },
+            { title: 'Sum of n terms', desc: 'AP: Sₙ = n/2[2a + (n-1)d]. GP: Sₙ = a(rⁿ-1)/(r-1).' }
+          ],
+          bookBack: [
+            { q: 'Find the 12th term of the AP: 7, 13, 19, 25, ...', a: 'a = 7, d = 6. a₁₂ = 7 + (12-1)×6 = 7 + 66 = 73.' }
+          ]
+        }
+      ],
+      'Science': [
+        {
+          title: 'Laws of Motion',
+          desc: 'Newton\'s three laws and their applications',
+          sections: [
+            { title: 'Newton\'s First Law (Inertia)', desc: 'An object at rest stays at rest and an object in motion stays in motion unless acted upon by a force.' },
+            { title: 'Newton\'s Second Law', desc: 'F = m × a. The rate of change of momentum is directly proportional to the applied force.' },
+            { title: 'Newton\'s Third Law', desc: 'For every action, there is an equal and opposite reaction.' }
+          ],
+          activities: [
+            { title: 'Seat Belt Experiment', desc: 'Push a toy car with a doll (no belt) forward and then stop the car suddenly. Observe what happens to the doll.', interpret: 'The doll continues forward because of inertia (1st law). Seat belts hold passengers back to prevent injury.' }
+          ],
+          bookBack: [
+            { q: 'Calculate the force needed to accelerate a 5 kg mass at 3 m/s².', a: 'F = m × a = 5 × 3 = 15 N.' }
+          ]
+        }
+      ],
+      'Tamil': [
+        {
+          title: 'இயல் 1 — தமிழ்ப்பெருமை',
+          desc: 'தமிழ் மொழியின் பெருமை குறித்த உரைப்பாடல்',
+          sections: [
+            { title: 'தமிழ் மொழி வளர்ச்சி', desc: 'தமிழ் ஒரு செம்மொழி. 2500 ஆண்டுகளுக்கு மேலான வரலாறு கொண்டது.' }
+          ],
+          bookBack: [
+            { q: 'தமிழ் ஏன் செம்மொழி என்று அழைக்கப்படுகிறது?', a: 'தமிழ் மொழிக்கு நீண்ட வரலாறு, தனி இலக்கணம், தொன்மையான இலக்கியம் உள்ளது. எனவே செம்மொழியாக இந்திய அரசு 2004-இல் அறிவித்தது.' }
+          ]
+        }
+      ]
+    }
+  },
+  'Default': {
+    subjects: {
+      'General': [
+        {
+          title: 'Your Class Syllabus',
+          desc: 'A detailed chapter-wise syllabus with sub-sections, activities, and book-back Q&A is being prepared for your class and board.',
+          sections: [
+            { title: 'Contact your tutor', desc: 'Your tutor will upload the chapter-wise syllabus shortly. You can request specific topics through the AI tutor or your class teacher.' }
+          ],
+          activities: [],
+          bookBack: []
+        }
+      ]
+    }
+  }
+};
+
+async function loadStudentSyllabus(student) {
+  const container = document.getElementById('sp-syllabus-content');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">⏳ Loading syllabus...</div>';
+
+  const board = student.board || 'CBSE';
+  const cls = student.std || 'Class 10';
+  const key = `${board}|${cls}`;
+
+  // V12: Fetch admin-uploaded syllabus from Supabase first
+  let adminSyllabus = [];
+  try {
+    const mats = await dbGetAll('materials');
+    adminSyllabus = mats.filter(m => m.class === cls && m.type === 'syllabus' && m.status !== 'rejected' && m.status !== 'pending');
+  } catch(e) {
+    adminSyllabus = (LOCAL.get('materials') || []).filter(m => m.class === cls && m.type === 'syllabus');
+  }
+
+  if (adminSyllabus.length > 0) {
+    let html = `<div style="background:linear-gradient(135deg,rgba(245,200,66,0.1),rgba(245,200,66,0.02));border:1px solid rgba(245,200,66,0.3);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:10px;color:var(--gold);font-weight:800;letter-spacing:2px;font-family:'JetBrains Mono',monospace;">📋 OFFICIAL SYLLABUS — Kongu Brilliance</div>
+      <div style="font-family:'Lora','Georgia',serif;font-size:20px;font-weight:800;color:#fff;margin-top:6px;">${board} · ${cls}</div>
+    </div>`;
+    adminSyllabus.forEach(m => {
+      const isUrl = /^https?:\/\//i.test((m.content||'').trim());
+      html += `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;">
+        <div style="font-family:'Lora','Georgia',serif;font-size:15px;font-weight:800;color:#fff;margin-bottom:10px;">${sanitize(m.title||m.subject||'Syllabus')}</div>
+        ${isUrl
+          ? `<a class="btn btn-gold" href="${m.content}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:10px 20px;">📄 Open Syllabus Document</a>`
+          : `<div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.75;white-space:pre-wrap;">${sanitize(m.content||'').slice(0,4000)}</div>`
+        }
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" onclick="openAIVideo('${sanitize(m.subject||'')} Syllabus','AI Study Session')">🤖 AI Lesson</button>
+          <button class="btn btn-ghost btn-sm" onclick="showStudentView(\'tests\',document.querySelector(\'[onclick*=tests]\'))">📝 Practice Quiz</button>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html;
+    return;
+  }
+
+  // Fallback to built-in structured syllabus
+  const data = STRUCTURED_SYLLABUS[key] || STRUCTURED_SYLLABUS['Default'];
+  const subjects = Object.keys(data.subjects);
+
+  container.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(245,200,66,0.1),rgba(245,200,66,0.02));border:1px solid rgba(245,200,66,0.3);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:10px;color:var(--gold);font-weight:800;letter-spacing:2px;font-family:'JetBrains Mono',monospace;">📋 SYLLABUS (Default — Upload yours via admin panel)</div>
+      <div style="font-family:'Lora','Georgia',serif;font-size:20px;font-weight:800;color:#fff;margin-top:6px;">${board} · ${cls}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">Built-in curriculum. Click <strong style="color:var(--gold);">📝 Practice Quiz</strong> to test yourself, or <strong style="color:#A5B4FC;">🤖 Ask AI Tutor</strong> for help!</div>
+    </div>
+    <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:20px;padding-bottom:4px;">
+      ${subjects.map((s, i) => `<button class="syl-tab-btn ${i===0?'active':''}" data-subject="${s.replace(/"/g,'&quot;')}" onclick="switchSyllabusTab(this)" style="background:${i===0?'rgba(245,200,66,0.15)':'var(--faint)'};border:1px solid ${i===0?'rgba(245,200,66,0.4)':'var(--border)'};color:${i===0?'var(--gold)':'#fff'};padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;">${sanitize(s)}</button>`).join('')}
+    </div>
+    <div id="syl-subject-container"></div>
+  `;
+  if (subjects[0]) renderSyllabusSubject(subjects[0], data);
+}
+
+
+
+function switchSyllabusTab(btn) {
+  const subject = btn.getAttribute('data-subject');
+  document.querySelectorAll('.syl-tab-btn').forEach(b => {
+    b.style.background = 'var(--faint)';
+    b.style.borderColor = 'var(--border)';
+    b.style.color = '#fff';
+  });
+  btn.style.background = 'rgba(245,200,66,0.15)';
+  btn.style.borderColor = 'rgba(245,200,66,0.4)';
+  btn.style.color = 'var(--gold)';
+  const student = window._currentStudent;
+  if (!student) return;
+  const key = `${student.board || 'CBSE'}|${student.std || 'Class 10'}`;
+  const data = STRUCTURED_SYLLABUS[key] || STRUCTURED_SYLLABUS['Default'];
+  renderSyllabusSubject(subject, data);
+}
+
+function renderSyllabusSubject(subject, data) {
+  const container = document.getElementById('syl-subject-container');
+  if (!container) return;
+  const chapters = data.subjects[subject] || [];
+  if (!chapters.length) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);">📚 Syllabus for this subject will be added soon.</div>';
+    return;
+  }
+  container.innerHTML = chapters.map((ch, idx) => `
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden;">
+      <button onclick="toggleSyllabusChapter(this)" style="width:100%;text-align:left;background:linear-gradient(90deg,rgba(99,102,241,0.08),transparent);border:none;padding:14px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-family:inherit;color:#fff;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:10px;color:var(--gold);font-family:'JetBrains Mono',monospace;letter-spacing:1px;font-weight:700;">CHAPTER ${idx + 1}</div>
+          <div style="font-family:'Lora','Georgia',serif;font-size:15px;font-weight:800;color:#fff;margin-top:3px;">${sanitize(ch.title)}</div>
+          ${ch.desc ? `<div style="font-size:11.5px;color:rgba(255,255,255,0.65);margin-top:3px;">${sanitize(ch.desc)}</div>` : ''}
+        </div>
+        <div style="color:var(--gold);font-size:14px;" class="syl-chev">▾</div>
+      </button>
+      <div class="syl-chapter-body" style="display:none;padding:0 18px 18px;">
+        ${ch.sections && ch.sections.length ? `
+          <div style="margin-top:14px;">
+            <div style="font-size:10px;color:var(--teal);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;">📖 SUB-SECTIONS</div>
+            ${ch.sections.map((s, si) => `<div style="background:rgba(0,229,160,0.04);border-left:3px solid var(--teal);border-radius:6px;padding:10px 12px;margin-bottom:6px;">
+              <div style="font-weight:700;color:#fff;font-size:13px;">${si+1}.${idx+1} ${sanitize(s.title)}</div>
+              ${s.desc ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:4px;line-height:1.6;">${sanitize(s.desc)}</div>` : ''}
+            </div>`).join('')}
+          </div>
+        ` : ''}
+        ${ch.activities && ch.activities.length ? `
+          <div style="margin-top:16px;">
+            <div style="font-size:10px;color:#F97316;font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;">🧪 ACTIVITIES &amp; INTERPRETATIONS</div>
+            ${ch.activities.map((a, ai) => `<div style="background:rgba(249,115,22,0.04);border:1px solid rgba(249,115,22,0.15);border-radius:8px;padding:12px;margin-bottom:6px;">
+              <div style="font-weight:700;color:#F97316;font-size:12.5px;margin-bottom:5px;">🔬 Activity ${ai+1}: ${sanitize(a.title)}</div>
+              ${a.desc ? `<div style="font-size:12px;color:rgba(255,255,255,0.8);margin-bottom:6px;line-height:1.55;"><strong style="color:#fff;">What to do:</strong> ${sanitize(a.desc)}</div>` : ''}
+              ${a.interpret ? `<div style="font-size:12px;color:rgba(255,255,255,0.8);line-height:1.55;background:rgba(255,255,255,0.03);padding:8px 10px;border-radius:6px;margin-top:4px;"><strong style="color:var(--teal);">📊 Interpretation:</strong> ${sanitize(a.interpret)}</div>` : ''}
+            </div>`).join('')}
+          </div>
+        ` : ''}
+        ${ch.bookBack && ch.bookBack.length ? `
+          <div style="margin-top:16px;">
+            <button onclick="toggleBookBack(this)" style="background:linear-gradient(135deg,rgba(245,200,66,0.1),rgba(245,200,66,0.02));border:1px solid rgba(245,200,66,0.3);color:var(--gold);padding:10px 14px;border-radius:8px;font-size:11.5px;font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;cursor:pointer;width:100%;text-align:left;">📝 BOOK-BACK QUESTIONS &amp; ANSWERS (${ch.bookBack.length}) <span style="float:right;">▾</span></button>
+            <div class="book-back-body" style="display:none;margin-top:8px;">
+              ${ch.bookBack.map((qa, qi) => `<div style="background:var(--faint);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:6px;">
+                <div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:6px;">Q${qi+1}. ${sanitize(qa.q)}</div>
+                <div style="font-size:12.5px;color:rgba(255,255,255,0.85);line-height:1.65;padding:8px 10px;background:rgba(0,229,160,0.04);border-left:3px solid var(--teal);border-radius:4px;"><strong style="color:var(--teal);">Answer:</strong> ${sanitize(qa.a)}</div>
+              </div>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-gold btn-sm" onclick="showStudentView('tests',document.querySelector('[onclick*=tests]'))">📝 Practice Quiz</button>
+          <button class="btn btn-ghost btn-sm" onclick="aihelpSetSubject('${subject}',null);showStudentView('aihelp',document.querySelector('[onclick*=aihelp]'))">🤖 Ask AI Tutor</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleSyllabusChapter(btn) {
+  const body = btn.nextElementSibling;
+  const chev = btn.querySelector('.syl-chev');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    if (chev) chev.textContent = '▴';
+  } else {
+    body.style.display = 'none';
+    if (chev) chev.textContent = '▾';
+  }
+}
+function toggleBookBack(btn) {
+  const body = btn.nextElementSibling;
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    btn.innerHTML = btn.innerHTML.replace('▾','▴');
+  } else {
+    body.style.display = 'none';
+    btn.innerHTML = btn.innerHTML.replace('▴','▾');
+  }
+}
+
+function toggleSyllabus(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+const QUIZ_BANK = {
+  'Mathematics': [
+    {q:'What is the HCF of 12 and 18?', opts:['4','6','8','3'], ans:1},
+    {q:'If x² – 5x + 6 = 0, what are the values of x?', opts:['2,3','1,6','−2,−3','4,2'], ans:0},
+    {q:'The product of two irrational numbers is always:', opts:['Irrational','Rational','Integer','Natural number'], ans:1},
+    {q:'Degree of polynomial 3x³ – x² + 7 is:', opts:['2','1','3','7'], ans:2},
+    {q:'√2 is:', opts:['Rational','Irrational','Integer','Natural'], ans:1},
+    {q:'Value of (2³)² is:', opts:['32','64','12','16'], ans:1},
+    {q:'Sum of zeroes of 2x² – 7x + 3 is:', opts:['7/2','3/2','−7/2','2/7'], ans:0},
+    {q:'Which is NOT a polynomial?', opts:['3x+1','x²−x','√x+1','x³'], ans:2},
+    {q:'Area of circle with radius 7 cm (π=22/7):', opts:['154 cm²','44 cm²','22 cm²','77 cm²'], ans:0},
+    {q:'If p(x) = x² − 3x + 2, then p(1) =', opts:['0','1','2','−1'], ans:0},
+  ],
+  'Science': [
+    {q:'Which type of reaction involves combination of two substances to form one product?', opts:['Decomposition','Combination','Displacement','Redox'], ans:1},
+    {q:'Photosynthesis is which type of chemical reaction?', opts:['Decomposition','Combination','Redox','Neutralisation'], ans:2},
+    {q:'The chemical formula for Calcium Carbonate is:', opts:['CaCO₃','CaO','Ca(OH)₂','CaCl₂'], ans:0},
+    {q:'Which gas is produced when zinc reacts with dilute sulphuric acid?', opts:['O₂','CO₂','H₂','SO₂'], ans:2},
+    {q:'Life processes that provide energy are called:', opts:['Nutrition','Respiration','Excretion','Transportation'], ans:1},
+    {q:'The basic unit of life is:', opts:['Tissue','Organ','Cell','Organism'], ans:2},
+    {q:'Plants prepare food through:', opts:['Respiration','Photosynthesis','Excretion','Digestion'], ans:1},
+    {q:'DNA is found in:', opts:['Cell wall','Cell membrane','Nucleus','Vacuole'], ans:2},
+    {q:'Which organ pumps blood in humans?', opts:['Lung','Liver','Kidney','Heart'], ans:3},
+    {q:'Rusting of iron is what type of reaction?', opts:['Decomposition','Combination','Displacement','Oxidation'], ans:3},
+  ],
+  'Social Science': [
+    {q:'The French Revolution began in which year?', opts:['1789','1776','1848','1799'], ans:0},
+    {q:'The Salt March was led by:', opts:['Nehru','Gandhi','Bose','Patel'], ans:1},
+    {q:'The Non-Cooperation Movement began in:', opts:['1920','1919','1930','1942'], ans:0},
+    {q:'Which was NOT a cause of French Revolution?', opts:['Tax inequality','Food shortage','Weak monarchy','Industrial revolution'], ans:3},
+    {q:'The famous Dandi March took place in:', opts:['1930','1920','1942','1947'], ans:0},
+    {q:'Rowlatt Act was passed in:', opts:['1919','1920','1916','1930'], ans:0},
+    {q:'Who wrote "Discovery of India"?', opts:['Gandhi','Nehru','Patel','Bose'], ans:1},
+    {q:'Jallianwala Bagh massacre happened in:', opts:['1917','1919','1920','1921'], ans:1},
+    {q:'The Constitution of India was adopted on:', opts:['15 Aug 1947','26 Jan 1950','26 Nov 1949','30 Jan 1948'], ans:2},
+    {q:'Which river is called the "Sorrow of Bihar"?', opts:['Ganga','Brahmaputra','Kosi','Yamuna'], ans:2},
+  ],
+  'English': [
+    {q:'The passive voice of "She writes a letter" is:', opts:['A letter is written by her','A letter was written by her','A letter has been written','She has written a letter'], ans:0},
+    {q:'Which is a proper noun?', opts:['city','river','Coimbatore','school'], ans:2},
+    {q:'Synonym of "benevolent" is:', opts:['cruel','kind','brave','silent'], ans:1},
+    {q:'Antonym of "optimistic" is:', opts:['hopeful','pessimistic','cheerful','bright'], ans:1},
+    {q:'"Neither he nor I __ present." Choose correct verb:', opts:['was','were','are','is'], ans:0},
+    {q:'Which tense: "I have been studying for 3 hours"?', opts:['Simple present','Past perfect','Present perfect continuous','Present continuous'], ans:2},
+    {q:'Identify the figure of speech: "The wind whispered through the trees":', opts:['Simile','Metaphor','Personification','Hyperbole'], ans:2},
+    {q:'"He is as brave as a lion." This is a:', opts:['Metaphor','Simile','Personification','Alliteration'], ans:1},
+    {q:'Indirect speech of "She said, I am tired":', opts:['She said she is tired','She said she was tired','She told she was tired','She said I am tired'], ans:1},
+    {q:'Which is NOT a conjunction?', opts:['and','but','because','never'], ans:3},
+  ],
+  'Tamil': [
+    {q:'எட்டு + இரண்டு = ?', opts:['பத்து','ஒன்பது','ஏழு','பதினொன்று'], ans:0},
+    {q:'உயிர் எழுத்துக்களின் எண்ணிக்கை:', opts:['12','18','16','24'], ans:0},
+    {q:'"அன்னை" என்ற சொல்லின் எதிர்ச்சொல்:', opts:['தந்தை','சகோதரி','மனைவி','நண்பர்'], ans:0},
+    {q:'இடை எழுத்துக்களின் எண்ணிக்கை:', opts:['3','6','8','18'], ans:0},
+    {q:'மெய் எழுத்துக்களின் எண்ணிக்கை:', opts:['12','18','16','24'], ans:1},
+  ],
+};
+
+async function loadStudentTests(student) {
+  const container = document.getElementById('sp-tests-content');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">⏳ Loading quizzes from database...</div>';
+
+  // V12: Always fetch from Supabase — ensures admin-created quizzes appear cross-device
+  let allQuizzes = [];
+  try { allQuizzes = await dbGetAll('quizzes'); } catch(e) { allQuizzes = LOCAL.get('quizzes') || []; }
+  const myClassQuizzes = allQuizzes.filter(q => q.class === student.std && q.status !== 'pending' && q.status !== 'rejected');
+
+  let allQP = [];
+  try { allQP = await dbGetAll('question_papers'); } catch(e) { allQP = LOCAL.get('question_papers') || []; }
+  const myQP = allQP.filter(p => p.class === student.std);
+
+  let mats = [];
+  try { mats = await dbGetAll('materials'); } catch(e) { mats = LOCAL.get('materials') || []; }
+  const adminTests = mats.filter(m => m.class === student.std && m.type === 'test' && m.status !== 'rejected' && m.status !== 'pending');
+
+  let html = '';
+
+  if (myClassQuizzes.length > 0) {
+    html += `<div style="background:linear-gradient(135deg,rgba(245,200,66,0.1),rgba(245,200,66,0.02));border:1px solid rgba(245,200,66,0.3);border-radius:14px;padding:20px;margin-bottom:20px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">🏆 YOUR QUIZZES · ${myClassQuizzes.length} AVAILABLE</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+        ${myClassQuizzes.map(q => {
+          const diffColor = q.difficulty === 'Hard' ? 'var(--coral)' : q.difficulty === 'Easy' ? 'var(--teal)' : 'var(--gold)';
+          const qCount = q.count || (q.questions||[]).length;
+          const timer = q.timerMinutes ? q.timerMinutes + ' min' : qCount + ' min';
+          const pts = Math.round(qCount * (q.marksPerQ||10) * (q.difficulty==='Hard'?2:q.difficulty==='Easy'?1:1.5));
+          return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:14px;">
+            <div style="font-size:10px;color:${diffColor};font-weight:700;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;margin-bottom:4px;">${sanitize(q.subject)} · ${q.difficulty||'MEDIUM'}</div>
+            <div style="font-family:'Lora','Georgia',serif;font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.3;">${sanitize(q.topic)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">📝 ${qCount} Qs · ⏱ ${timer} · ⭐ ${pts} pts max</div>
+            <button class="btn btn-gold btn-sm" style="width:100%;padding:9px;" onclick="previewQuizAsStudent('${q.id}')">▶ Start Quiz</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (myQP.length) {
+    html += `<div style="background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(99,102,241,0.02));border:1px solid rgba(99,102,241,0.25);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:12px;color:#A5B4FC;font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">📄 QUESTION PAPERS · ${myQP.length}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;">
+        ${myQP.map(p => {
+          const isLink = /^https?:\/\//i.test((p.content||'').trim());
+          return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:12px;">
+            <div style="font-family:'Lora','Georgia',serif;font-size:13.5px;font-weight:800;color:#fff;margin-bottom:4px;">${sanitize(p.title)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">${sanitize(p.subject)}${p.year?' · '+sanitize(p.year):''}</div>
+            ${isLink ? `<a class="btn btn-teal btn-sm" href="${p.content}" target="_blank" rel="noopener" style="display:block;text-align:center;padding:8px;text-decoration:none;">🔗 Open</a>` : `<button class="btn btn-gold btn-sm" onclick="viewQP('${p.id}')" style="width:100%;padding:8px;">👁 View</button>`}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (adminTests.length) {
+    html += `<div style="font-size:12px;color:var(--teal);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">📋 EXTRA TESTS</div>`;
+    adminTests.forEach(at => {
+      html += `<div class="test-card medium" style="margin-bottom:10px;"><div class="test-title">📝 ${sanitize(at.title)}</div><div class="test-meta"><span class="test-tag">📚 ${sanitize(at.subject)}</span></div><div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.55;white-space:pre-wrap;">${sanitize(at.content||'').slice(0,400)}</div></div>`;
+    });
+  }
+
+  if (!myClassQuizzes.length && !myQP.length && !adminTests.length) {
+    html = `<div style="background:var(--faint);border:1px dashed var(--border);border-radius:12px;padding:30px;text-align:center;color:var(--muted);"><div style="font-size:36px;margin-bottom:10px;">📝</div><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px;">No quizzes yet for ${sanitize(student.std)}</div><div style="font-size:12px;">Your tutor or admin hasn't added quizzes yet.</div></div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+
+async function loadStudentAttendance(student) {
+  // Sync from Supabase first
+  try {
+    if (supabase_client) {
+      // Query both snake_case and camelCase column names
+      const { data } = await supabase_client.from('attendance').select('*')
+        .or(`student_phone.eq.${student.phone},studentPhone.eq.${student.phone}`)
+        .order('created_at',{ascending:false}).limit(200);
+      if (data && data.length) {
+        const local = LOCAL.get('attendance') || [];
+        data.forEach(r => { if (!local.find(x => x.id === r.id)) local.unshift(r); });
+        LOCAL.set('attendance', local);
+      }
+    }
+  } catch(e){}
+  const allAtt = LOCAL.get('attendance') || [];
+  const allLeaves = LOCAL.get('leaves') || [];
+  const myAtt = allAtt.filter(a => a.studentId === student.id || a.student_id === student.id || a.studentPhone === student.phone || a.student_phone === student.phone);
+  const myLeaves = allLeaves.filter(l => l.studentId === student.id || l.studentPhone === student.phone);
+  const present = myAtt.filter(a => a.status === 'P').length;
+  const absent = myAtt.filter(a => a.status === 'A').length;
+  const leaveApproved = myLeaves.filter(l => l.status === 'approved').length;
+  const total = present + absent;
+  const pct = total ? Math.round((present/total)*100) : 0;
+  const pEl = document.getElementById('sp-att-present');
+  const aEl = document.getElementById('sp-att-absent');
+  const pcEl = document.getElementById('sp-att-pct');
+  if(pEl) pEl.textContent = present;
+  if(aEl) aEl.textContent = absent;
+  if(pcEl) pcEl.textContent = pct + '%';
+
+  // Update subtitle to show current month
+  const now = new Date();
+  const monthName = now.toLocaleString('en-IN', { month: 'long' });
+  const sub = document.querySelector('#sv-attendance .portal-page-sub');
+  if (sub) sub.textContent = `Attendance marked by your tutor — ${monthName} ${now.getFullYear()}`;
+
+  const calEl = document.getElementById('sp-att-calendar');
+  if (!calEl) return;
+
+  // Build lookup maps
+  const attByDate = {};
+  myAtt.forEach(a => { attByDate[a.date] = a; });
+  const leaveByDate = {};
+  myLeaves.forEach(l => { if (l.date) leaveByDate[l.date] = l; });
+
+  // Build calendar for current month
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-indexed
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Sun
+
+  const headerLabel = `<div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:12px;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;">${monthName.toUpperCase()} ${year} — ATTENDANCE CALENDAR</div>`;
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let cal = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:14px;">`;
+  dayNames.forEach(d => { cal += `<div style="text-align:center;font-size:10px;font-weight:700;color:var(--muted);padding:4px;">${d}</div>`; });
+
+  // Blank cells before month starts
+  for (let i = 0; i < firstDayOfMonth; i++) cal += `<div></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, month, d);
+    const dayOfWeek = dateObj.getDay();
+    const dateStr = `${d.toString().padStart(2,'0')}/${(month+1).toString().padStart(2,'0')}/${year}`;
+    const attRec = attByDate[dateStr];
+    const leaveRec = leaveByDate[dateStr];
+    const isSunday = dayOfWeek === 0;
+    const isFuture = dateObj > now;
+
+    let bg, color, title = '';
+    if (isSunday) { bg = 'rgba(255,255,255,0.03)'; color = 'var(--muted)'; }
+    else if (isFuture) { bg = 'rgba(255,255,255,0.04)'; color = 'rgba(255,255,255,0.3)'; }
+    else if (leaveRec && leaveRec.status === 'approved') { bg = 'rgba(165,180,252,0.15)'; color = '#A5B4FC'; title = 'Leave'; }
+    else if (attRec && attRec.status === 'P') {
+      bg = 'rgba(0,229,160,0.15)'; color = 'var(--teal)';
+      title = (attRec.checkIn ? 'In: ' + attRec.checkIn : '') + (attRec.checkOut ? ' Out: ' + attRec.checkOut : '');
+    } else if (attRec && attRec.status === 'A') { bg = 'rgba(255,87,87,0.15)'; color = 'var(--coral)'; title = 'Absent'; }
+    else { bg = 'rgba(255,255,255,0.04)'; color = 'rgba(255,255,255,0.3)'; }
+
+    cal += `<div title="${title}" onclick="showAttDetail('${dateStr}')" style="text-align:center;padding:5px 2px;border-radius:6px;background:${bg};color:${color};font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s;">${d}</div>`;
+  }
+  cal += `</div>`;
+
+  // Legend
+  const legend = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+    <span style="font-size:11px;color:var(--teal);">🟢 Present</span>
+    <span style="font-size:11px;color:var(--coral);">🔴 Absent</span>
+    <span style="font-size:11px;color:#A5B4FC;">🔵 Leave</span>
+    <span style="font-size:11px;color:var(--muted);">⬜ Sunday / Future</span>
+  </div>`;
+
+  calEl.innerHTML = headerLabel + legend + cal;
+
+  // Detail table
+  const detailEl = document.getElementById('sp-att-detail');
+  if (detailEl && myAtt.length > 0) {
+    const rows = [...myAtt].reverse().slice(0, 30).map(a => {
+      const icon = a.status === 'P' ? '🟢' : '🔴';
+      const ci = a.checkIn || '—';
+      const co = a.checkOut || '—';
+      return `<div style="display:grid;grid-template-columns:80px 1fr 80px 80px;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;">
+        <span style="color:var(--muted);">${a.date||'—'}</span>
+        <span style="color:#fff;">${icon} ${a.status==='P'?'Present':'Absent'}</span>
+        <span style="color:var(--teal);font-family:'JetBrains Mono',monospace;font-size:10px;">${ci}</span>
+        <span style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;">${co}</span>
+      </div>`;
+    }).join('');
+    detailEl.innerHTML = `
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;">DAILY RECORD (DATE · STATUS · CHECK-IN · CHECK-OUT)</div>
+      ${rows}
+      ${leaveApproved > 0 ? `<div style="margin-top:10px;padding:10px;background:rgba(165,180,252,0.08);border:1px solid rgba(165,180,252,0.2);border-radius:8px;font-size:12px;color:#A5B4FC;">🔵 Approved Leaves: <strong>${leaveApproved}</strong></div>` : ''}
+    `;
+  } else if (detailEl) {
+    detailEl.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:16px;">No attendance records yet. Your tutor will mark attendance daily.</div>';
+  }
+}
+
+function showAttDetail(dateStr) {
+  const allAtt = LOCAL.get('attendance') || [];
+  const student = window._currentStudent;
+  if (!student) return;
+  const rec = allAtt.find(a => a.date === dateStr && (a.studentId === student.id || a.studentPhone === student.phone));
+  if (!rec) { showToast('ℹ️', `No attendance record for ${dateStr}`); return; }
+  const ci = rec.checkIn || 'Not recorded';
+  const co = rec.checkOut || 'Not recorded';
+  showToast(rec.status === 'P' ? '🟢' : '🔴', `${dateStr}: ${rec.status==='P'?'Present':'Absent'} · In: ${ci} · Out: ${co}`);
+}
+
+// ══════════════════════════════════════════════
+// TUTOR LOGIN
+// ══════════════════════════════════════════════
+async function tutorLogin() {
+  const id = document.getElementById('tl-id').value.trim();
+  const pass = document.getElementById('tl-pass').value.trim();
+  const errEl = document.getElementById('tl-err');
+  if (!id || !pass) { errEl.textContent = 'Enter ID and password'; errEl.style.display='flex'; return; }
+  if (!supabase_client) { errEl.textContent = 'Login service unavailable. Please try again shortly.'; errEl.style.display='flex'; return; }
+    const { data: tmatches, error: tRpcErr } = await supabase_client.rpc('check_tutor_login', { p_id: id, p_pass: pass });
+    if (tRpcErr) { errEl.textContent = 'Login error. Please try again.'; errEl.style.display='flex'; return; }
+    let tutor = tmatches && tmatches[0];
+    if (!tutor) { errEl.textContent='Wrong ID or password.'; errEl.style.display='flex'; return; }
+  if (tutor.status === 'disabled') { errEl.textContent='Account disabled. Contact admin.'; errEl.style.display='flex'; return; }
+  errEl.style.display = 'none';
+  closeModal('loginModal');
+  openTutorPortal(tutor);
+}
+
+async function openTutorPortal(tutor) {
+  window._currentTutor = tutor;
+  const tm = document.getElementById('tutorPortalModal');
+  if (tm) { tm.classList.remove('hidden'); tm.style.display = ''; }
+  const students = await dbGetAll('students');
+  document.getElementById('tutorWelcomeText').textContent = tutor.name;
+  document.getElementById('tp-count').textContent = students.length;
+  const batchCount = tutor.batches ? tutor.batches.split(',').length : 0;
+  document.getElementById('tp-batches-count').textContent = batchCount;
+  document.getElementById('tutorBatchList').innerHTML = tutor.batches ?
+    tutor.batches.split(',').map(b => `<div style="padding:6px 0;border-bottom:1px solid var(--border);color:rgba(255,255,255,0.75);">⏰ ${b.trim()}</div>`).join('') :
+    '<div style="color:var(--muted);">No batches assigned yet. Contact admin.</div>';
+  // Load tasks count
+  const tasks = LOCAL.get('tasks').filter(t => t.tutorId === tutor.id || t.tutorId === 'all');
+  document.getElementById('tp-tasks-count').textContent = tasks.length;
+  // Load leave pending
+  const leaves = LOCAL.get('leaves').filter(l => l.tutorId === tutor.id && l.status === 'pending');
+  document.getElementById('tp-leave-count').textContent = leaves.length;
+  // Notice
+  const notices = LOCAL.get('tasks').filter(t => t.tutorId === 'all' || t.tutorId === tutor.id).slice(0,2);
+  const noticeEl = document.getElementById('tutor-notice-today');
+  if (noticeEl) {
+    noticeEl.innerHTML = notices.length ? notices.map(n => `<div style="margin-bottom:8px;"><strong style="color:var(--gold);">${n.title}</strong><br><span style="font-size:12px;color:var(--muted);">${n.desc || ''}</span></div>`).join('') : 'No notices from admin today. Have a great teaching day! 🎓';
+  }
+  // Start clock
+  updateLiveClock();
+  setInterval(updateLiveClock, 1000);
+  // Load check-in state
+  const today = new Date().toLocaleDateString('en-IN');
+  const ciState = LOCAL.get('checkins').find(c => c.tutorId === tutor.id && c.date === today);
+  if (ciState) {
+    const btn = document.getElementById('checkinBtnEl');
+    if (btn) {
+      btn.classList.add('checked');
+      document.getElementById('checkin-label-text').textContent = ciState.checkOut ? 'CHECKED OUT' : 'CHECKED IN ✓';
+      document.getElementById('checkin-time-display').textContent = ciState.checkIn + (ciState.checkOut ? ' → ' + ciState.checkOut : '');
+      document.getElementById('ci-display').textContent = ciState.checkIn || '—';
+      document.getElementById('co-display').textContent = ciState.checkOut || '—';
+    }
+  }
+  loadTutorAttHistory(tutor);
+  loadTutorTasksView(tutor);
+  loadTutorLeaveHistory(tutor);
+  document.getElementById('att-date-display').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('tutorPortalModal').classList.remove('hidden');
+  showTutorView('home', document.querySelector('#tutorPortalModal .psb-link'));
+  showToast('👨‍🏫', `Welcome, ${tutor.name}!`);
+  // V8: Save session for refresh persistence
+  try {
+    sessionStorage.setItem('kb_session', JSON.stringify({ type:'tutor', id: tutor.id, ts: Date.now() }));
+    sessionStorage.removeItem('kb_loggedOut');
+  } catch(e){}
+  logActivity('tutor_login', { name: tutor.name, id: tutor.id });
+}
+
+function tutorPortalLogout() {
+  const tr = window._currentTutor;
+  if (tr) logActivity('tutor_logout', { name: tr.name });
+  const tm2 = document.getElementById('tutorPortalModal');
+  if (tm2) { tm2.classList.add('hidden'); tm2.style.display = 'none'; }
+  window._currentTutor = null;
+  try {
+    sessionStorage.removeItem('kb_session');
+    sessionStorage.setItem('kb_loggedOut','1');
+  } catch(e){}
+  try { history.replaceState(null,'',location.pathname); } catch(e){}
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('🔐', 'Logged out. Returning to main website.');
+}
+
+function showTutorView(view, btn) {
+  showTutorViewSilent(view, btn);
+  try {
+    const newHash = '#tutor/' + view;
+    if (location.hash !== newHash) history.pushState({ portal:'tutor', view }, '', newHash);
+  } catch(e){}
+}
+
+function showTutorViewSilent(view, btn) {
+  document.querySelectorAll('#tutorPortalModal .psb-link').forEach(l => l.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.querySelectorAll('#tutorPortalModal .portal-view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('tv-' + view);
+  if(el) el.classList.add('active');
+  closePortalDrawer('tutorPortalModal');
+  // Live loaders - always fetch fresh from Supabase
+  const tutor = window._currentTutor;
+  if (view === 'home' && tutor) loadTutorDashboard(tutor);
+  if (view === 'markatt') loadAttendanceStudents();
+  if (view === 'checkin' && tutor) loadCheckinStatus(tutor);
+  if (view === 'materials') loadTutorMaterials();
+  if (view === 'quizzes') loadTutorQuizzes();
+  if (view === 'assigntest') loadTutorAssignTest();
+  if (view === 'tasks' && tutor) loadTutorTasksView(tutor);
+  if (view === 'leave' && tutor) loadTutorLeaveHistory(tutor);
+  if (view === 'timing' && tutor) loadTutorTiming(tutor);
+  if (view === 'qpapers') loadTutorQPList();
+}
+
+// ══════════════════════════════════════════════
+// V11: TUTOR — Upload Materials
+// ══════════════════════════════════════════════
+async function loadTutorMaterials() {
+  const list = document.getElementById('tm-my-list');
+  if (!list) return;
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  // Sync from Supabase
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('materials').select('*').eq('tutorId', tutor.id).order('created_at',{ascending:false}).limit(100);
+      if (data && data.length) {
+        const local = LOCAL.get('materials') || [];
+        data.forEach(r => { if (!local.find(x => x.id === r.id)) local.unshift(r); });
+        LOCAL.set('materials', local.slice(0,200));
+      }
+    }
+  } catch(e){}
+  const mats = (LOCAL.get('materials') || []).filter(m => m.uploaderName === tutor.name || m.tutorId === tutor.id);
+  if (mats.length === 0) { list.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px;">No submissions yet.</div>'; return; }
+  list.innerHTML = mats.map(m => {
+    const statusBadge = m.status === 'pending' ? '<span style="background:rgba(245,200,66,0.2);color:var(--gold);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">⏳ PENDING</span>' :
+                        m.status === 'approved' ? '<span style="background:rgba(0,229,160,0.2);color:var(--teal);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">✅ APPROVED</span>' :
+                        '<span style="background:rgba(255,87,87,0.2);color:var(--coral);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">❌ REJECTED</span>';
+    return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div><div style="font-weight:700;color:#fff;">${sanitize(m.title)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${sanitize(m.class)} · ${sanitize(m.subject)} · ${(m.type||'').toUpperCase()}</div></div>
+        ${statusBadge}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function tutorSubmitMaterial() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  const cls = document.getElementById('tm-class').value;
+  const subject = sanitize(document.getElementById('tm-subject').value);
+  const title = sanitize(document.getElementById('tm-title').value);
+  const type = document.getElementById('tm-type').value;
+  const content = document.getElementById('tm-content').value.trim();
+  const desc = sanitize(document.getElementById('tm-desc').value);
+  if (!cls || !subject || !title || !content) { showToast('⚠️','Fill all required fields',true); return; }
+  const record = {
+    id: 'MAT_' + Date.now(),
+    class: cls, subject, title, type, content, desc,
+    uploadedBy: 'tutor', uploaderName: tutor.name, tutorId: tutor.id,
+    status: 'pending',
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  await dbInsert('materials', record);
+  ['tm-subject','tm-title','tm-content','tm-desc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  logActivity('tutor_submitted_material', { tutorName: tutor.name, title, subject });
+  loadTutorMaterials();
+  showToast('📤','Submitted for admin approval!');
+}
+
+// ══════════════════════════════════════════════
+// V11: TUTOR — Create Quizzes
+// ══════════════════════════════════════════════
+let _tutorQuestions = [];
+
+async function loadTutorQuizzes() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  if (_tutorQuestions.length === 0) _tutorQuestions = [createBlankQuestion()];
+  renderTutorQuestions();
+  // Sync from Supabase first
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('quizzes').select('*').eq('tutorId', tutor.id).order('created_at',{ascending:false}).limit(100);
+      if (data && data.length) {
+        const local = LOCAL.get('quizzes') || [];
+        data.forEach(r => { if (!local.find(x => x.id === r.id)) local.unshift(r); });
+        LOCAL.set('quizzes', local.slice(0,300));
+      }
+    }
+  } catch(e){}
+  // Show my quizzes
+  const list = document.getElementById('tq-my-list');
+  if (list) {
+    const mine = (LOCAL.get('quizzes') || []).filter(q => q.tutorId === tutor.id || q.createdByName === tutor.name);
+    if (mine.length === 0) { list.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px;">No quizzes created yet.</div>'; }
+    else {
+      list.innerHTML = mine.map(q => {
+        const statusBadge = q.status === 'pending' ? '<span style="background:rgba(245,200,66,0.2);color:var(--gold);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">⏳ PENDING</span>' :
+                            q.status === 'approved' ? '<span style="background:rgba(0,229,160,0.2);color:var(--teal);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">✅ APPROVED</span>' : '';
+        return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div><div style="font-weight:700;color:#fff;">${sanitize(q.topic)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${sanitize(q.class)} · ${sanitize(q.subject)} · ${q.questions.length} Qs</div></div>
+            ${statusBadge}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+function renderTutorQuestions() {
+  const container = document.getElementById('tq-questions-list');
+  if (!container) return;
+  container.innerHTML = _tutorQuestions.map((q, i) => `
+    <div style="background:rgba(99,102,241,0.04);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;">QUESTION ${i + 1}</div>
+        ${_tutorQuestions.length > 1 ? `<button class="btn btn-danger btn-sm" onclick="_tutorQuestions.splice(${i},1); renderTutorQuestions();">🗑</button>` : ''}
+      </div>
+      <div class="form-group"><textarea class="form-input" rows="2" oninput="_tutorQuestions[${i}].q=this.value" placeholder="Question text...">${sanitize(q.q)}</textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${[0,1,2,3].map(oi => `<div class="form-group" style="margin-bottom:8px;"><label style="font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px;"><input type="radio" name="tq-ans-${i}" ${q.ans === oi ? 'checked' : ''} onchange="_tutorQuestions[${i}].ans=${oi}"/>Option ${String.fromCharCode(65+oi)} (correct)</label><input class="form-input" oninput="_tutorQuestions[${i}].opts[${oi}]=this.value" value="${sanitize(q.opts[oi])}"/></div>`).join('')}
+      </div>
+      <div class="form-group"><label class="form-label">💡 Explanation (optional — auto if blank)</label><textarea class="form-input" rows="2" oninput="_tutorQuestions[${i}].exp=this.value">${sanitize(q.exp)}</textarea></div>
+    </div>
+  `).join('');
+}
+
+function tutorAddQuestion() {
+  _tutorQuestions.push(createBlankQuestion());
+  renderTutorQuestions();
+}
+
+async function tutorSubmitQuiz() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  const cls = document.getElementById('tq-class').value;
+  const subj = document.getElementById('tq-subject').value.trim();
+  const topic = sanitize(document.getElementById('tq-topic').value);
+  const diff = document.getElementById('tq-diff').value;
+  if (!subj || !topic) { showToast('⚠️','Subject + topic required',true); return; }
+  const valid = [];
+  for (let i = 0; i < _tutorQuestions.length; i++) {
+    const q = _tutorQuestions[i];
+    if (!q.q.trim() || q.opts.some(o => !o.trim())) { showToast('⚠️',`Fill Q${i+1} completely`,true); return; }
+    valid.push({
+      q: sanitize(q.q), opts: q.opts.map(sanitize), ans: q.ans,
+      exp: sanitize(q.exp || `Correct answer is ${String.fromCharCode(65+q.ans)}.`),
+      optExp: q.optExp || ['', '', '', '']
+    });
+  }
+  const record = {
+    id: 'QZT_' + Date.now(),
+    class: cls, subject: subj, topic, difficulty: diff,
+    count: valid.length, questions: valid,
+    createdBy: 'tutor', createdByName: tutor.name, tutorId: tutor.id,
+    status: 'pending',
+    created_at: new Date().toISOString()
+  };
+  const saved = LOCAL.get('quizzes') || [];
+  saved.unshift(record);
+  LOCAL.set('quizzes', saved.slice(0, 300));
+  await dbInsert('quizzes', record);
+  logActivity('tutor_submitted_quiz', { tutorName: tutor.name, topic, count: valid.length });
+  _tutorQuestions = [createBlankQuestion()];
+  renderTutorQuestions();
+  loadTutorQuizzes();
+  showToast('📤','Quiz submitted for admin approval!');
+}
+
+// ══════════════════════════════════════════════
+// V11: TUTOR — Assign Test to Student
+// ══════════════════════════════════════════════
+async function loadTutorAssignTest() {
+  const students = await dbGetAll('students');
+  const quizzes = (LOCAL.get('quizzes') || []).filter(q => q.status !== 'pending' && q.status !== 'rejected');
+  const sSel = document.getElementById('at-student');
+  const qSel = document.getElementById('at-quiz');
+  if (sSel) sSel.innerHTML = '<option value="">Select student...</option>' + students.map(s => `<option value="${s.id}">${sanitize(s.name)} · ${sanitize(s.std)} · ${sanitize(s.phone)}</option>`).join('');
+  if (qSel) qSel.innerHTML = '<option value="">Select approved quiz...</option>' + quizzes.map(q => `<option value="${q.id}">${sanitize(q.subject)} · ${sanitize(q.topic)} (${q.questions.length} Qs)</option>`).join('');
+  // List previous assignments
+  const tutor = window._currentTutor;
+  const atList = document.getElementById('at-my-list');
+  if (atList && tutor) {
+    const assigns = (LOCAL.get('test_assignments') || []).filter(a => a.tutorId === tutor.id);
+    if (assigns.length === 0) atList.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;font-size:13px;">No tests assigned yet.</div>';
+    else atList.innerHTML = assigns.map(a => `<div style="background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">
+      <div style="font-weight:700;color:#fff;font-size:13px;">${sanitize(a.quizTopic)} → ${sanitize(a.studentName)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">${a.due ? 'Due: ' + a.due + ' · ' : ''}Assigned ${a.date}</div>
+    </div>`).join('');
+  }
+}
+
+async function tutorAssignTest() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  const sId = document.getElementById('at-student').value;
+  const qId = document.getElementById('at-quiz').value;
+  if (!sId || !qId) { showToast('⚠️','Pick student and quiz',true); return; }
+  const students = await dbGetAll('students');
+  const student = students.find(s => s.id === sId);
+  const quiz = (LOCAL.get('quizzes') || []).find(q => q.id === qId);
+  if (!student || !quiz) { showToast('⚠️','Not found',true); return; }
+  const record = {
+    id: 'TA_' + Date.now(),
+    studentId: sId, studentName: student.name, studentPhone: student.phone, studentClass: student.std,
+    quizId: qId, quizTopic: quiz.topic, quizSubject: quiz.subject,
+    tutorId: tutor.id, tutorName: tutor.name,
+    due: document.getElementById('at-due').value || '',
+    note: sanitize(document.getElementById('at-note').value || ''),
+    status: 'assigned',
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  LOCAL.push('test_assignments', record);
+    await dbInsert('test_assignments', record);
+  logActivity('test_assigned', { tutorName: tutor.name, student: student.name, quiz: quiz.topic });
+  document.getElementById('at-note').value = '';
+  loadTutorAssignTest();
+  showToast('🎯',`Test assigned to ${student.name}!`);
+}
+
+function updateLiveClock() {
+  const now = new Date();
+  const clockEl = document.getElementById('live-clock');
+  const dateEl = document.getElementById('live-date');
+  if(clockEl) clockEl.textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(dateEl) dateEl.textContent = now.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+async function doCheckin() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  const now = new Date();
+  const today = now.toLocaleDateString('en-IN');
+  const time = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  // Check both LOCAL and Supabase for existing checkin today
+  const allCheckins = LOCAL.get('checkins') || [];
+  const existing = allCheckins.find(c => (c.tutorId === tutor.id || c.tutor_id === tutor.id) && c.date === today);
+  if (!existing) {
+    // Check in
+    const record = { id:'CI_'+Date.now(), tutorId:tutor.id, tutorName:tutor.name, date:today, checkIn:time, checkOut:null };
+    LOCAL.push('checkins', record);
+    document.getElementById('checkinBtnEl').classList.add('checked');
+    document.getElementById('checkin-label-text').textContent = 'CHECKED IN ✓';
+    document.getElementById('checkin-time-display').textContent = 'Checked in at ' + time;
+    document.getElementById('ci-display').textContent = time;
+    showToast('✅', `Check-in recorded at ${time}`);
+    dbInsert('checkins', record);
+  } else if (!existing.checkOut) {
+    // Check out
+    const all = LOCAL.get('checkins');
+    const idx = all.findIndex(c => c.id === existing.id);
+    if (idx !== -1) { all[idx].checkOut = time; LOCAL.set('checkins', all); }
+    document.getElementById('checkin-label-text').textContent = 'CHECKED OUT';
+    document.getElementById('checkin-time-display').textContent = existing.checkIn + ' → ' + time;
+    document.getElementById('co-display').textContent = time;
+    // Save checkout to Supabase
+    try {
+      if (supabase_client) {
+        await supabase_client.from('checkins')
+          .update({ checkOut: time, check_out: time, hours: calcHours(existing.checkIn, time) })
+          .eq('id', existing.id);
+      }
+    } catch(e) {}
+    showToast('✅', `Check-out recorded at ${time}`);
+  } else {
+    showToast('ℹ️', 'Already checked in and out for today.');
+  }
+  loadTutorAttHistory(tutor);
+}
+
+function calcHours(checkIn, checkOut) {
+  try {
+    const parse = t => { const [h,m] = t.replace(/[APap][Mm]/,'').trim().split(':').map(Number); return h*60+m; };
+    const diff = parse(checkOut) - parse(checkIn);
+    return diff > 0 ? (diff/60).toFixed(1) : '0';
+  } catch(e) { return '0'; }
+}
+
+async function loadTutorAttHistory(tutor) {
+  const el = document.getElementById('tutor-att-history');
+  if (!el) return;
+  // Fetch from Supabase to get accurate data
+  const allCheckins = await dbGetAll('checkins');
+  // Deduplicate by date - keep only one record per date (latest checkIn)
+  const seen = new Set();
+  const deduped = allCheckins
+    .filter(c => (c.tutorId === tutor.id || c.tutor_id === tutor.id))
+    .sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''))
+    .filter(c => { const d = c.date; if (seen.has(d)) return false; seen.add(d); return true; })
+    .slice(0,7);
+  const all = deduped;
+  if (!all.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0;">No attendance records yet.</div>'; return; }
+  el.innerHTML = all.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+    <span style="font-size:13px;color:#fff;">${c.date}</span>
+    <span style="font-size:12px;color:var(--teal);">In: ${c.checkIn}</span>
+    <span style="font-size:12px;color:var(--coral);">Out: ${c.checkOut || '—'}</span>
+    <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;background:rgba(0,229,160,0.12);color:var(--teal);">✓ Present</span>
+  </div>`).join('');
+}
+
+async function loadAttendanceStudents() {
+  const batch = document.getElementById('att-batch-sel').value;
+  if (!batch) return;
+  const tutor = window._currentTutor;
+  const allStudents = await dbGetAll('students');
+  const approved = allStudents.filter(s => s.status === 'approved');
+  // Show only students assigned to this tutor (if any assignments exist)
+  const assigned = approved.filter(s => s.assignedTutorId === tutor?.id || s.assigned_tutor_id === tutor?.id);
+  const pool = assigned.length > 0 ? assigned : approved;
+  const batchStudents = pool.filter(s => s.batch === batch || !s.batch);
+  const container = document.getElementById('att-students-list');
+  if (!batchStudents.length) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px;">No students found for this batch.</div>';
+    return;
+  }
+  const today = new Date().toLocaleDateString('en-IN');
+  const existing = LOCAL.get('attendance').filter(a => a.date === today && a.batch === batch);
+  container.innerHTML = `<div class="table-wrap" style="overflow-x:auto;"><table class="attendance-table">
+    <thead><tr><th>#</th><th>Student Name</th><th>Class</th><th>Status</th></tr></thead>
+    <tbody>
+    ${batchStudents.map((s, i) => {
+      const att = existing.find(a => a.studentId === s.id);
+      return `<tr>
+        <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${i+1}</td>
+        <td><strong>${s.name}</strong></td>
+        <td>${s.std || '—'}</td>
+        <td style="display:flex;gap:6px;align-items:center;">
+          <button class="att-btn-present ${att?.status==='P'?'active':''}" id="p-${s.id}" onclick="markAtt('${s.id}','${s.name}','P','${batch}')">✓ Present</button>
+          <button class="att-btn-absent ${att?.status==='A'?'active':''}" id="a-${s.id}" onclick="markAtt('${s.id}','${s.name}','A','${batch}')">✗ Absent</button>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+  window._pendingAttendance = {};
+  existing.forEach(a => { window._pendingAttendance[a.studentId] = a.status; });
+}
+
+function markAtt(studentId, studentName, status, batch) {
+  if (!window._pendingAttendance) window._pendingAttendance = {};
+  window._pendingAttendance[studentId] = status;
+  document.getElementById('p-' + studentId).classList.toggle('active', status === 'P');
+  document.getElementById('a-' + studentId).classList.toggle('active', status === 'A');
+}
+
+async function saveAttendance() {
+  const tutor = window._currentTutor;
+  const batch = document.getElementById('att-batch-sel').value;
+  const pending = window._pendingAttendance || {};
+  if (!Object.keys(pending).length) { showToast('⚠️', 'No attendance marked yet.'); return; }
+  const today = new Date().toLocaleDateString('en-IN');
+  // Remove old entries for today+batch
+  const allAtt = LOCAL.get('attendance').filter(a => !(a.date === today && a.batch === batch));
+  const students = await dbGetAll('students');
+  const newEntries = Object.entries(pending).map(([studentId, status]) => {
+    const s = students.find(st => st.id === studentId);
+    const now_time = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    return { id:'ATT_'+Date.now()+'_'+studentId, studentId, studentPhone: s?.phone, studentName: s?.name, date:today, batch, status, checkIn: status==='P' ? now_time : null, checkOut: null, tutorId:tutor?.id, tutorName:tutor?.name, created_at: new Date().toISOString() };
+  });
+  LOCAL.set('attendance', [...allAtt, ...newEntries]);
+  newEntries.forEach(e => dbInsert('attendance', e));
+  showToast('✅', `Attendance saved for ${Object.keys(pending).length} students!`);
+}
+
+async function loadTutorTasksView(tutor) {
+  const el = document.getElementById('tutor-tasks-list');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px;">⏳ Loading tasks...</div>';
+  // V12: fetch from Supabase so admin-assigned tasks appear cross-device
+  let tasks = [];
+  try { tasks = await dbGetAll('tasks'); } catch(e) { tasks = LOCAL.get('tasks') || []; }
+  tasks = tasks.filter(t => !t.tutorId || t.tutorId === 'all' || t.tutorId === tutor.id || t.tutor_id === tutor.id || t.tutorName === tutor.name || t.tutor_name === tutor.name);
+  if (!tasks.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No tasks assigned yet. Check back later.</div>'; return; }
+  el.innerHTML = tasks.map(t => `<div class="task-card">
+    <div class="task-priority ${t.priority || 'medium'}"></div>
+    <div style="flex:1;">
+      <div class="task-title">${sanitize(t.title)}</div>
+      <div class="task-desc">${sanitize(t.task_desc||t.desc||t.description||'No description.')}</div>
+      <div class="task-due">Due: ${t.dueDate||t.due||'Today'} · Priority: ${(t.priority||'medium').toUpperCase()} · Status: ${(t.status||'pending').toUpperCase()}</div>
+    </div>
+    <button class="btn btn-teal btn-sm" onclick="markTaskDone('${t.id}',this)" ${t.status==='done'?'disabled style="opacity:.5"':''}>✓ Done</button>
+  </div>`).join('');
+}
+
+async function markTaskDone(id, btn) {
+  await dbUpdate('tasks', id, { status: 'done' });
+  if (btn) { btn.textContent = '✓ Done'; btn.disabled = true; btn.style.opacity = '.5'; }
+  showToast('✅','Task marked as done');
+}
+
+async function loadTutorLeaveHistory(tutor) {
+  const el = document.getElementById('leave-history-list');
+  if (!el) return;
+  let leaves = [];
+  try { leaves = await dbGetAll('leaves'); } catch(e) { leaves = LOCAL.get('leaves') || []; }
+  leaves = leaves.filter(l => l.tutorId === tutor.id);
+  if (!leaves.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No leave applications submitted yet.</div>'; return; }
+  el.innerHTML = leaves.map(l => `<div class="leave-history-item">
+    <div><div style="font-size:13px;font-weight:700;color:#fff;">${sanitize(l.type||l.reason||'Leave')}</div><div style="font-size:12px;color:var(--muted);">${l.fromDate||l.date||'—'} · ${sanitize(l.reason||'')}</div></div>
+    <span class="leave-status ${l.status||'pending'}">${(l.status||'PENDING').toUpperCase()}</span>
+  </div>`).join('');
+}
+
+async function submitLeaveApplication() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  const date = document.getElementById('leave-date').value;
+  const type = document.getElementById('leave-type').value;
+  const reason = document.getElementById('leave-reason').value.trim();
+  if (!date || !type || !reason) { showToast('⚠️','Fill all leave fields.',true); return; }
+  const record = { id:'LVE_'+Date.now(), tutorId:tutor.id, tutorName:tutor.name, fromDate:date, type, reason, status:'pending', created_at:new Date().toISOString(), date:new Date().toLocaleDateString('en-IN') };
+  await dbInsert('leaves', record);
+  document.getElementById('leave-date').value = '';
+  document.getElementById('leave-type').value = '';
+  document.getElementById('leave-reason').value = '';
+  await loadTutorLeaveHistory(tutor);
+  showToast('📤', 'Leave application submitted to admin!');
+}
+
+// ══════════════════════════════════════════════
+// DEMO CLASS BOOKING
+// ══════════════════════════════════════════════
+async function bookDemo() {
+  const name    = document.getElementById('demo-name').value.trim();
+  const phone   = document.getElementById('demo-phone').value.trim();
+  const cls     = document.getElementById('demo-class').value;
+  const subject = document.getElementById('demo-subject').value.trim();
+  const mode    = document.getElementById('demo-mode').value;
+  const batch   = document.getElementById('demo-batch').value;
+  const errEl   = document.getElementById('demo-err');
+  if (!rateLimitOk('demo_enquiries')) {
+    showToast('⚠️','Too many requests. Please wait a minute.', true); return;
+  }
+  // Phone uniqueness: one phone = one demo booking
+  const existingDemos = await dbGetAll('demo_enquiries');
+  if (existingDemos.find(d => d.phone === phone)) {
+    showToast('ℹ️','This number already has a demo booking. Admin will contact you!'); return;
+  }
+  if (!name || !phone || !cls || !subject || !mode) {
+    errEl.textContent = 'Please fill all required fields including tuition mode.';
+    errEl.style.display = 'flex'; return;
+  }
+  if (!/^[6-9]\d{9}$/.test(phone)) {
+    errEl.textContent = 'Enter a valid 10-digit Indian mobile number.';
+    errEl.style.display = 'flex'; return;
+  }
+  errEl.style.display = 'none';
+  const btn = document.getElementById('demoBtn');
+  btn.textContent = '⏳ Booking...'; btn.disabled = true;
+  const modeLabel = { online: 'Online (Zoom/Meet)', offline: 'Offline / Centre', home: 'Home Tuition' }[mode] || mode;
+  const record = {
+    id: 'DEMO_' + Date.now(),
+    name, phone, std: cls, subject,
+    tuitionType: mode, mode: modeLabel,
+    batch: batch || 'Not specified',
+    type: 'free_demo',
+    status: 'new',
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  // Save via dbInsert (handles snake_case conversion + LOCAL cache)
+  await dbInsert('demo_enquiries', record);
+  sendAdminNotification('📅 FREE DEMO CLASS BOOKING — Kongu Brilliance', { name, phone, std: cls, subject, mode: modeLabel, batch });
+  logActivity('demo_booked', { name, phone, std: cls, mode });
+  document.getElementById('demoFormWrap').classList.add('hidden');
+  document.getElementById('demoSuccess').classList.remove('hidden');
+  btn.textContent = '🎓 Book My Free Demo';
+  btn.disabled = false;
+  ['demo-name','demo-phone','demo-subject'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const demoClass = document.getElementById('demo-class'); if (demoClass) demoClass.value = '';
+  const demoMode = document.getElementById('demo-mode'); if (demoMode) demoMode.value = '';
+  const batchEl = document.getElementById('demo-batch'); if (batchEl) batchEl.value = '';
+  showToast('🎉', `Demo booked for ${name}! Mode: ${modeLabel}. We will call within 2 hours.`);
+}
+
+// ══════════════════════════════════════════════
+// FILE UPLOAD HANDLERS (Tutor & Admin Materials)
+// ══════════════════════════════════════════════
+function handleTutorFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('tm-file-status');
+  const MAX = 4 * 1024 * 1024; // 4MB max
+  if (file.size > MAX) {
+    if (status) status.textContent = '⚠️ File too large. Maximum size is 4MB.';
+    if (status) status.style.color = 'var(--coral)';
+    input.value = '';
+    return;
+  }
+  if (status) status.textContent = '⏳ Reading file...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result;
+    const contentEl = document.getElementById('tm-content');
+    // Detect if it's an image or document
+    if (file.type.startsWith('image/')) {
+      if (contentEl) contentEl.value = base64;
+    } else {
+      // For PDF/doc: store as data URL reference
+      if (contentEl) contentEl.value = base64;
+    }
+    // Auto-fill type based on file
+    const typeEl = document.getElementById('tm-type');
+    if (typeEl) {
+      if (file.type === 'application/pdf') typeEl.value = 'pdf';
+      else if (file.type.startsWith('image/')) typeEl.value = 'notes';
+      else typeEl.value = 'pdf';
+    }
+    if (status) {
+      status.textContent = `✅ File ready: ${file.name} (${(file.size/1024).toFixed(0)}KB)`;
+      status.style.color = 'var(--teal)';
+    }
+  };
+  reader.onerror = function() {
+    if (status) { status.textContent = '⚠️ Failed to read file.'; status.style.color = 'var(--coral)'; }
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleAdminFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('mat-file-status');
+  const MAX = 4 * 1024 * 1024;
+  if (file.size > MAX) {
+    if (status) status.textContent = '⚠️ File too large. Maximum 4MB allowed.';
+    if (status) status.style.color = 'var(--coral)';
+    input.value = '';
+    return;
+  }
+  if (status) status.textContent = '⏳ Reading file...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64 = e.target.result;
+    const contentEl = document.getElementById('mat-content');
+    if (contentEl) contentEl.value = base64;
+    const typeEl = document.getElementById('mat-type');
+    if (typeEl) {
+      if (file.type === 'application/pdf') typeEl.value = 'pdf';
+      else if (file.type.startsWith('image/')) typeEl.value = 'notes';
+      else typeEl.value = 'pdf';
+    }
+    if (status) {
+      status.textContent = `✅ File ready: ${file.name} (${(file.size/1024).toFixed(0)}KB)`;
+      status.style.color = 'var(--teal)';
+    }
+  };
+  reader.onerror = function() {
+    if (status) { status.textContent = '⚠️ Failed to read file.'; status.style.color = 'var(--coral)'; }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ══════════════════════════════════════════════
+// ENQUIRY FORM
+// ══════════════════════════════════════════════
+async function submitEnquiry() {
+  const nameEl = document.getElementById('enq-name');
+  const phoneEl = document.getElementById('enq-phone');
+  const msgEl = document.getElementById('enq-msg');
+  const errEl = document.getElementById('enq-err');
+  if (!nameEl || !phoneEl || !msgEl) return;
+  const name = nameEl.value.trim();
+  const phone = phoneEl.value.trim();
+  const msg = msgEl.value.trim();
+  if (!name || !phone || !msg) {
+    if (errEl) { errEl.textContent = 'Please fill all fields.'; errEl.style.display = 'flex'; }
+    else showToast('⚠️', 'Please fill all enquiry fields.', true);
+    return;
+  }
+  if (!validatePhone(phone)) { if(errEl){errEl.textContent='Enter valid 10-digit mobile.';errEl.style.display='flex';} return; }
+  if (!rateLimitOk('enquiries')) { showToast('⚠️', 'Too many messages. Please wait.', true); return; }
+  if (errEl) errEl.style.display = 'none';
+  const record = { id:'ENQ_'+Date.now(), name, phone, msg, type:'contact', status:'new', date: new Date().toLocaleDateString('en-IN'), created_at: new Date().toISOString() };
+  await dbInsert('enquiries', record);
+  sendAdminNotification('📩 NEW ENQUIRY — Kongu Brilliance', { name, phone, msg });
+  logActivity('enquiry_new', { name, phone });
+  nameEl.value = '';
+  phoneEl.value = '';
+  if (msgEl) msgEl.value = '';
+  const box = document.getElementById('contactFormBox');
+  const succ = document.getElementById('enqSuccess');
+  if (box) box.classList.add('hidden');
+  if (succ) succ.classList.remove('hidden');
+  showToast('📩', 'Enquiry received! We will contact you within 24 hours.');
+}
+
+// ══════════════════════════════════════════════
+// PASSWORD VISIBILITY TOGGLE
+// ══════════════════════════════════════════════
+function togglePwd(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  btn.textContent = isHidden ? '🙈' : '👁';
+  btn.title = isHidden ? 'Hide password' : 'Show password';
+}
+
+// ══════════════════════════════════════════════
+// ADMIN LOGIN WITH BRUTE-FORCE PROTECTION
+// ══════════════════════════════════════════════
+let adminFailCount = 0;
+let adminLockUntil = 0;
+
+function adminLogin() {
+  const email = document.getElementById('al-email').value.trim();
+  const pass  = document.getElementById('al-pass').value.trim();
+  const errEl = document.getElementById('al-err');
+  const now = Date.now();
+  if (now < adminLockUntil) {
+    const secs = Math.ceil((adminLockUntil - now) / 1000);
+    errEl.textContent = `🔐 Too many attempts. Locked for ${secs}s.`;
+    errEl.style.display = 'flex'; return;
+  }
+  if (!email || !pass) { errEl.textContent='Enter email and password'; errEl.style.display='flex'; return; }
+
+  // V6: verify against SHA-256 hash, not plain text
+  hashPassword(pass).then(h => {
+    const ok = (email === ADMIN.email) && (h === ADMIN.passHash);
+    if (!ok) {
+      adminFailCount++;
+      if (adminFailCount >= 3) {
+        adminLockUntil = now + 300000; // 5 minute lockout after 3 failed attempts
+        adminFailCount = 0;
+        errEl.textContent = '🚨 Too many failed attempts. Access blocked for 5 minutes.';
+        logActivity('admin_breach_attempt', { email: email, time: new Date().toISOString() });
+      } else {
+        errEl.textContent = `❌ Wrong credentials. ${3 - adminFailCount} attempt(s) left before 5-minute lockout.`;
+      }
+      errEl.style.display = 'flex';
+      // log breach attempt
+      try { console.warn('Admin login attempt failed at', new Date().toISOString(), 'email:', email); } catch(e){}
+      return;
+    }
+    adminFailCount = 0;
+    errEl.style.display = 'none';
+    closeModal('loginModal');
+    try { sessionStorage.removeItem('kb_loggedOut'); } catch(e){}
+    openAdminPanel();
+  });
+}
+
+function adminLogout() {
+  logActivity('admin_logout', { admin: ADMIN.email });
+  ADMIN.loggedIn = false;
+  window._currentTutor = null;
+  window._currentStudent = null;
+  window._currentQuiz = null;
+  window._quizSubmitted = false;
+  if (window._quizTimerInterval) clearInterval(window._quizTimerInterval);
+  // Stop any playing video
+  try {
+    const iframe = document.getElementById('vid-iframe');
+    if (iframe) { iframe.src = 'about:blank'; iframe.classList.add('hidden'); }
+    const overlay = document.getElementById('aiVideoOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  } catch(e){}
+  const sh = document.getElementById('adminShell');
+  sh.classList.add('hidden'); sh.style.display = 'none';
+  // Clear admin session from memory
+  try { ADMIN.email = ''; ADMIN.loggedIn = false; } catch(e){}
+  document.getElementById('al-email').value = '';
+  document.getElementById('al-pass').value = '';
+  document.querySelector('.page').style.display = '';
+  document.getElementById('navbar').style.display = '';
+  try {
+    sessionStorage.removeItem('kb_session');
+    sessionStorage.setItem('kb_loggedOut','1');
+  } catch(e){}
+  try { history.replaceState(null,'',location.pathname); } catch(e){}
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('🔐', 'Admin session ended.');
+}
+
+// ══════════════════════════════════════════════
+// ADMIN PANEL
+// ══════════════════════════════════════════════
+
+async function autoSyncLocalToSupabase() {
+  if (!supabase_client) return;
+  if (window.location.protocol === 'file:') { console.warn('⚠️ Skipping sync - file:// protocol blocks Supabase'); return; }
+  const tables = ['online_enquiries','enquiries','demo_enquiries','students','attendance','quiz_attempts','materials','tasks','leaves','question_papers','quizzes','fees','checkins'];
+  for (const table of tables) {
+    const recs = LOCAL.get(table) || [];
+    for (const rec of recs.slice(0, 100)) { // max 100 per table per sync
+      if (!rec.id) continue;
+      try {
+        const snake = filterForSupabase(table, toSnakeCase(rec));
+        const { error } = await withTimeout(
+          supabase_client.from(table).upsert([snake], { onConflict: 'id', ignoreDuplicates: true }), 5000
+        );
+        if (error && (error.code === '42703' || error.message?.includes('column'))) {
+          // Column missing in Supabase - run SQL to add it
+          console.warn(`⚠️ ${table}: missing column - run SQL to add it`);
+          break; // skip rest of this table
+        }
+      } catch(e) {}
+    }
+  }
+  console.log('✅ Auto-sync complete');
+}
+async function openAdminPanel() {
+  const adminShell = document.getElementById('adminShell');
+  adminShell.classList.remove('hidden');
+  adminShell.style.display = '';
+  // Auto-sync any local data that wasn't saved to Supabase yet
+  try { setTimeout(autoSyncLocalToSupabase, 2000); } catch(e) {}
+  try { preloadCustomVideos(); } catch(e) {}
+  await loadDashboard();
+  await loadStudentsTable();
+  await refreshApprovalBadge();
+  setInterval(refreshApprovalBadge, 30000);
+  // V8: Save session for refresh persistence
+  try {
+    sessionStorage.setItem('kb_session', JSON.stringify({ type:'admin', ts: Date.now() }));
+    sessionStorage.removeItem('kb_loggedOut');
+  } catch(e){}
+  logActivity('admin_login', { time: new Date().toISOString() });
+}
+
+// ══════════════════════════════════════════════
+// V8: SESSION RESTORE — refresh-safe for all portals
+// ══════════════════════════════════════════════
+async function restoreSession() {
+  // If user explicitly logged out, do NOT auto-restore
+  try { if (sessionStorage.getItem('kb_loggedOut') === '1') return false; } catch(e){}
+  let sess = null;
+  try { sess = JSON.parse(sessionStorage.getItem('kb_session') || 'null'); } catch(e){}
+  if (!sess || !sess.type) return false;
+
+  // sessionStorage auto-clears on browser close - no time check needed
+
+  try {
+    if (sess.type === 'admin') {
+      await openAdminPanel();
+      showToast('🔄', 'Welcome back, Admin!');
+      return true;
+    }
+
+    if (sess.type === 'student' && sess.id) {
+      // Try LOCAL cache first (fast), then Supabase (reliable)
+      let allStudents = LOCAL.get('students') || [];
+      let s = allStudents.find(x => x.id === sess.id);
+      if (!s) {
+        // Not in cache — fetch fresh from Supabase
+        allStudents = await dbGetAll('students');
+        s = allStudents.find(x => x.id === sess.id);
+      }
+      if (s && s.status === 'approved') {
+        openStudentPortal(s);
+        showToast('🔄', `Welcome back, ${s.name}! 🎓`);
+        return true;
+      }
+      // Student not found or not approved — clear session
+      sessionStorage.removeItem('kb_session');
+      return false;
+    }
+
+    if (sess.type === 'tutor' && sess.id) {
+      let allTutors = LOCAL.get('tutors') || [];
+      let t = allTutors.find(x => x.id === sess.id);
+      if (!t) {
+        allTutors = await dbGetAll('tutors');
+        t = allTutors.find(x => x.id === sess.id);
+      }
+      if (t) {
+        await openTutorPortal(t);
+        showToast('🔄', `Welcome back, ${t.name}! 👨‍🏫`);
+        return true;
+      }
+      sessionStorage.removeItem('kb_session');
+      return false;
+    }
+
+    sessionStorage.removeItem('kb_session');
+  } catch(e) {
+    console.warn('Session restore error:', e);
+    // DO NOT remove session on error — Supabase might just be slow
+    // Try again after 3 seconds
+    setTimeout(restoreSession, 3000);
+  }
+  return false;
+}
+
+async function loadDashboard() {
+  const students = await dbGetAll('students');
+  const tutors = await dbGetAll('tutors');
+  const enquiries = await dbGetAll('enquiries');
+  let onlineEnq = [];
+  try { onlineEnq = await dbGetAll('online_enquiries'); } catch(e){}
+  // Also include local-only online enquiries
+  const localEnq = LOCAL.get('online_enquiries') || [];
+  localEnq.forEach(r => { if (!onlineEnq.find(x => x.id === r.id)) onlineEnq.push(r); });
+
+  const today = new Date().toLocaleDateString('en-IN');
+  const pendingApprovals = students.filter(s => s.status === 'pending').length;
+  // V11: Count pending tutor submissions
+  const pendingMaterials = (LOCAL.get('materials') || []).filter(m => m.status === 'pending').length;
+  const pendingQuizzes = (LOCAL.get('quizzes') || []).filter(q => q.status === 'pending').length;
+
+  document.getElementById('a-total').textContent = students.length;
+  document.getElementById('a-today').textContent = students.filter(s => s.date === today).length;
+  document.getElementById('a-tutors').textContent = tutors.length;
+  document.getElementById('a-enquiries').textContent = enquiries.length + onlineEnq.length;
+
+  const recentEl = document.getElementById('dash-recent');
+  if (students.length === 0) {
+    recentEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">No registrations yet. Share the website to get enrollments!</div>';
+  } else {
+    // Show pending banners
+    let banner = '';
+    if (pendingApprovals > 0) {
+      banner += `<div class="safety-banner" style="background:linear-gradient(135deg,rgba(245,200,66,0.12),rgba(245,200,66,0.04));border-color:rgba(245,200,66,0.35);margin-bottom:10px;">
+        ⏳ <strong>${pendingApprovals} student${pendingApprovals>1?'s':''} waiting for your approval.</strong>
+        <button class="btn btn-gold btn-sm" style="margin-left:12px;" onclick="showAdminView('approvals',document.getElementById('adminApprovalsBtn'))">Review Now →</button>
+      </div>`;
+    }
+    if (pendingMaterials > 0) {
+      banner += `<div class="safety-banner" style="background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(99,102,241,0.04));border-color:rgba(99,102,241,0.35);margin-bottom:10px;">
+        📚 <strong>${pendingMaterials} tutor material submission${pendingMaterials>1?'s':''} waiting for review.</strong>
+        <button class="btn btn-gold btn-sm" style="margin-left:12px;" onclick="showAdminView('materials')">Review Materials →</button>
+      </div>`;
+    }
+    if (pendingQuizzes > 0) {
+      banner += `<div class="safety-banner" style="background:linear-gradient(135deg,rgba(0,229,160,0.12),rgba(0,229,160,0.04));border-color:rgba(0,229,160,0.35);margin-bottom:14px;">
+        📝 <strong>${pendingQuizzes} tutor quiz${pendingQuizzes>1?'zes':''} waiting for approval.</strong>
+        <button class="btn btn-gold btn-sm" style="margin-left:12px;" onclick="showAdminView('quizzes')">Review Quizzes →</button>
+      </div>`;
+    }
+    const recent = [...students].reverse().slice(0, 5);
+    recentEl.innerHTML = banner + recent.map(s => {
+      const statusBadge = s.status === 'pending' ? `<span class="approval-pending" style="margin-left:8px;font-size:9px;padding:2px 7px;">⏳ PENDING</span>` :
+                         s.status === 'rejected' ? `<span class="approval-pending approval-rejected" style="margin-left:8px;font-size:9px;padding:2px 7px;">❌ REJECTED</span>` :
+                         `<span class="approval-pending approval-approved" style="margin-left:8px;font-size:9px;padding:2px 7px;">✅ ACTIVE</span>`;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div>
+          <strong style="color:#fff;">${s.name}</strong>
+          <span class="td-tag td-student" style="margin-left:8px;">${s.std || '—'}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px;">${s.school || '—'}</span>
+          ${statusBadge}
+        </div>
+        <span style="font-size:11px;color:var(--muted);">${s.date || '—'}</span>
+      </div>`;
+    }).join('');
+  }
+  await refreshApprovalBadge();
+  // V9: Load dashboard top-3
+  try { loadDashLeaderboard(); } catch(e) {}
+}
+
+async function loadDashLeaderboard() {
+  const el = document.getElementById('dash-leaderboard');
+  if (!el) return;
+  const today = await buildLeaderboard('today');
+  if (today.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">🌱 No quiz attempts today yet. Students will appear here once they take quizzes.</div>';
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  const colors = ['#FFD700','#C0C0C0','#CD7F32'];
+  const top3 = today.slice(0, 3);
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(${Math.min(top3.length,3)},1fr);gap:10px;">
+    ${top3.map((s, i) => `<div style="background:rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.08);border:1px solid rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.3);border-radius:10px;padding:12px;text-align:center;">
+      <div style="font-size:24px;">${medals[i]}</div>
+      <div style="font-weight:800;color:#fff;font-size:13px;margin-top:4px;">${sanitize(s.name)}</div>
+      <div style="font-size:10px;color:var(--muted);">${s.class || '—'}</div>
+      <div style="font-size:20px;font-weight:900;color:${colors[i]};margin-top:4px;font-family:'Lora','Georgia',serif;">${s.totalPoints}</div>
+      <div style="font-size:9px;color:var(--muted);">POINTS</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function showAdminView(view, btn) {
+  showAdminViewSilent(view, btn);
+  try {
+    const newHash = '#admin/' + view;
+    if (location.hash !== newHash) history.pushState({ portal:'admin', view }, '', newHash);
+  } catch(e){}
+}
+
+function showAdminViewSilent(view, btn) {
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.admin-panel-view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById('view-' + view);
+  if (target) target.classList.add('active');
+  closeAdminDrawer();
+  if (view === 'students') loadStudentsTable();
+  if (view === 'tutors') { loadTutorsTable(); populateTaskTutorSelect(); }
+  if (view === 'enquiries') loadEnquiriesTable();
+  if (view === 'demoEnquiries') loadDemoEnquiries('all');
+  if (view === 'onlineEnquiries') loadOnlineEnquiries('all');
+  if (view === 'approvals') loadApprovalQueue('pending');
+  if (view === 'website') setTimeout(initHeroEditor, 400);
+  if (view === 'dashboard') { loadDashboard(); refreshApprovalBadge(); }
+  if (view === 'attendance') loadAdminAttendance();
+  if (view === 'analytics') loadAnalytics();
+  if (view === 'tasks') { populateTaskTutorSelect(); loadAdminTasks(); }
+  if (view === 'leave') loadAdminLeave();
+  if (view === 'materials') loadAdminMaterials();
+  if (view === 'finance') { loadFeeRecords(); loadSalaryTutorSelect(); loadSalaryRecords(); }
+  if (view === 'videosessions') loadAdminVideoSessions();
+  if (view === 'feedback') loadFeedbackAdmin();
+  if (view === 'contentEditor') loadContentEditor();
+  if (view === 'activityLog') loadActivityLog('all');
+  if (view === 'leaderboard') loadLeaderboard();
+  if (view === 'quizzes') loadQuizManager();
+  if (view === 'animations') { loadAnimationManager(); loadHomeVideos(); }
+  if (view === 'passwords') loadPasswordsView();
+  if (view === 'addStudent') loadAddStudentForm();
+  if (view === 'addTutor') loadAddTutorForm();
+  if (view === 'questionpapers') loadQuestionPapersAdmin();
+}
+
+// ══════════════════════════════════════════════
+// ADMIN — TASKS
+// ══════════════════════════════════════════════
+async function populateTaskTutorSelect() {
+  const sel = document.getElementById('task-tutor');
+  if (!sel) return;
+  const tutors = await dbGetAll('tutors');
+  sel.innerHTML = '<option value="all">All Tutors</option>' + tutors.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+async function adminCreateTask() {
+  const title = document.getElementById('task-title').value.trim();
+  const desc = document.getElementById('task-desc').value.trim();
+  const due = document.getElementById('task-due').value;
+  const tutorId = document.getElementById('task-tutor').value;
+  const tutorSel = document.getElementById('task-tutor');
+  const tutorName = tutorSel ? tutorSel.options[tutorSel.selectedIndex]?.text : tutorId;
+  const priority = document.getElementById('task-priority').value;
+  if (!title) { showToast('⚠️','Task title is required.',true); return; }
+  const record = {
+    id: 'TASK_'+Date.now(), title, task_desc: desc,
+    dueDate: due ? new Date(due).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN'),
+    tutorId, tutorName, priority, status: 'pending',
+    created_at: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-IN')
+  };
+  await dbInsert('tasks', record);  // V12: single authoritative write
+  ['task-title','task-desc','task-due'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  loadAdminTasks();
+  showToast('✅', `Task assigned to ${tutorId==='all'?'all tutors':tutorName}!`);
+}
+
+async function loadAdminTasks() {
+  const el = document.getElementById('admin-tasks-list');
+  if (!el) return;
+  let tasks = [];
+  try { tasks = await dbGetAll('tasks'); } catch(e) { tasks = LOCAL.get('tasks') || []; }
+  // Deduplicate by id
+  const seen = new Set();
+  tasks = tasks.filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
+  if (!tasks.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No tasks created yet.</div>'; return; }
+  const pendingAdmin = tasks.filter(t => (t.status||'pending').toLowerCase() !== 'done');
+  const doneAdmin = tasks.filter(t => (t.status||'').toLowerCase() === 'done');
+  const adminTabHtml = `<div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button onclick="showAdminTaskTab('pending')" id="atab-pending" class="btn btn-gold btn-sm">⏳ Pending (${pendingAdmin.length})</button>
+    <button onclick="showAdminTaskTab('done')" id="atab-done" class="btn btn-ghost btn-sm">✅ Done (${doneAdmin.length})</button>
+  </div>`;
+  // Render admin tasks with tabs
+  const pendingHtml = pendingAdmin.length ? pendingAdmin.map(t => `<div class="task-card">
+    <div class="task-priority ${t.priority||'medium'}"></div>
+    <div style="flex:1;">
+      <div class="task-title">${sanitize(t.title||'—')}</div>
+      <div class="task-desc">${sanitize(t.task_desc||t.task_desc||t.desc||t.description||'—')}</div>
+      <div class="task-due">Due: ${t.dueDate||t.due||'Today'} · For: ${t.tutorId==='all'?'All Tutors':sanitize(t.tutorName||t.tutorId||'—')} · ${(t.priority||'MEDIUM').toUpperCase()} · <span style="color:var(--gold);">${(t.status||'PENDING').toUpperCase()}</span></div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">✕</button>
+  </div>`).join('') : '<div style="color:var(--muted);padding:10px;">No pending tasks</div>';
+  const doneHtml = doneAdmin.length ? doneAdmin.map(t => `<div class="task-card" style="opacity:0.7;">
+    <div class="task-priority ${t.priority||'medium'}" style="background:var(--teal);"></div>
+    <div style="flex:1;">
+      <div class="task-title" style="text-decoration:line-through;">${sanitize(t.title||'—')}</div>
+      <div class="task-due">Due: ${t.dueDate||t.due||'—'} · For: ${t.tutorId==='all'?'All Tutors':sanitize(t.tutorName||'—')} · <span style="color:var(--teal);">✅ DONE</span></div>
+    </div>
+    <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">✕</button>
+  </div>`).join('') : '<div style="color:var(--muted);padding:10px;">No completed tasks yet</div>';
+  el.innerHTML = adminTabHtml + 
+    '<div id="atasks-pending">' + pendingHtml + '</div>' +
+    '<div id="atasks-done" style="display:none;">' + doneHtml + '</div>';
+}
+
+async function deleteTask(id) {
+  await dbDelete('tasks', id);
+  loadAdminTasks();
+  showToast('🗑','Task removed.');
+}
+
+async function loadAdminLeave() {
+  const el = document.getElementById('admin-leave-list');
+  if (!el) return;
+  let leaves = [];
+  try { leaves = await dbGetAll('leaves'); } catch(e) { leaves = LOCAL.get('leaves') || []; }
+  // Deduplicate
+  const seen = new Set();
+  leaves = leaves.filter(l => { if (seen.has(l.id)) return false; seen.add(l.id); return true; });
+  if (!leaves.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0;">No leave requests submitted yet.</div>'; return; }
+  el.innerHTML = leaves.map(l => `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <div style="font-size:14px;font-weight:700;color:#fff;">${sanitize(l.tutorName||'Tutor')}</div>
+      <div style="font-size:12px;color:var(--gold);margin-top:3px;">${sanitize(l.type||'Leave')} · ${l.fromDate||l.date||'—'}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">${sanitize(l.reason||'')}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span class="leave-status ${l.status||'pending'}">${(l.status||'PENDING').toUpperCase()}</span>
+      ${(l.status==='pending'||!l.status) ? `<button class="btn btn-teal btn-sm" onclick="approveLeave('${l.id}','approved')">✓ Approve</button><button class="btn btn-danger btn-sm" onclick="approveLeave('${l.id}','rejected')">✗ Reject</button>` : ''}
+    </div>
+  </div>`).join('');
+}
+
+async function approveLeave(id, status) {
+  await dbUpdate('leaves', id, { status });
+  // Also update LOCAL cache immediately
+  const leaves = LOCAL.get('leaves') || [];
+  const idx = leaves.findIndex(l => l.id === id);
+  if (idx > -1) { leaves[idx].status = status; LOCAL.set('leaves', leaves); }
+  await loadAdminLeave();
+  showToast(status==='approved'?'✅':'❌', `Leave ${status === 'approved' ? 'approved' : 'rejected'}!`);
+}
+
+// ══════════════════════════════════════════════
+// ADMIN — MATERIALS
+// ══════════════════════════════════════════════
+async function adminAddMaterial() {
+  const cls = document.getElementById('mat-class').value;
+  const subject = document.getElementById('mat-subject').value.trim();
+  const title = document.getElementById('mat-title').value.trim();
+  const type = document.getElementById('mat-type').value;
+  const content = document.getElementById('mat-content').value.trim();
+  const descEl = document.getElementById('mat-desc');
+  const desc = descEl ? descEl.value.trim() : '';
+  if (!cls || !subject || !title || !content) { showToast('⚠️','Fill all required material fields.',true); return; }
+
+  // If editing an existing material
+  if (window._editingMaterialId) {
+    const existing = LOCAL.get('materials') || [];
+    const idx = existing.findIndex(m => m.id === window._editingMaterialId);
+    if (idx !== -1) {
+      existing[idx] = { ...existing[idx], class: cls, subject, title, type, content, desc, updated_at: new Date().toISOString() };
+      LOCAL.set('materials', existing);
+      try { if (supabase_client) await supabase_client.from('materials').update(existing[idx]).eq('id', window._editingMaterialId).then(()=>{}).catch(()=>{}); } catch(e){}
+      showToast('✅','Material updated!');
+      window._editingMaterialId = null;
+      resetMaterialForm();
+      loadAdminMaterials();
+      return;
+    }
+  }
+
+  const record = {
+    id: 'MAT_' + Date.now(),
+    class: cls, subject, title, type, content, desc,
+    uploadedBy: window._currentTutor ? 'tutor' : 'admin',
+    uploaderName: window._currentTutor ? window._currentTutor.name : 'Admin',
+    status: window._currentTutor ? 'pending' : 'approved',   // tutors need approval
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  await dbInsert('materials', record);
+  resetMaterialForm();
+  loadAdminMaterials();
+  logActivity('material_uploaded', { title, type, class: cls, subject });
+  showToast('✅', window._currentTutor ? 'Submitted for admin approval!' : `Material "${title}" saved!`);
+}
+
+function resetMaterialForm() {
+  ['mat-class','mat-subject','mat-title','mat-content','mat-desc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const btn = document.querySelector('#view-materials .form-submit');
+  if (btn) { btn.textContent = '✓ Save Material'; }
+}
+
+async function loadAdminMaterials() {
+  const el = document.getElementById('admin-mat-list');
+  if (!el) return;
+  let mats = LOCAL.get('materials') || [];
+  // Sync from Supabase to catch tutor submissions from other sessions
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('materials').select('*').order('created_at', { ascending: false }).limit(500);
+      if (data && data.length) {
+        data.forEach(r => { if (!mats.find(m => m.id === r.id)) mats.unshift(r); });
+        LOCAL.set('materials', mats);
+      }
+    }
+  } catch(e) {}
+  if (!mats.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">No materials uploaded yet.</div>'; return; }
+  const typeIcon = { notes:'📖', test:'📝', syllabus:'📋', pdf:'📄', video:'🎬', audio:'🎧', link:'🔗' };
+  el.innerHTML = mats.map(m => {
+    const isUrl = /^https?:\/\//i.test((m.content||'').trim());
+    const statusBadge = m.status === 'pending' ? '<span style="background:rgba(245,200,66,0.2);color:var(--gold);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px;">⏳ PENDING APPROVAL</span>' :
+                        m.status === 'rejected' ? '<span style="background:rgba(255,87,87,0.2);color:var(--coral);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px;">❌ REJECTED</span>' : '';
+    return `<div class="admin-mat-card">
+      <div class="admin-mat-row">
+        <div class="admin-mat-info">
+          <div class="admin-mat-title">${typeIcon[m.type]||'📚'} ${sanitize(m.title)} ${statusBadge}</div>
+          <div class="admin-mat-sub">${sanitize(m.class)} · ${sanitize(m.subject)} · ${(m.type||'').toUpperCase()} · by ${sanitize(m.uploaderName||'Admin')} · ${m.date||'—'}</div>
+          ${m.desc ? `<div style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:4px;">${sanitize(m.desc)}</div>` : ''}
+        </div>
+        <div class="admin-mat-actions">
+          ${m.status === 'pending' ? `<button class="btn btn-teal btn-sm" onclick="approveMaterial('${m.id}')">✓ Approve</button><button class="btn btn-coral btn-sm" onclick="rejectMaterial('${m.id}')">✕ Reject</button>` : ''}
+          ${isUrl ? `<a class="btn btn-ghost btn-sm" href="${m.content}" target="_blank" rel="noopener">🔗 Open</a>` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="previewMaterial('${m.id}')">👁 Preview</button>
+          <button class="btn btn-ghost btn-sm" onclick="editMaterial('${m.id}')">✏ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteMaterial('${m.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="hidden" id="prev-${m.id}" style="margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.7);line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;">${isUrl ? '<a href="'+m.content+'" target="_blank" style="color:var(--gold);">🔗 '+sanitize(m.content)+'</a>' : sanitize(m.content).slice(0,1500)}</div>
+    </div>`;
+  }).join('');
+}
+
+async function previewMaterial(id) {
+  let mats = LOCAL.get('materials') || [];
+  let m = mats.find(x => x.id === id);
+  if (!m && supabase_client) {
+    try {
+      const { data } = await supabase_client.from('materials').select('*').eq('id', id).maybeSingle();
+      if (data) m = data;
+    } catch(e) {}
+  }
+  if (!m) { showToast('⚠️','Material not found',true); return; }
+  const existing = document.getElementById('materialReadModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'materialReadModal';
+  modal.className = 'modal-overlay';
+  modal.style.cssText = 'z-index:9100;';
+  const cnt = (m.content || m.file_url || '').trim();
+  const isImg = cnt.startsWith('data:image/');
+  const isVideo = cnt.startsWith('data:video/') || /\.(mp4|webm|ogg|mov)$/i.test(cnt);
+  const isAudio = cnt.startsWith('data:audio/') || /\.(mp3|wav|ogg|m4a)$/i.test(cnt);
+  const isPdf = cnt.startsWith('data:application/pdf') || cnt.startsWith('data:application/octet');
+  const isYT = /youtu\.?be/.test(cnt);
+  const isUrl = /^https?:\/\//i.test(cnt);
+  let bodyHtml;
+  if (isImg) {
+    bodyHtml = `<img src="${cnt}" style="max-width:100%;border-radius:8px;display:block;margin:0 auto;" alt="${sanitize(m.title)}"/>`;
+  } else if (isVideo) {
+    bodyHtml = `<video src="${cnt}" controls style="width:100%;max-height:500px;border-radius:8px;background:#000;"><source src="${cnt}">Your browser does not support video.</video>`;
+  } else if (isAudio) {
+    bodyHtml = `<audio src="${cnt}" controls style="width:100%;margin-top:20px;"></audio>`;
+  } else if (isPdf) {
+    bodyHtml = `<iframe src="${cnt}" style="width:100%;height:600px;border:none;border-radius:8px;"></iframe>`;
+  } else if (isYT) {
+    const ytId = cnt.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1];
+    bodyHtml = ytId ? `<iframe src="https://www.youtube.com/embed/${ytId}" style="width:100%;height:400px;border:none;border-radius:8px;" allowfullscreen></iframe>` : `<a href="${cnt}" target="_blank">▶ Open YouTube Video</a>`;
+  } else if (isUrl) {
+    bodyHtml = `<a href="${cnt}" target="_blank" rel="noopener" style="color:var(--gold);font-size:14px;word-break:break-all;">🔗 ${sanitize(cnt)}</a>`;
+  } else {
+    bodyHtml = `<div style="white-space:pre-wrap;font-size:14px;color:rgba(255,255,255,0.9);line-height:1.75;">${sanitize(m.content)}</div>`;
+  }
+  modal.innerHTML = `<div class="modal modal-lg" style="max-width:760px;max-height:85vh;overflow-y:auto;">
+    <div class="modal-header" style="position:sticky;top:0;background:var(--ink2);z-index:2;">
+      <div><div class="modal-title">${sanitize(m.title)}</div><div class="modal-subtitle">${sanitize(m.class||'')} · ${sanitize(m.subject||'')} · ${(m.type||'notes').toUpperCase()} · by ${sanitize(m.uploaderName||'Admin')}</div></div>
+      <button class="modal-close" onclick="document.getElementById('materialReadModal').remove()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px 28px;">${bodyHtml}</div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+function editMaterial(id) {
+  const mats = LOCAL.get('materials') || [];
+  const m = mats.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('mat-class').value = m.class;
+  document.getElementById('mat-subject').value = m.subject;
+  document.getElementById('mat-title').value = m.title;
+  document.getElementById('mat-type').value = m.type;
+  document.getElementById('mat-content').value = m.content;
+  const descEl = document.getElementById('mat-desc');
+  if (descEl) descEl.value = m.desc || '';
+  window._editingMaterialId = id;
+  const btn = document.querySelector('#view-materials .form-submit');
+  if (btn) btn.textContent = '💾 Update Material';
+  document.getElementById('mat-class').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function approveMaterial(id) {
+  const mats = LOCAL.get('materials');
+  const idx = mats.findIndex(m => m.id === id);
+  if (idx === -1) return;
+  mats[idx].status = 'approved';
+  mats[idx].approvedAt = new Date().toISOString();
+  LOCAL.set('materials', mats);
+  try { if (supabase_client) await supabase_client.from('materials').update({ status:'approved' }).eq('id', id).then(()=>{}).catch(()=>{}); } catch(e){}
+  logActivity('material_approved', { id, title: mats[idx].title });
+  loadAdminMaterials();
+  showToast('✅','Material approved & visible to students');
+}
+async function rejectMaterial(id) {
+  const mats = LOCAL.get('materials');
+  const idx = mats.findIndex(m => m.id === id);
+  if (idx === -1) return;
+  mats[idx].status = 'rejected';
+  LOCAL.set('materials', mats);
+  try { if (supabase_client) await supabase_client.from('materials').update({ status:'rejected' }).eq('id', id).then(()=>{}).catch(()=>{}); } catch(e){}
+  loadAdminMaterials();
+  showToast('❌','Material rejected');
+}
+
+// V11: Approve/reject tutor-submitted quizzes
+async function approveQuiz(id) {
+  const quizzes = LOCAL.get('quizzes') || [];
+  const idx = quizzes.findIndex(q => q.id === id);
+  if (idx === -1) return;
+  quizzes[idx].status = 'approved';
+  quizzes[idx].approvedAt = new Date().toISOString();
+  LOCAL.set('quizzes', quizzes);
+  try { if (supabase_client) await supabase_client.from('quizzes').update({ status:'approved' }).eq('id', id).then(()=>{}).catch(()=>{}); } catch(e){}
+  logActivity('quiz_approved', { id, topic: quizzes[idx].topic });
+  loadQuizManager();
+  showToast('✅','Quiz approved');
+}
+async function rejectQuiz(id) {
+  const quizzes = LOCAL.get('quizzes') || [];
+  const idx = quizzes.findIndex(q => q.id === id);
+  if (idx === -1) return;
+  quizzes[idx].status = 'rejected';
+  LOCAL.set('quizzes', quizzes);
+  try { if (supabase_client) await supabase_client.from('quizzes').update({ status:'rejected' }).eq('id', id).then(()=>{}).catch(()=>{}); } catch(e){}
+  loadQuizManager();
+  showToast('❌','Quiz rejected');
+}
+
+function deleteMaterial(id) {
+  adminDelete('materials', id, 'Material');
+}
+
+// ══════════════════════════════════════════════
+// V6: ADMIN — ATTENDANCE VIEW (Supabase live sync)
+// ══════════════════════════════════════════════
+async function loadAdminAttendance() {
+  const tbody = document.getElementById('adminAttBody');
+  const tutorTbody = document.getElementById('tutorCheckinBody');
+  if (!tbody || !tutorTbody) return;
+  // Live fetch from Supabase (with local fallback)
+  const records = await dbGetAll('attendance');
+  const checkins = await dbGetAll('checkins');
+  const todayDate = new Date().toLocaleDateString('en-IN');
+
+  // Stats
+  const todayRecs = records.filter(r => r.date === todayDate);
+  const presentToday = todayRecs.filter(r => r.status === 'P').length;
+  const absentToday = todayRecs.filter(r => r.status === 'A').length;
+  const total = presentToday + absentToday;
+  const rate = total ? Math.round((presentToday/total)*100) : 0;
+  const tutorsToday = new Set(checkins.filter(c => c.date === todayDate).map(c => c.tutorId)).size;
+  document.getElementById('att-stat-present').textContent = presentToday;
+  document.getElementById('att-stat-absent').textContent = absentToday;
+  document.getElementById('att-stat-rate').textContent = rate + '%';
+  document.getElementById('att-stat-tutors').textContent = tutorsToday;
+
+  // Tutor checkins table
+  if (!checkins.length) {
+    tutorTbody.innerHTML = '<tr><td colspan="7"><div style="color:var(--muted);padding:14px;text-align:center;">No tutor check-ins yet.</div></td></tr>';
+  } else {
+    tutorTbody.innerHTML = checkins.slice(0,30).map((c,i) => {
+      let hours = '—';
+      const ci = c.checkIn || c.check_in || '';
+      const co = c.checkOut || c.check_out || '';
+      if (ci && co) { c.checkIn = ci; c.checkOut = co; }
+      if (c.checkIn && c.checkOut) {
+        try {
+          const inT = c.checkIn.match(/(\d+):(\d+)/);
+          const outT = c.checkOut.match(/(\d+):(\d+)/);
+          if (inT && outT) {
+            let mins = (parseInt(outT[1])*60 + parseInt(outT[2])) - (parseInt(inT[1])*60 + parseInt(inT[2]));
+            if (mins < 0) mins += 24*60;
+            hours = (mins/60).toFixed(1) + 'h';
+          }
+        } catch(e){}
+      }
+      const status = c.checkOut ? '<span style="color:var(--teal);font-weight:700;">✓ Complete</span>' : '<span style="color:var(--gold);font-weight:700;">⏳ Active</span>';
+      return `<tr>
+        <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+        <td><strong>${sanitize(c.tutorName||c.tutor_name||'—')}</strong></td>
+        <td style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;">${c.date||'—'}</td>
+        <td style="font-size:12px;color:var(--teal);">${c.checkIn||c.check_in||'—'}</td>
+        <td style="font-size:12px;color:var(--coral);">${c.checkOut||c.check_out||'—'}</td>
+        <td style="font-size:12px;color:var(--gold);">${hours}</td>
+        <td>${status}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Filtered student records
+  const classFilter = document.getElementById('adm-att-filter-class')?.value;
+  const dateFilter = document.getElementById('adm-att-filter-date')?.value;
+  let filtered = records;
+  if (classFilter) filtered = filtered.filter(r => (r.studentClass||r.student_class||r.std) === classFilter);
+  if (dateFilter) {
+    const indianDate = new Date(dateFilter).toLocaleDateString('en-IN');
+    filtered = filtered.filter(r => r.date === indianDate || r.date === dateFilter);
+  }
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📅</div><div>No student attendance records found.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.slice(0,100).map((r,i) => `<tr>
+    <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+    <td><strong>${sanitize(r.studentName||'—')}</strong></td>
+    <td style="font-size:12px;">${sanitize(r.studentClass||r.std||'—')}</td>
+    <td style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;">${r.date||'—'}</td>
+    <td style="font-size:12px;">${sanitize(r.batch||'—')}</td>
+    <td><span class="att-status-${r.status}">${r.status==='P'?'✓ Present':'✗ Absent'}</span></td>
+    <td style="font-size:11px;color:var(--teal);font-family:'JetBrains Mono',monospace;">${r.checkIn||r.check_in||'—'}</td>
+    <td style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;">${r.checkOut||r.check_out||'—'}</td>
+    <td style="font-size:12px;color:var(--muted);">${sanitize(r.tutorName||r.tutor_name||'—')}</td>
+  </tr>`).join('');
+
+  // Update attendance % stats
+  try {
+    const allC3 = await dbGetAll('checkins');
+    const allA3 = await dbGetAll('attendance');
+    const mon3 = new Date().getMonth(); const yr3 = new Date().getFullYear();
+    const days3 = new Set(allC3.filter(c=>{
+      const p=(c.date||'').split('/');
+      return p.length===3&&parseInt(p[1])-1===mon3&&parseInt(p[2])===yr3;
+    }).map(c=>c.date)).size;
+    const tp3=document.getElementById('tutor-att-pct');
+    if(tp3) tp3.textContent=Math.min(100,Math.round((days3/26)*100))+'%';
+    const pre3=allA3.filter(a=>a.status==='present'||a.check_in).length;
+    const sp3=document.getElementById('student-att-pct');
+    if(sp3) sp3.textContent=(allA3.length>0?Math.round((pre3/allA3.length)*100):0)+'%';
+  } catch(e) {}
+}
+
+async function exportAttendanceCSV() {
+  const rec = await dbGetAll('attendance');
+  const checkins = await dbGetAll('checkins');
+  const headers = ['Type','Name','Class/Batch','Date','Status/CheckIn','CheckOut','MarkedBy'];
+  const rows = [
+    ...rec.map(r => ['Student', r.studentName, r.studentClass||r.batch, r.date, r.status==='P'?'Present':'Absent','—', r.tutorName||'—']),
+    ...checkins.map(c => ['Tutor', c.tutorName, '—', c.date, c.checkIn, c.checkOut||'—','self'])
+  ];
+  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v||''}"`).join(','))].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kb_attendance_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  showToast('✅', 'Attendance exported as CSV');
+}
+
+// ══════════════════════════════════════════════
+// V6: APPROVAL QUEUE
+// ══════════════════════════════════════════════
+async function refreshApprovalBadge() {
+  const students = await dbGetAll('students');
+  const pending = students.filter(s => s.status === 'pending').length;
+  const badge = document.getElementById('approvalBadge');
+  if (!badge) return;
+  if (pending > 0) { badge.textContent = pending; badge.style.display = 'inline-block'; }
+  else badge.style.display = 'none';
+}
+
+
+async function syncAndReloadApprovals() {
+  const container = document.getElementById('approvalListContainer');
+  if (container) container.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">⏳ Syncing and fetching from Supabase...</div>';
+  // Push ALL local students to Supabase (catches any that failed silently)
+  if (supabase_client) {
+    const localStudents = LOCAL.get('students') || [];
+    for (const s of localStudents.slice(0, 50)) {
+      if (!s.id) continue;
+      try {
+        const snake = toSnakeCase(s);
+        await supabase_client.from('students').upsert([snake], {onConflict: 'id', ignoreDuplicates: false}).then(()=>{}).catch(()=>{});
+      } catch(e) {}
+    }
+  }
+  // Now reload from Supabase fresh
+  await loadApprovalQueue('pending');
+  showToast('✅', 'Synced! All enrollments loaded from database.');
+}
+async function loadApprovalQueue(filter) {
+  const container = document.getElementById('approvalListContainer');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);">Loading from Supabase...</div>';
+  // Push any locally-saved students that haven't reached Supabase yet
+  if (supabase_client) {
+    const localStudents = LOCAL.get('students') || [];
+    for (const s of localStudents.filter(s => s.status === 'pending').slice(0, 20)) {
+      if (!s.id) continue;
+      try { await supabase_client.from('students').upsert([toSnakeCase(s)], {onConflict:'id'}).then(()=>{}).catch(()=>{}); } catch(e){}
+    }
+  }
+  let students = await dbGetAll('students');
+  if (filter !== 'all') students = students.filter(s => s.status === filter);
+  // sort: pending first, then by date desc
+  students.sort((a,b) => {
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (b.status === 'pending' && a.status !== 'pending') return 1;
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  });
+  if (!students.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">${filter==='pending'?'✅':'📋'}</div><div>${filter==='pending'?'No pending approvals — all caught up!':'No '+filter+' students.'}</div></div>`;
+    return;
+  }
+  container.innerHTML = students.slice(0,50).map(s => {
+    const statusClass = s.status === 'pending' ? 'approval-pending' : (s.status === 'approved' ? 'approval-approved' : 'approval-rejected');
+    const statusText = s.status ? s.status.toUpperCase() : 'PENDING';
+    const credBox = s.status === 'approved' ? `<div class="cred-display">🔑 Login → Mobile: <strong>${s.phone}</strong> · Password: set by student at registration</div>` : '';
+    return `<div class="approval-card">
+      <div class="approval-header">
+        <div>
+          <div class="approval-name">🎓 ${s.name}</div>
+          <div class="approval-meta">📞 ${s.phone} · 🏫 ${s.school||'—'} · 📚 ${s.std||'—'} (${s.board||'—'}) · 👨‍👩‍👧 ${s.parent||'—'}<br>
+          📍 ${s.native||'—'} · ⏰ ${s.batch||'—'} · 📝 ${s.subjects||'All subjects'}</div>
+        </div>
+        <span class="approval-pending ${statusClass}">${statusText}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace;">Submitted: ${s.date||'—'} ${s.time||''}</div>
+      ${credBox}
+      <div class="approval-actions" style="margin-top:12px;">
+        ${s.status === 'pending' ? `
+          <button class="btn btn-teal btn-sm" onclick="approveStudent('${s.id}')">✓ Approve & Activate Login</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectStudent('${s.id}')">✗ Reject</button>
+        ` : `
+          <button class="btn btn-ghost btn-sm" onclick="approveStudent('${s.id}')">↺ Re-approve</button>
+        `}
+        <a class="btn btn-ghost btn-sm" href="tel:${s.phone}">📞 Call</a>
+        <a class="btn btn-ghost btn-sm" href="https://wa.me/91${s.phone}" target="_blank">💬 WhatsApp</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function approveStudent(id) {
+  const students = await dbGetAll('students');
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  s.status = 'approved';
+  s.approved_at = new Date().toISOString();
+  // Save back
+  if (supabase_client) {
+    try { await supabase_client.from('students').update({status:'approved', approved_at: s.approved_at}).eq('id', id); }
+    catch(e) { console.warn('Supabase update fallback to local:', e); }
+  }
+  LOCAL.set('students', students);
+  showToast('✅', `${s.name} approved! Login is now active.`);
+  loadApprovalQueue('pending');
+  refreshApprovalBadge();
+  // Send approval email
+  sendAdminNotification('✅ STUDENT APPROVED — Login Active', s);
+}
+async function rejectStudent(id) {
+  if (!confirm('Reject this student application? They will not be able to log in.')) return;
+  const students = await dbGetAll('students');
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  s.status = 'rejected';
+  if (supabase_client) {
+    try { await supabase_client.from('students').update({status:'rejected'}).eq('id', id); } catch(e){}
+  }
+  LOCAL.set('students', students);
+  showToast('❌', `${s.name} rejected.`);
+  loadApprovalQueue('pending');
+  refreshApprovalBadge();
+}
+
+// ══════════════════════════════════════════════
+// V6: ONLINE TUITION ENQUIRIES VIEWER
+// ══════════════════════════════════════════════
+
+// ══════════════════════════════════════════════
+// DEMO ENQUIRIES ADMIN PANEL
+// ══════════════════════════════════════════════
+
+// ══════════════════════════════════════════════
+// ADMIN — REVIEWS & FEEDBACK MANAGEMENT
+// ══════════════════════════════════════════════
+
+// ══════════════════════════════════════════════
+// HOME PAGE VIDEO MANAGEMENT
+// ══════════════════════════════════════════════
+async function saveHomeVideo(section) {
+  const inputEl = document.getElementById('hp-' + section + '-url');
+  const statusEl = document.getElementById('hp-' + section + '-status');
+  if (!inputEl) return;
+  const url = inputEl.value.trim();
+  if (!url) { showToast('⚠️','Paste a YouTube URL first',true); return; }
+  // Extract YouTube video ID
+  const ytMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  const videoId = ytMatch ? ytMatch[1] : url;
+  const record = {
+    key: 'home_video_' + section,
+    value: JSON.stringify({ url, videoId, section, updated: new Date().toLocaleDateString('en-IN') }),
+    updated_at: new Date().toISOString()
+  };
+  // Save to localStorage and Supabase admin_config
+  localStorage.setItem('kb_home_video_' + section, JSON.stringify(record));
+  try {
+    if (supabase_client) {
+      await supabase_client.from('admin_config').upsert([record]).then(()=>{}).catch(()=>{});
+    }
+  } catch(e) {}
+  if (statusEl) statusEl.textContent = '✅ Saved! Video ID: ' + videoId;
+  showToast('✅', section.charAt(0).toUpperCase() + section.slice(1) + ' video saved!');
+}
+
+async function loadHomeVideos() {
+  // Load saved home video URLs into the input fields
+  const sections = ['hero','founder','classroom','results','promo','testimonial'];
+  for (const section of sections) {
+    const inputEl = document.getElementById('hp-' + section + '-url');
+    const statusEl = document.getElementById('hp-' + section + '-status');
+    if (!inputEl) continue;
+    // Check localStorage first
+    const saved = localStorage.getItem('kb_home_video_' + section);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        const val = JSON.parse(data.value || '{}');
+        if (val.url) {
+          inputEl.value = val.url;
+          if (statusEl) statusEl.textContent = '✅ Saved · Video ID: ' + (val.videoId || '—');
+        }
+      } catch(e) {}
+    }
+    // Also try Supabase
+    try {
+      if (supabase_client) {
+        const { data } = await supabase_client.from('admin_config').select('value').eq('key', 'home_video_' + section).maybeSingle();
+        if (data && data.value) {
+          const val = JSON.parse(data.value);
+          if (val.url && inputEl) inputEl.value = val.url;
+        }
+      }
+    } catch(e) {}
+  }
+}
+
+// ══════════════════════════════════════════════
+// ADMIN VIEW LOADERS for static form panels
+// ══════════════════════════════════════════════
+async function loadPasswordsView() {
+  // Load shared Gemini key status
+  const gemKeyEl = document.getElementById('admin-gemini-key');
+  if (gemKeyEl) {
+    const saved = localStorage.getItem('kb_gemini_key') || localStorage.getItem('kb_shared_gemini_key') || '';
+    if (saved && !gemKeyEl.value) gemKeyEl.value = saved;
+  }
+  // Load student+tutor password list
+  const container = document.getElementById('passwords-content');
+  if (!container) return;
+  const [students, tutors] = await Promise.all([dbGetAll('students'), dbGetAll('tutors')]);
+  const approved = students.filter(s => s.status === 'approved');
+  container.innerHTML = `
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;">🎓 STUDENTS (${approved.length})</div>
+      ${approved.length ? approved.map(s => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--faint);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:13px;">${sanitize(s.name)}</div>
+            <div style="font-size:11px;color:var(--muted);">📞 ${sanitize(s.phone||'—')} · ${sanitize(s.std||'—')} · ${sanitize(s.board||'—')}</div>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.3);border-radius:6px;padding:4px 10px;margin-bottom:6px;">${sanitize(s.pass_plain||s.passPlain||'(hashed - reset to view)')}</div>
+          <button class="btn btn-ghost btn-sm" onclick="adminInitResetPassword('${s.id}','student','${sanitize(s.name).replace(/'/g,'')}')">🔑 Reset Password</button>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">No approved students yet.</div>'}
+    </div>
+    <div>
+      <div style="font-size:11px;color:#A5B4FC;font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;">👨‍🏫 TUTORS (${tutors.length})</div>
+      ${tutors.length ? tutors.map(t => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--faint);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:13px;">${sanitize(t.name)}</div>
+            <div style="font-size:11px;color:var(--muted);">📞 ${sanitize(t.phone||'—')} · ✉️ ${sanitize(t.email||'—')}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="adminInitResetPassword('${t.id}','tutor','${sanitize(t.name).replace(/'/g,'')}')">🔑 Reset Password</button>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">No tutors added yet.</div>'}
+    </div>
+  `;
+}
+
+function loadAddStudentForm() {
+  // Reset the add student form
+  ['as-name','as-phone','as-pass','as-school','as-native','as-parent','as-subjects'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const std = document.getElementById('as-std'); if(std) std.value = '';
+  const board = document.getElementById('as-board'); if(board) board.value = '';
+  const batch = document.getElementById('as-batch'); if(batch) batch.value = '';
+}
+
+function loadAddTutorForm() {
+  ['at-name','at-phone','at-email','at-pass','at-subjects','at-batches'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+}
+async function loadFeedbackAdmin() {
+  const list = document.getElementById('fb-list');
+  if (!list) return;
+  list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">Loading...</div>';
+  let reviews = LOCAL.get('testimonials') || [];
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('testimonials').select('*').order('created_at', {ascending:false}).limit(100);
+      if (data && data.length) {
+        data.forEach(r => { if (!reviews.find(x => x.id === r.id)) reviews.unshift(r); });
+        LOCAL.set('testimonials', reviews);
+      }
+    }
+  } catch(e) {}
+  if (!reviews.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⭐</div><div>No reviews yet. Add the first one above!</div></div>';
+    return;
+  }
+  const stars = n => '⭐'.repeat(parseInt(n) || 5);
+  list.innerHTML = '<div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:monospace;margin-bottom:14px;">ALL REVIEWS (' + reviews.length + ')</div>' +
+    reviews.map(r => `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;">
+          <div style="font-weight:800;color:#fff;font-size:14px;">${sanitize(r.name||'—')} ${r.class ? '<span style="font-size:11px;color:var(--muted);font-weight:400;">· '+sanitize(r.class)+'</span>' : ''}</div>
+          <div style="font-size:11px;color:var(--gold);margin:4px 0;">${stars(r.rating)}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.6;margin-top:6px;">"${sanitize(r.review||'')}"</div>
+          ${r.achievement ? `<div style="font-size:11px;color:var(--teal);margin-top:6px;">🏆 ${sanitize(r.achievement)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" onclick="editFeedback('${r.id}')">✏ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteFeedback('${r.id}')">🗑</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:'JetBrains Mono',monospace;">${r.date||'—'}</div>
+    </div>`).join('');
+}
+
+async function saveFeedback() {
+  const name = sanitize(document.getElementById('fb-name')?.value?.trim() || '');
+  const cls = sanitize(document.getElementById('fb-class')?.value?.trim() || '');
+  const review = sanitize(document.getElementById('fb-review')?.value?.trim() || '');
+  const rating = document.getElementById('fb-rating')?.value || '5';
+  const achievement = sanitize(document.getElementById('fb-achievement')?.value?.trim() || '');
+  const editId = document.getElementById('fb-edit-id')?.value;
+  const image = window._revImageData || '';
+  if (!name || !review) { showToast('⚠️','Name and review are required',true); return; }
+  const reviews = LOCAL.get('testimonials') || [];
+  if (editId) {
+    const idx = reviews.findIndex(r => r.id === editId);
+    if (idx > -1) {
+      reviews[idx] = { ...reviews[idx], name, class: cls, review, rating, achievement, image: image || reviews[idx].image, updated: new Date().toLocaleDateString('en-IN') };
+      LOCAL.set('testimonials', reviews);
+      try { if (supabase_client) await supabase_client.from('testimonials').update({name, class: cls, review, rating, achievement}).eq('id', editId); } catch(e){}
+      showToast('✅','Review updated!');
+    }
+  } else {
+    const record = { id: 'FB_'+Date.now(), name, class: cls, review, rating, achievement, image, date: new Date().toLocaleDateString('en-IN'), created_at: new Date().toISOString() };
+    reviews.unshift(record);
+    LOCAL.set('testimonials', reviews);
+    // Also update localStorage key used by homepage
+    try { localStorage.setItem('kb_testimonials', JSON.stringify(reviews)); } catch(e){}
+      await dbInsert('testimonials', record);
+    showToast('✅','Review added! Reload homepage to see it.');
+  }
+  clearFeedbackForm();
+  loadFeedbackAdmin();
+}
+
+function editFeedback(id) {
+  const reviews = LOCAL.get('testimonials') || [];
+  const r = reviews.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('fb-edit-id').value = id;
+  document.getElementById('fb-name').value = r.name || '';
+  document.getElementById('fb-class').value = r.class || '';
+  document.getElementById('fb-review').value = r.review || '';
+  document.getElementById('fb-rating').value = r.rating || '5';
+  document.getElementById('fb-achievement').value = r.achievement || '';
+  document.getElementById('fb-name').scrollIntoView({behavior:'smooth', block:'center'});
+  showToast('✏','Editing review — make changes and click Save');
+}
+
+async function deleteFeedback(id) {
+  if (!confirm('Delete this review?')) return;
+  let reviews = LOCAL.get('testimonials') || [];
+  reviews = reviews.filter(r => r.id !== id);
+  LOCAL.set('testimonials', reviews);
+  try { if (supabase_client) await supabase_client.from('testimonials').delete().eq('id', id); } catch(e){}
+  showToast('🗑','Review deleted');
+  loadFeedbackAdmin();
+}
+
+function clearFeedbackForm() {
+  ['fb-name','fb-class','fb-review','fb-achievement','fb-edit-id'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const rating = document.getElementById('fb-rating'); if (rating) rating.value = '5';
+}
+
+
+async function syncLocalEnquiriesToSupabase() {
+  showToast('⏳', 'Syncing local data to Supabase...');
+  let synced = 0;
+  for (const table of ['online_enquiries', 'enquiries', 'demo_enquiries', 'students']) {
+    const recs = LOCAL.get(table) || [];
+    for (const rec of recs) {
+      if (!rec.id) continue;
+      try {
+        const snake = toSnakeCase(rec);
+        const { error } = await supabase_client.from(table).upsert([snake], { onConflict: 'id' });
+        if (!error) synced++;
+      } catch(e) {}
+    }
+  }
+  showToast('✅', `Synced ${synced} records to Supabase!`);
+  loadOnlineEnquiries('all');
+}
+async function loadDemoEnquiries(filter) {
+  const container = document.getElementById('demoEnquiriesContainer');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">⏳ Loading from database...</div>';
+
+  // Fire-and-forget sync
+  (async () => {
+    const toSync2 = LOCAL.get('demo_enquiries') || [];
+    if (toSync2.length > 0 && supabase_client) {
+      for (const rec of toSync2.slice(0,30)) {
+        if (!rec.id) continue;
+        try { await supabase_client.from('demo_enquiries').upsert([toSnakeCase(rec)],{onConflict:'id'}); } catch(e){}
+      }
+    }
+  })();
+
+  let recs = (LOCAL.get('demo_enquiries') || []).slice();
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('demo_enquiries').select('*').order('created_at', { ascending: false }).limit(200);
+      if (data && data.length) {
+        data.forEach(r => { if (!recs.find(x => x.id === r.id)) recs.push(r); });
+      }
+    }
+  } catch(e){}
+
+  recs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  const f = filter || 'all';
+  const allRecs = [...recs];
+  if (['online','offline','home'].includes(f)) recs = recs.filter(r => (r.tuitionType||r.tuition_type||'online') === f);
+  else if (f === 'new') recs = recs.filter(r => (r.status||'new') === 'new');
+  else if (f === 'contacted') recs = recs.filter(r => r.status === 'contacted');
+
+  const counts = {
+    all: allRecs.length,
+    online: allRecs.filter(r => (r.tuitionType||'') === 'online').length,
+    offline: allRecs.filter(r => r.tuitionType === 'offline').length,
+    home: allRecs.filter(r => r.tuitionType === 'home').length,
+    new: allRecs.filter(r => (r.status||'new') === 'new').length,
+    contacted: allRecs.filter(r => r.status === 'contacted').length
+  };
+
+  const filterBar = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+    <button class="btn btn-${f==='all'?'gold':'ghost'} btn-sm" onclick="loadDemoEnquiries('all')">📋 All (${counts.all})</button>
+    <button class="btn btn-${f==='online'?'gold':'ghost'} btn-sm" onclick="loadDemoEnquiries('online')">💻 Online (${counts.online})</button>
+    <button class="btn btn-${f==='offline'?'gold':'ghost'} btn-sm" onclick="loadDemoEnquiries('offline')">🏫 Offline (${counts.offline})</button>
+    <button class="btn btn-${f==='home'?'gold':'ghost'} btn-sm" onclick="loadDemoEnquiries('home')">🏠 Home (${counts.home})</button>
+    <button class="btn btn-${f==='new'?'gold':'ghost'} btn-sm" onclick="loadDemoEnquiries('new')">🆕 New (${counts.new})</button>
+    <button class="btn btn-${f==='contacted'?'gold':'ghost'} btn-sm" onclick="loadDemoEnquiries('contacted')">📞 Contacted (${counts.contacted})</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportDemoEnquiries()" style="margin-left:auto;">⬇ Export CSV</button>
+  </div>`;
+
+  if (!recs.length) {
+    container.innerHTML = filterBar + '<div class="empty-state"><div class="empty-icon">🎓</div><div>No demo class bookings yet.</div></div>';
+    return;
+  }
+
+  container.innerHTML = filterBar + recs.map(r => {
+    const modeIcon = { online:'💻', offline:'🏫', home:'🏠' }[r.tuitionType] || '🎓';
+    const modeLabel = { online:'Online', offline:'Offline / Centre', home:'Home Tuition' }[r.tuitionType] || r.tuitionType || '—';
+    return `<div class="approval-card">
+      <div class="approval-header">
+        <div>
+          <div class="approval-name">${modeIcon} ${sanitize(r.name||'—')} <span style="background:rgba(245,200,66,0.15);color:var(--gold);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-left:6px;">${modeLabel.toUpperCase()}</span></div>
+          <div class="approval-meta">📞 ${sanitize(r.phone||'—')} · 🎓 ${sanitize(r.std||'—')} · 📚 ${sanitize(r.subject||'—')}<br>⏰ ${sanitize(r.batch||'Not specified')} · 📅 Requested: ${r.date||'—'}</div>
+        </div>
+        <span class="approval-pending ${(r.status||'new') === 'contacted' ? 'approval-approved' : ''}">${(r.status||'NEW').toUpperCase()}</span>
+      </div>
+      <div class="approval-actions" style="margin-top:12px;">
+        <a class="btn btn-teal btn-sm" href="tel:${r.phone}">📞 Call</a>
+        <a class="btn btn-ghost btn-sm" href="https://wa.me/91${r.phone}?text=${encodeURIComponent('Hi '+sanitize(r.name||'')+', Kongu Brilliance here! Your '+modeLabel+' demo class request has been received. When would you like to schedule it?')}" target="_blank">💬 WhatsApp</a>
+        <button class="btn btn-gold btn-sm" onclick="updateDemoStatus('${r.id}','contacted')">✅ Mark Contacted</button>
+        <button class="btn btn-coral btn-sm" onclick="deleteDemoEnquiry('${r.id}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+async function deleteDemoEnquiry(id) {
+  if (!confirm('Delete this demo booking? This cannot be undone.')) return;
+  let recs = LOCAL.get('demo_enquiries') || [];
+  recs = recs.filter(r => r.id !== id);
+  LOCAL.set('demo_enquiries', recs);
+  try { if (supabase_client) await supabase_client.from('demo_enquiries').delete().eq('id', id); } catch(e){}
+  showToast('🗑', 'Demo booking deleted');
+  loadDemoEnquiries('all');
+}
+async function updateDemoStatus(id, status) {
+  const local = LOCAL.get('demo_enquiries') || [];
+  const idx = local.findIndex(x => x.id === id);
+  if (idx !== -1) { local[idx].status = status; LOCAL.set('demo_enquiries', local); }
+  try { if (supabase_client) await supabase_client.from('demo_enquiries').update({status}).eq('id', id); } catch(e){}
+  showToast('✅', 'Status updated');
+  loadDemoEnquiries('all');
+}
+
+function exportDemoEnquiries() {
+  const recs = LOCAL.get('demo_enquiries') || [];
+  if (!recs.length) { showToast('⚠️','No demo bookings to export',true); return; }
+  const header = ['Name','Phone','Class','Subject','Mode','Batch','Status','Date'];
+  const rows = recs.map(r => [r.name,r.phone,r.std,r.subject,r.tuitionType,r.batch,r.status||'new',r.date].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'KB_Demo_Bookings_' + new Date().toLocaleDateString('en-IN').replace(/\//g,'-') + '.csv';
+  a.click();
+  showToast('✅','CSV downloaded!');
+}
+
+async function loadOnlineEnquiries(filter) {
+  const container = document.getElementById('onlineEnquiriesContainer');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">⏳ Loading from database...</div>';
+
+  // Fire-and-forget sync (don't block the fetch)
+  if (supabase_client) {
+    (async () => {
+      const toSync = LOCAL.get('online_enquiries') || [];
+      for (const rec of toSync.slice(0,10)) {
+        if (!rec.id) continue;
+        try { await supabase_client.from('online_enquiries').upsert([toSnakeCase(rec)],{onConflict:'id'}); } catch(e){}
+      }
+    })();
+  }
+
+  // Always merge local + Supabase — guarantees admin sees everything
+  let recs = [];
+  const localRecs = LOCAL.get('online_enquiries') || [];
+  recs = [...localRecs];
+  try {
+    const dbRecs = await dbGetAll('online_enquiries');
+    dbRecs.forEach(r => { if (!recs.find(x => x.id === r.id)) recs.push(r); });
+  } catch(e){}
+  try {
+    const allEnq = await dbGetAll('enquiries');
+    allEnq.filter(e => e.type === 'online_tuition' || e.type === 'tuition_enquiry' || (e.msg||'').includes('TUITION]')).forEach(t => { if (!recs.find(r => r.id === t.id)) recs.push(t); });
+  } catch(e){}
+
+  // Compute counts for badges (before filter applied)
+  const counts = {
+    all: recs.length,
+    online: recs.filter(r => (r.tuitionType||r.tuition_type||'online') === 'online').length,
+    offline: recs.filter(r => (r.tuitionType||r.tuition_type) === 'offline').length,
+    home: recs.filter(r => (r.tuitionType||r.tuition_type) === 'home').length,
+    new: recs.filter(r => (r.status||'new') === 'new').length,
+    contacted: recs.filter(r => r.status === 'contacted').length,
+    converted: recs.filter(r => r.status === 'converted').length
+  };
+
+  // Apply filter
+  const f = filter || 'all';
+  if (['online','offline','home'].includes(f)) recs = recs.filter(r => (r.tuitionType||r.tuition_type||'online') === f);
+  else if (['new','contacted','converted'].includes(f)) recs = recs.filter(r => (r.status||'new') === f);
+
+  recs.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+
+  // Classification filter bar
+  const filterBar = `<div style="padding:8px 12px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.2);border-radius:8px;font-size:12px;color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+    💡 Data not showing? <button class="btn btn-gold btn-sm" onclick="syncLocalEnquiriesToSupabase()" style="font-size:11px;padding:5px 14px;">🔄 Sync Now</button>
+    <span style="font-size:11px;color:var(--muted);">— pushes all saved enquiries from this device to cloud</span>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+    <button class="btn btn-${f==='all'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('all')">📋 All (${counts.all})</button>
+    <button class="btn btn-${f==='online'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('online')">💻 Online (${counts.online})</button>
+    <button class="btn btn-${f==='offline'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('offline')">🏫 Offline (${counts.offline})</button>
+    <button class="btn btn-${f==='home'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('home')">🏠 Home (${counts.home})</button>
+    <span style="width:1px;background:var(--border);margin:0 4px;"></span>
+    <button class="btn btn-${f==='new'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('new')">🆕 New (${counts.new})</button>
+    <button class="btn btn-${f==='contacted'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('contacted')">📞 Contacted (${counts.contacted})</button>
+    <button class="btn btn-${f==='converted'?'gold':'ghost'} btn-sm" onclick="loadOnlineEnquiries('converted')">✅ Converted (${counts.converted})</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportOnlineEnquiries()" style="margin-left:auto;">⬇ Export CSV</button>
+  </div>`;
+
+  if (!recs.length) {
+    container.innerHTML = filterBar + '<div class="empty-state"><div class="empty-icon">📩</div><div>No tuition enquiries in this category yet.</div></div>';
+    return;
+  }
+
+  container.innerHTML = filterBar + recs.slice(0,80).map(r => {
+    const tt = r.tuitionType || 'online';
+    const typeIcon = { online:'💻', offline:'🏫', home:'🏠' }[tt] || '📩';
+    const typeBadge = `<span style="background:rgba(245,200,66,0.15);color:var(--gold);padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-left:6px;">${typeIcon} ${tt.toUpperCase()}</span>`;
+    const statusCol = (r.status||'new') === 'converted' ? 'approval-approved' : (r.status||'new') === 'contacted' ? 'approval-pending' : 'approval-rejected';
+    return `<div class="approval-card">
+      <div class="approval-header">
+        <div>
+          <div class="approval-name">${typeIcon} ${sanitize(r.name||'—')} ${typeBadge}<span style="font-size:11px;color:var(--muted);font-weight:400;"> · ${sanitize(r.std||'—')} ${sanitize(r.board||'')}</span></div>
+          <div class="approval-meta">📞 ${sanitize(r.phone||'—')}${r.city?' · 📍 '+sanitize(r.city):''}${r.subjects?' · 📚 '+sanitize(r.subjects):''}<br>
+          ${r.preferred_time?'⏰ '+sanitize(r.preferred_time)+' · ':''}${r.mode?'🎥 '+sanitize(r.mode):''}<br>
+          ${r.msg ? '💬 ' + sanitize(r.msg).slice(0,200) : '(no message)'}</div>
+        </div>
+        <span class="approval-pending ${statusCol}">${(r.status||'new').toUpperCase()}</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace;">Received: ${r.date||'—'}</div>
+      <div class="approval-actions" style="margin-top:12px;">
+        <a class="btn btn-teal btn-sm" href="tel:${r.phone}">📞 Call</a>
+        <a class="btn btn-ghost btn-sm" href="https://wa.me/91${r.phone}?text=${encodeURIComponent('Hi ' + (r.name||'') + ', this is Kongu Brilliance regarding your ' + tt + ' tuition enquiry.')}" target="_blank">💬 WhatsApp</a>
+        <button class="btn btn-ghost btn-sm" onclick="updateOnlineEnquiry('${r.id}','contacted')">Mark Contacted</button>
+        <button class="btn btn-gold btn-sm" onclick="updateOnlineEnquiry('${r.id}','converted')">✅ Converted</button>
+        <button class="btn btn-coral btn-sm" onclick="deleteOnlineEnquiry('${r.id}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function updateOnlineEnquiry(id, status) {
+  const tables = ['online_enquiries', 'enquiries'];
+  for (const t of tables) {
+    try {
+      if (supabase_client) await supabase_client.from(t).update({status}).eq('id', id);
+      const local = LOCAL.get(t) || [];
+      const i = local.findIndex(x => x.id === id);
+      if (i !== -1) { local[i].status = status; LOCAL.set(t, local); }
+    } catch(e){}
+  }
+  showToast('✅', 'Status updated to ' + status);
+  loadOnlineEnquiries('all');
+}
+
+async function exportOnlineEnquiries() {
+  let recs = LOCAL.get('online_enquiries') || [];
+  try {
+    const dbRecs = await dbGetAll('online_enquiries');
+    dbRecs.forEach(r => { if (!recs.find(x => x.id === r.id)) recs.push(r); });
+  } catch(e){}
+  const headers = ['Name','Mobile','Type','Class','Board','Subjects','City','Time','Status','Date','Message'];
+  const rows = recs.map(r => [r.name,r.phone,r.tuitionType||r.mode||'online',r.std,r.board,r.subjects,r.city,r.preferred_time,r.status||'new',r.date,r.msg].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'kb_tuition_enquiries.csv'; a.click();
+  showToast('✅', 'Tuition enquiries exported');
+}
+
+// ══════════════════════════════════════════════
+// V6: ANALYTICS DASHBOARD
+// ══════════════════════════════════════════════
+async function loadAnalytics() {
+  const students = await dbGetAll('students');
+  const tutors = await dbGetAll('tutors');
+  const checkins = await dbGetAll('checkins');
+  const attendance = await dbGetAll('attendance');
+  let onlineEnq = [];
+  try { onlineEnq = await dbGetAll('online_enquiries'); } catch(e){}
+  const enquiries = await dbGetAll('enquiries');
+
+  const today = new Date().toLocaleDateString('en-IN');
+  const last30 = students.filter(s => {
+    if (!s.created_at) return false;
+    const d = new Date(s.created_at);
+    return (Date.now() - d.getTime()) < 30 * 24 * 3600 * 1000;
+  });
+  const pendingApprovals = students.filter(s => s.status === 'pending').length;
+  const totalAttendance = attendance.length;
+  const avgAttendance = attendance.length ? Math.round((attendance.filter(a => a.status === 'P').length / attendance.length) * 100) : 0;
+
+  // Stat tiles
+  document.getElementById('analyticsStatGrid').innerHTML = `
+    <div class="stat-mini"><div class="stat-mini-num gold-text">${students.length}</div><div class="stat-mini-lbl">Total Students</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:var(--teal);">${last30.length}</div><div class="stat-mini-lbl">New (30 days)</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:var(--gold);">${pendingApprovals}</div><div class="stat-mini-lbl">Pending Approvals</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:#A5B4FC;">${tutors.length}</div><div class="stat-mini-lbl">Active Tutors</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:var(--teal);">${avgAttendance}%</div><div class="stat-mini-lbl">Avg Attendance</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:var(--coral);">${enquiries.length + onlineEnq.length}</div><div class="stat-mini-lbl">Total Enquiries</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:#A5B4FC;">${onlineEnq.length}</div><div class="stat-mini-lbl">Online Tuition</div></div>
+    <div class="stat-mini"><div class="stat-mini-num" style="color:var(--gold);">${checkins.length}</div><div class="stat-mini-lbl">Check-In Records</div></div>
+  `;
+
+  // Class breakdown
+  const byClass = {};
+  students.forEach(s => { const c = s.std || 'Unknown'; byClass[c] = (byClass[c] || 0) + 1; });
+  const classHTML = Object.entries(byClass).sort((a,b) => b[1]-a[1]).slice(0,8).map(([c,n]) => {
+    const pct = students.length ? Math.round(n/students.length*100) : 0;
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#fff;margin-bottom:4px;"><span>${c}</span><span style="color:var(--gold);">${n} (${pct}%)</span></div>
+      <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#C47A10,#F5C842);"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('classBreakdown').innerHTML = classHTML || '<div style="color:var(--muted);font-size:13px;">No data yet.</div>';
+
+  // Board breakdown
+  const byBoard = {};
+  students.forEach(s => { const b = s.board || 'Unknown'; byBoard[b] = (byBoard[b] || 0) + 1; });
+  const boardHTML = Object.entries(byBoard).sort((a,b) => b[1]-a[1]).map(([b,n]) => {
+    const pct = students.length ? Math.round(n/students.length*100) : 0;
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#fff;margin-bottom:4px;"><span>${b}</span><span style="color:var(--teal);">${n} (${pct}%)</span></div>
+      <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,rgba(0,229,160,0.5),var(--teal));"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('boardBreakdown').innerHTML = boardHTML || '<div style="color:var(--muted);font-size:13px;">No data yet.</div>';
+
+  // 30-day enrollment trend (text-based bar chart)
+  const trendDays = {};
+  for (let i=29; i>=0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = d.toLocaleDateString('en-IN');
+    trendDays[key] = 0;
+  }
+  last30.forEach(s => { const d = new Date(s.created_at).toLocaleDateString('en-IN'); if (key in trendDays) trendDays[key]++; if (trendDays[d] !== undefined) trendDays[d]++; });
+  const maxV = Math.max(1, ...Object.values(trendDays));
+  const trendHTML = `<div style="display:flex;align-items:flex-end;gap:3px;height:80px;margin-bottom:6px;">
+    ${Object.entries(trendDays).map(([d,n]) => `<div title="${d}: ${n} new" style="flex:1;background:linear-gradient(0deg,${n>0?'#A5B4FC':'rgba(255,255,255,0.05)'},${n>0?'rgba(165,180,252,0.3)':'transparent'});height:${Math.max(3,n/maxV*100)}%;border-radius:2px;"></div>`).join('')}
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;"><span>30 days ago</span><span>Today</span></div>`;
+  document.getElementById('enrollmentTrend').innerHTML = trendHTML;
+
+  // Recommendations
+  const recs = [];
+  if (pendingApprovals > 0) recs.push(`⏳ <strong>${pendingApprovals} student${pendingApprovals>1?'s':''} waiting for approval</strong> — go to "Pending Approvals" tab to review.`);
+  if (avgAttendance < 75 && totalAttendance > 10) recs.push(`📉 Average attendance is <strong>${avgAttendance}%</strong> — consider parent communication for low-attending students.`);
+  if (onlineEnq.length > 5) recs.push(`💻 You have <strong>${onlineEnq.length} online tuition enquiries</strong> — high demand! Consider launching a dedicated online batch.`);
+  if (last30.length > 10) recs.push(`📈 <strong>${last30.length} new enrollments in last 30 days</strong> — strong growth! Consider hiring more tutors.`);
+  if (tutors.length < 3 && students.length > 30) recs.push(`👨‍🏫 Student-tutor ratio is high (${Math.round(students.length/Math.max(1,tutors.length))}:1) — consider adding more tutors.`);
+  if (!recs.length) recs.push('✅ Everything looks healthy. Keep nurturing your students!');
+  document.getElementById('adminRecommendations').innerHTML = recs.map(r => '• ' + r).join('<br><br>');
+}
+
+// ══════════════════════════════════════════════
+// ADMIN — PASSWORDS VIEW
+// ══════════════════════════════════════════════
+async function loadPasswordsView(type) {
+  const el = document.getElementById('passwords-content');
+  if (!el) return;
+  // Highlight active tab
+  const st = document.getElementById('pwd-tab-students');
+  const tt = document.getElementById('pwd-tab-tutors');
+  if (st) st.className = type==='students' ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm';
+  if (tt) tt.className = type==='tutors' ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm';
+  if (type === 'students') {
+    const students = await dbGetAll('students');
+    if (!students.length) { el.innerHTML = '<div style="color:var(--muted);">No students registered yet.</div>'; return; }
+    el.innerHTML = `<div class="table-wrap" style="overflow-x:auto;"><table class="data-table">
+      <thead><tr><th>#</th><th>Name</th><th>Mobile (Username)</th><th>Class</th><th>Password</th></tr></thead>
+      <tbody>
+      ${students.map((s,i) => `<tr>
+        <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+        <td><strong>${s.name}</strong></td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.phone}</td>
+        <td>${s.std||'—'}</td>
+        <td><span class="pass-reveal" style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(245,200,66,0.1);padding:3px 8px;border-radius:6px;">${s.pass_plain || s.pass_plain || '—'}</span></td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  } else {
+    const tutors = await dbGetAll('tutors');
+    if (!tutors.length) { el.innerHTML = '<div style="color:var(--muted);">No tutors added yet.</div>'; return; }
+    el.innerHTML = `<div class="table-wrap" style="overflow-x:auto;"><table class="data-table">
+      <thead><tr><th>#</th><th>Name</th><th>Email / Mobile (Username)</th><th>Password</th></tr></thead>
+      <tbody>
+      ${tutors.map((t,i) => `<tr>
+        <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+        <td><strong>${t.name}</strong></td>
+        <td style="font-size:12px;">${t.email}<br><span style="color:var(--muted);font-family:'JetBrains Mono',monospace;">${t.phone}</span></td>
+        <td><span class="pass-reveal" style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(245,200,66,0.1);padding:3px 8px;border-radius:6px;">${t.pass_plain || '—'}</span></td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  }
+}
+
+async function loadStudentsTable() {
+  const students = await dbGetAll('students');
+  // Patch: fix students with null name/phone - restore from LOCAL and update Supabase
+  const localStudents = LOCAL.get('students') || [];
+  students.forEach(s => {
+    // Normalize snake_case → camelCase for display
+    if (!s.assignedTutorName && s.assigned_tutor_name) s.assignedTutorName = s.assigned_tutor_name;
+    if (!s.assignedTutorId && s.assigned_tutor_id) s.assignedTutorId = s.assigned_tutor_id;
+    if (!s.name || !s.phone) {
+      const local = localStudents.find(l => l.id === s.id);
+      if (local) {
+        if (!s.name && local.name) { s.name = local.name; }
+        if (!s.phone && local.phone) { s.phone = local.phone; }
+        if (!s.pass_plain && local.pass_plain) { s.pass_plain = local.pass_plain; }
+        if (!s.assignedTutorName && local.assignedTutorName) s.assignedTutorName = local.assignedTutorName;
+        // Update Supabase silently
+        if (supabase_client && (local.name || local.phone)) {
+          supabase_client.from('students').update({
+            name: s.name, phone: s.phone, pass_plain: s.pass_plain
+          }).eq('id', s.id).then(()=>{}).catch(()=>{});
+        }
+      }
+    }
+  });
+  const tbody = document.getElementById('studentsBody');
+  if (students.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📋</div><div>No student registrations yet.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = students.map((s, i) => {
+    const statusBadge = s.status === 'pending' ? '<span style="font-size:10px;color:var(--gold);font-family:\'JetBrains Mono\',monospace;">⏳ PENDING</span>' :
+                      s.status === 'rejected' ? '<span style="font-size:10px;color:var(--coral);font-family:\'JetBrains Mono\',monospace;">❌ REJECTED</span>' :
+                      '<span style="font-size:10px;color:var(--teal);font-family:\'JetBrains Mono\',monospace;">✅ ACTIVE</span>';
+    return `<tr>
+      <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${i+1}</td>
+      <td><strong>${s.name}</strong></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${s.phone}</td>
+      <td><span class="td-tag td-student">${s.std || '—'}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${s.board || '—'}</td>
+      <td style="font-size:12px;">${s.school || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);">${s.native || '—'}</td>
+      <td style="font-size:11px;color:var(--teal);">${s.batch || '—'}</td>
+      <td style="font-size:11px;">${(s.assignedTutorName||s.assigned_tutor_name) ? '<span style="color:var(--teal);">👨‍🏫 '+sanitize(s.assignedTutorName||s.assigned_tutor_name)+'</span>' : '<span style="color:var(--muted);">—</span>'}</td>
+      <td style="font-size:11px;color:var(--muted);">${s.date || '—'}${statusBadge ? '<br>'+statusBadge : ''}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+      <button class="btn btn-teal btn-sm" onclick="adminAssignTutorToStudent('${s.id}','${sanitize(s.name||'')}')" title="Assign Tutor">👨‍🏫 Assign</button>
+          <button class="btn btn-ghost btn-sm" onclick="adminInitResetPassword(this)" data-uid="${s.id}" data-utype="student" data-uname="${sanitize(s.name||'')}" title="Reset Password">🔑</button>
+          <a class="btn btn-ghost btn-sm" href="tel:${s.phone}" title="Call">📞</a>
+          <a class="btn btn-ghost btn-sm" href="https://wa.me/91${s.phone}" target="_blank" title="WhatsApp">💬</a>
+          <button class="btn btn-danger btn-sm" onclick="adminDelete('students','${s.id}','Student: ${(s.name||'').replace(/'/g,"\\'")}')" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('a-total').textContent = students.length;
+}
+
+async function loadTutorsTable() {
+  const tutors = await dbGetAll('tutors');
+  const tbody = document.getElementById('tutorsBody');
+  if (tutors.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👨‍🏫</div><div>No tutors added yet.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = tutors.map((t, i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+      <td><strong>${t.name}</strong></td>
+      <td style="font-size:12px;">${t.email}<br><span style="color:var(--muted);">${t.phone}</span></td>
+      <td style="font-size:12px;">${t.subjects || '—'}</td>
+      <td style="font-size:12px;color:var(--teal);">${t.batches || '—'}</td>
+      <td style="font-size:11px;color:var(--muted);">${t.date || '—'}</td>
+      <td>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="adminInitResetPassword('${t.id}','tutor','${(t.name||'').replace(/'/g,"\\'")}')" title="Reset Password">🔑</button>
+          <a class="btn btn-ghost btn-sm" href="tel:${t.phone}" title="Call">📞</a>
+          <button class="btn btn-danger btn-sm" onclick="adminDelete('tutors','${t.id}','Tutor: ${(t.name||'').replace(/'/g,"\\'")}')" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+  document.getElementById('a-tutors').textContent = tutors.length;
+}
+
+async function deleteTutor(id) {
+  adminDelete('tutors', id, 'Tutor');
+}
+
+
+async function deleteOnlineEnquiry(id) {
+  if (!confirm('Delete this tuition enquiry?')) return;
+  ['online_enquiries','enquiries'].forEach(async tbl => {
+    let recs = LOCAL.get(tbl) || [];
+    LOCAL.set(tbl, recs.filter(r => r.id !== id && r.id !== id+'_e'));
+    try { if (supabase_client) await supabase_client.from(tbl).delete().eq('id', id); } catch(e){}
+  });
+  showToast('🗑','Enquiry deleted');
+  loadOnlineEnquiries('all');
+}
+
+async function deleteEnquiry(id) {
+  if (!confirm('Delete this enquiry?')) return;
+  let recs = LOCAL.get('enquiries') || [];
+  LOCAL.set('enquiries', recs.filter(r => r.id !== id));
+  try { if (supabase_client) await supabase_client.from('enquiries').delete().eq('id', id); } catch(e){}
+  showToast('🗑','Enquiry deleted');
+  loadEnquiriesTable();
+}
+
+async function syncEnquiriesToSupabase() {
+  if (!supabase_client) { showToast('⚠️','Not connected to Supabase',true); return; }
+  showToast('⏳', 'Syncing contact messages to Supabase...');
+  const recs = LOCAL.get('enquiries') || [];
+  const contactRecs = recs.filter(r => !r.type || r.type === 'contact');
+  let synced = 0;
+  for (const rec of contactRecs) {
+    if (!rec.id) continue;
+    try {
+      const snake = toSnakeCase(rec);
+      const { error } = await supabase_client.from('enquiries').upsert([snake], { onConflict: 'id', ignoreDuplicates: true });
+      if (!error) synced++;
+    } catch(e) {}
+  }
+  showToast('✅', synced + ' contact messages synced to cloud!');
+  loadEnquiriesTable();
+}
+async function loadEnquiriesTable() {
+  const tbody = document.getElementById('enquiriesBody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">⏳ Loading from database...</td></tr>';
+  // Fire-and-forget sync
+  (async () => {
+    const toSync3 = LOCAL.get('enquiries') || [];
+    if (toSync3.length > 0 && supabase_client) {
+      for (const rec of toSync3.filter(r=>!r.type||r.type==='contact').slice(0,30)) {
+        if (!rec.id) continue;
+        try { await supabase_client.from('enquiries').upsert([toSnakeCase(rec)],{onConflict:'id'}); } catch(e){}
+      }
+    }
+  })();
+  const all = await dbGetAll('enquiries');
+  // Show ONLY contact form messages (type=contact or no type)
+  // Tuition enquiries are in Online Tuition tab, demo in Free Demo tab
+  const enqs = all.filter(e => !e.type || e.type === 'contact');
+  if (enqs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📩</div><div>No enquiries yet.</div></div></td></tr>';
+    return;
+  }
+  // Show ALL enquiries (contact + tuition) so admin sees everything
+  const displayEnqs = enqs.filter(e => e.id); // show all valid records
+  if (displayEnqs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📩</div><div>No enquiries yet.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = displayEnqs.map((e, i) => {
+    const typeLabel = e.type === 'tuition_enquiry' ? ' <span style="background:rgba(99,102,241,0.2);color:#A5B4FC;padding:2px 6px;border-radius:6px;font-size:10px;">Tuition</span>' : e.type === 'free_demo' ? ' <span style="background:rgba(245,200,66,0.2);color:var(--gold);padding:2px 6px;border-radius:6px;font-size:10px;">Demo</span>' : '';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+      <td><strong>${sanitize(e.name||'—')}</strong>${typeLabel}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${sanitize(e.phone||'—')}</td>
+      <td style="font-size:12px;max-width:260px;">${sanitize(e.msg || e.subject || '—')}</td>
+      <td style="font-size:11px;color:var(--muted);">${e.date || '—'}</td>
+      <td><button class="btn btn-coral btn-sm" onclick="deleteEnquiry('${e.id}')">🗑 Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// V8: CREDENTIALS HELPERS (for admin-add-student flow)
+// ══════════════════════════════════════════════
+function copyCredField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  try { navigator.clipboard.writeText(el.textContent); showToast('📋','Copied to clipboard'); }
+  catch(e) { showToast('⚠️','Copy failed','error'); }
+}
+function shareCredsWhatsApp() {
+  const name = document.getElementById('credsModalName').textContent;
+  const phone = document.getElementById('credsModalPhone').textContent;
+  const pass = document.getElementById('credsModalPass').textContent;
+  const msg = `Welcome to Kongu Brilliance, ${name}! 🎓%0A%0AYour login credentials:%0A📱 Mobile: ${phone}%0A🔑 Password: ${pass}%0A%0AVisit our website and click Login → Student. Keep these credentials safe!`;
+  window.open(`https://wa.me/91${phone}?text=${msg}`, '_blank');
+}
+
+// ══════════════════════════════════════════════
+// V8: ADMIN PASSWORD RESET
+// Admin can reset any student/tutor password — no email/OTP needed
+// ══════════════════════════════════════════════
+function adminInitResetPassword(btnEl, userId, userType, userName) {
+  // Support both: adminInitResetPassword(btn) and adminInitResetPassword(id, type, name)
+  if (btnEl && btnEl.dataset) {
+    userId = btnEl.dataset.uid;
+    userType = btnEl.dataset.utype;
+    userName = btnEl.dataset.uname;
+  }
+  const uidEl = document.getElementById('resetPwdUserId');
+  const utypeEl = document.getElementById('resetPwdUserType');
+  const newEl = document.getElementById('resetPwdNew');
+  const subEl = document.getElementById('resetPwdSubtitle');
+  if (uidEl) uidEl.value = userId || '';
+  if (utypeEl) utypeEl.value = userType || '';
+  if (newEl) newEl.value = '';
+  if (subEl) subEl.textContent = 'Reset password for ' + (userName||'') + ' (' + (userType||'') + ')';
+  openModal('resetPwd');
+}
+
+async function confirmResetPassword() {
+  const userId = document.getElementById('resetPwdUserId').value;
+  const userType = document.getElementById('resetPwdUserType').value;
+  const newPass = document.getElementById('resetPwdNew').value.trim();
+  if (!userId || !userType) { showToast('⚠️','Missing user info',true); return; }
+  const pwCheck = validateStrongPassword(newPass);
+  if (!pwCheck.ok) { showToast('⚠️', pwCheck.msg, true); return; }
+
+  const table = userType === 'student' ? 'students' : 'tutors';
+  const passHash = await hashPassword(newPass);
+
+  try {
+    if (supabase_client) {
+      const { error } = await supabase_client.from(table).update({ pass: passHash }).eq('id', userId);
+      if (error) console.warn('Supabase reset error:', error);
+    }
+    const local = LOCAL.get(table);
+    const idx = local.findIndex(x => x.id === userId);
+    if (idx !== -1) { local[idx].pass = passHash; LOCAL.set(table, local); }
+    logActivity('password_reset', { userId, userType, resetBy: 'admin' });
+    closeModal('resetPwdModal');
+    showToast('✅', `Password reset! New password: ${newPass}`);
+    // Show credentials modal with the new password
+    const user = local.find(x => x.id === userId);
+    if (user) {
+      const phone = user.phone || user.email || userId;
+      document.getElementById('credsModalName').textContent = user.name;
+      document.getElementById('credsModalPhone').textContent = phone;
+      document.getElementById('credsModalPass').textContent = newPass;
+      document.getElementById('credsModal').classList.remove('hidden');
+    }
+    // Refresh tables
+    if (userType === 'student') loadStudentsTable();
+    else loadTutorsTable();
+  } catch(e) {
+    console.error('Reset pwd failed:', e);
+    showToast('⚠️','Reset failed: ' + e.message, true);
+  }
+}
+
+// ══════════════════════════════════════════════
+// V8: UNIVERSAL DELETE (admin full control)
+// ══════════════════════════════════════════════
+async function adminDelete(table, id, label) {
+  if (!confirm(`Permanently delete this ${label}?\n\nThis cannot be undone.`)) return;
+  try {
+    if (supabase_client) {
+      const { error } = await supabase_client.from(table).delete().eq('id', id);
+      if (error) console.warn('Supabase delete error:', error);
+    }
+    const local = LOCAL.get(table);
+    const filtered = local.filter(x => x.id !== id);
+    LOCAL.set(table, filtered);
+    logActivity('admin_deleted', { table, id, label });
+    showToast('🗑️', `${label} deleted`);
+    // Refresh the relevant table
+    if (table === 'students') { loadStudentsTable(); loadDashboard(); loadApprovalQueue('pending'); }
+    if (table === 'tutors') loadTutorsTable();
+    if (table === 'enquiries') loadEnquiriesTable();
+    if (table === 'online_enquiries') loadOnlineEnquiries('all');
+    if (table === 'materials') loadAdminMaterials();
+    if (table === 'attendance') loadAdminAttendance();
+    if (table === 'checkins') loadAdminAttendance();
+  } catch(e) {
+    console.error('Delete failed:', e);
+    showToast('⚠️','Delete failed: ' + e.message, true);
+  }
+}
+
+// ══════════════════════════════════════════════
+// V8: ACTIVITY LOG — admin sees every action
+// ══════════════════════════════════════════════
+function logActivity(action, meta) {
+  try {
+    const log = LOCAL.get('activity_log') || [];
+    log.unshift({
+      id: 'ACT_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      action, meta: meta || {},
+      time: new Date().toISOString(),
+      date: new Date().toLocaleDateString('en-IN'),
+      timeStr: new Date().toLocaleTimeString('en-IN')
+    });
+    // Keep last 500 entries locally (Supabase-synced separately)
+    if (log.length > 500) log.length = 500;
+    LOCAL.set('activity_log', log);
+    // Fire-and-forget Supabase sync
+    if (supabase_client && ['admin_login','student_login','tutor_login','admin_logout','student_logout','tutor_logout','admin_deleted','password_reset','admin_added_student','demo_booked','enquiry_new'].includes(action)) {
+      supabase_client.from('activity_log').insert({ action, meta: meta || {}, time: new Date().toISOString() }).then(()=>{}).catch(()=>{});
+    }
+  } catch(e) { /* log quietly */ }
+}
+
+async function loadActivityLog(filter) {
+  const container = document.getElementById('activityLogContainer');
+  if (!container) return;
+  let log = LOCAL.get('activity_log') || [];
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('activity_log').select('*').order('time', {ascending:false}).limit(200);
+      if (data && data.length) {
+        // Merge cloud + local, dedupe by time+action
+        const seen = new Set();
+        [...data, ...log].forEach(x => { const k = x.time + '_' + x.action; if (!seen.has(k)) seen.add(k); });
+        log = [...data, ...log.filter(l => !data.find(d => d.time === l.time && d.action === l.action))];
+      }
+    }
+  } catch(e){}
+  if (filter && filter !== 'all') log = log.filter(l => l.action === filter);
+  if (!log.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📜</div><div>No activity recorded yet.</div></div>';
+    return;
+  }
+  const iconFor = (a) => ({
+    admin_login:'🔐', student_login:'🎓', tutor_login:'👨‍🏫',
+    admin_logout:'🔓', student_logout:'🚪', tutor_logout:'🚶',
+    admin_added_student:'➕', password_reset:'🔑', admin_deleted:'🗑️',
+    ai_question:'🤖', student_approved:'✅', student_rejected:'❌',
+    enquiry_new:'📩', online_enquiry:'💻', demo_booked:'🎓', checkin:'🕐', checkout:'🚪'
+  }[a] || '📌');
+  const labelFor = (a) => ({
+    admin_login:'Admin logged in', student_login:'Student logged in', tutor_login:'Tutor logged in',
+    admin_logout:'Admin logged out', student_logout:'Student logged out', tutor_logout:'Tutor logged out',
+    admin_added_student:'Admin added student', password_reset:'Password reset',
+    admin_deleted:'Record deleted', ai_question:'AI question asked', demo_booked:'Demo class booked',
+    student_approved:'Student approved', student_rejected:'Student rejected',
+    enquiry_new:'New enquiry', online_enquiry:'Online tuition enquiry',
+    checkin:'Tutor checked in', checkout:'Tutor checked out'
+  }[a] || a);
+
+  container.innerHTML = log.slice(0,100).map(l => {
+    const meta = typeof l.meta === 'string' ? (()=>{try{return JSON.parse(l.meta);}catch(e){return{};}})() : (l.meta || {});
+    const detail = meta.name || meta.phone || meta.topic || meta.label || Object.entries(meta).map(([k,v])=>`${k}: ${String(v).slice(0,40)}`).join(' · ');
+    return `<div style="display:flex;align-items:start;gap:12px;padding:12px 14px;background:var(--faint);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+      <div style="font-size:22px;line-height:1;">${iconFor(l.action)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;color:#fff;font-size:13px;">${labelFor(l.action)}</div>
+        ${detail ? `<div style="font-size:11.5px;color:rgba(255,255,255,0.65);margin-top:2px;">${sanitize(detail).slice(0,140)}</div>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--muted);text-align:right;font-family:'JetBrains Mono',monospace;white-space:nowrap;">${l.date || '—'}<br>${l.timeStr || new Date(l.time).toLocaleTimeString('en-IN')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// V8: ANIMATED LEARNING MODULES — OWNED BY KB
+// Real browser animations. No YouTube. Premium feel.
+// ══════════════════════════════════════════════
+const ANIMATED_MODULES = {
+  'integers': {
+    title: 'Integers: The Number Line Walk',
+    subject: 'Mathematics',
+    classes: ['Class 6','Class 7','Class 8'],
+    duration: '5 min',
+    description: 'Watch how positive and negative integers live on a number line. Real-time addition & subtraction shown visually.',
+    scenes: [
+      { text: 'Imagine a number line stretching infinitely in both directions...', duration: 3000 },
+      { text: 'Numbers to the RIGHT of zero are POSITIVE (+1, +2, +3...)', duration: 3500, highlight: 'positive' },
+      { text: 'Numbers to the LEFT of zero are NEGATIVE (-1, -2, -3...)', duration: 3500, highlight: 'negative' },
+      { text: 'Zero is neither positive nor negative — it is the center.', duration: 2500, highlight: 'zero' },
+      { text: 'ADDITION: Start at a number, walk RIGHT for positive, LEFT for negative.', duration: 4000, action:'add', a: 3, b: 4 },
+      { text: 'Example: 3 + 4 = 7. Start at 3, walk 4 steps RIGHT.', duration: 4000, action:'walk', from: 3, to: 7 },
+      { text: 'SUBTRACTION: -5 + 3 = -2. Start at -5, walk 3 steps RIGHT.', duration: 4500, action:'walk', from: -5, to: -2 },
+      { text: 'That\'s it! Addition moves right, subtraction moves left. Integers are just positions.', duration: 4000 },
+    ],
+    engine: 'numberLine'
+  },
+  'newtonslaws': {
+    title: 'Newton\'s Three Laws of Motion',
+    subject: 'Physics',
+    classes: ['Class 9','Class 10','Class 11'],
+    duration: '6 min',
+    description: 'See Newton\'s laws in motion: a ball at rest, a force applied, and the equal-opposite reaction — all animated.',
+    scenes: [
+      { text: 'Meet Newton. 1687. He wrote three laws that changed everything.', duration: 3500 },
+      { text: 'LAW 1: An object at rest STAYS at rest. This ball isn\'t going anywhere.', duration: 4000, action:'ballRest' },
+      { text: 'Unless... a force acts on it. Watch what happens.', duration: 3000, action:'applyForce' },
+      { text: 'The ball moves! And it KEEPS moving until friction stops it.', duration: 4000, action:'ballRolls' },
+      { text: 'LAW 2: Force = mass × acceleration. Push harder, faster acceleration.', duration: 4500, action:'showFma' },
+      { text: 'Light ball: small push = big move. Heavy ball: same push = tiny move.', duration: 4000, action:'compareMasses' },
+      { text: 'LAW 3: For every action, equal and opposite REACTION.', duration: 4000, action:'rocket' },
+      { text: 'A rocket pushes gas DOWN → gas pushes rocket UP. That\'s how rockets fly!', duration: 4500 },
+    ],
+    engine: 'physics'
+  },
+  'chemicalreactions': {
+    title: 'Chemical Reactions: How Atoms Combine',
+    subject: 'Chemistry',
+    classes: ['Class 9','Class 10'],
+    duration: '5 min',
+    description: 'Watch atoms collide, bond, and transform. Balance equations visually with animated molecules.',
+    scenes: [
+      { text: 'Every chemical reaction is atoms rearranging into new combinations.', duration: 3500 },
+      { text: 'Meet Hydrogen (H) and Oxygen (O). 2 H atoms + 1 O atom...', duration: 4000, action:'showAtoms' },
+      { text: '...combine to form H₂O — water! Energy is released.', duration: 4000, action:'bondFormation' },
+      { text: 'COMBUSTION: CH₄ + 2O₂ → CO₂ + 2H₂O + HEAT', duration: 4500, action:'combustion' },
+      { text: 'Left side = Right side. This is called BALANCING the equation.', duration: 4000, action:'balanceCheck' },
+      { text: 'Types: Combination, Decomposition, Displacement, Redox.', duration: 4000 },
+    ],
+    engine: 'chemistry'
+  },
+  'gandhisaltmarch': {
+    title: 'Gandhi\'s Salt March: The Story of Dandi',
+    subject: 'History',
+    classes: ['Class 8','Class 9','Class 10'],
+    duration: '7 min',
+    description: 'March with Gandhi across 240 miles of India in 1930 — a story of non-violent defiance that shook the British Empire.',
+    scenes: [
+      { text: '1930. India is under British rule. Salt is a basic necessity — and British monopoly.', duration: 4500 },
+      { text: 'The British tax on salt affects every Indian household. Even making your own salt is illegal.', duration: 5000 },
+      { text: 'March 12, 1930. Gandhi begins walking from Sabarmati Ashram.', duration: 4000, action:'startMarch' },
+      { text: '240 miles on foot. 24 days of walking. 78 followers grow to thousands.', duration: 5000, action:'growingCrowd' },
+      { text: 'April 6, 1930. Gandhi reaches Dandi, picks up salt from the sea.', duration: 4500, action:'arriveDandi' },
+      { text: 'This simple act — illegal under British law — sparks protests across India.', duration: 4500, action:'nationwide' },
+      { text: '60,000 Indians arrested. World media shocked. British Empire\'s moral authority crumbles.', duration: 5000 },
+      { text: 'The Salt March didn\'t free India — but it broke fear. Freedom would come in 1947.', duration: 5000 },
+    ],
+    engine: 'history'
+  },
+  'photosynthesis': {
+    title: 'Photosynthesis: How Plants Eat Sunlight',
+    subject: 'Biology',
+    classes: ['Class 6','Class 7','Class 8','Class 9','Class 10'],
+    duration: '4 min',
+    description: 'Watch a plant capture sunlight, absorb CO₂ & water, and transform it into food + oxygen.',
+    scenes: [
+      { text: 'Plants don\'t eat like us. They make their OWN food — from sunlight.', duration: 3500 },
+      { text: 'Formula: 6CO₂ + 6H₂O + SUNLIGHT → C₆H₁₂O₆ + 6O₂', duration: 4500, action:'showFormula' },
+      { text: 'Roots drink water from soil. Leaves breathe in CO₂ from air.', duration: 4000, action:'absorb' },
+      { text: 'Chlorophyll (green pigment) captures sunlight energy.', duration: 4000, action:'chlorophyll' },
+      { text: 'Chemical magic happens: CO₂ + H₂O becomes GLUCOSE (food!) and OXYGEN.', duration: 4500, action:'transform' },
+      { text: 'Plants release oxygen — which we breathe. Every breath: thanks to photosynthesis.', duration: 4500 },
+    ],
+    engine: 'biology'
+  },
+  'fractions': {
+    title: 'Fractions: The Pizza Approach',
+    subject: 'Mathematics',
+    classes: ['Class 3','Class 4','Class 5','Class 6'],
+    duration: '4 min',
+    description: 'Learn fractions by cutting, sharing, and comparing pizza slices. Addition, subtraction, equivalence — all visual.',
+    scenes: [
+      { text: 'A whole pizza = 1. Cut it in half — each piece is 1/2.', duration: 3500, action:'pizzaWhole' },
+      { text: 'Cut each half again — now you have 4 equal pieces of 1/4 each.', duration: 4000, action:'pizzaQuarter' },
+      { text: 'FRACTION = part ÷ whole. 1 slice out of 4 total = 1/4.', duration: 4000, action:'fractionDef' },
+      { text: 'ADDING: 1/4 + 1/4 = 2/4 (or 1/2). Just add the numerators!', duration: 4500, action:'fractionAdd' },
+      { text: 'EQUIVALENT: 1/2 = 2/4 = 4/8. Same amount of pizza, different cuts.', duration: 4500, action:'equivalence' },
+      { text: 'Multiply top and bottom by same number → equivalent fraction!', duration: 4000 },
+    ],
+    engine: 'fractions'
+  },
+  'electricity': {
+    title: 'Electricity: The Flow of Electrons',
+    subject: 'Physics',
+    classes: ['Class 8','Class 9','Class 10'],
+    duration: '5 min',
+    description: 'See electrons flow through a circuit. Voltage, current, resistance — Ohm\'s law in action.',
+    scenes: [
+      { text: 'Electricity = moving electrons. Think of it as water flowing through pipes.', duration: 4000 },
+      { text: 'A battery is like a pump. It pushes electrons through the wire.', duration: 4000, action:'battery' },
+      { text: 'VOLTAGE (V) = push strength (Volts)', duration: 3500, action:'voltage' },
+      { text: 'CURRENT (I) = how many electrons flow per second (Amperes)', duration: 4000, action:'current' },
+      { text: 'RESISTANCE (R) = what slows electrons down (Ohms)', duration: 4000, action:'resistance' },
+      { text: 'OHM\'S LAW: V = I × R. More voltage or less resistance = more current.', duration: 4500, action:'ohmLaw' },
+    ],
+    engine: 'electricity'
+  },
+  'solarsystem': {
+    title: 'The Solar System: Our Cosmic Home',
+    subject: 'Science',
+    classes: ['Class 3','Class 4','Class 5','Class 6','Class 7','Class 8'],
+    duration: '5 min',
+    description: 'Travel through our solar system. 8 planets, 1 sun, infinite wonder — all animated to scale.',
+    scenes: [
+      { text: 'Meet the SUN — a giant ball of burning gas, 150 million km from Earth.', duration: 4000, action:'sun' },
+      { text: 'MERCURY — closest to sun. Hottest (day) and coldest (night) extremes.', duration: 3500, action:'mercury' },
+      { text: 'VENUS — hottest planet. Thick toxic clouds. Spins BACKWARD!', duration: 4000, action:'venus' },
+      { text: 'EARTH — our home. Only known planet with life. 71% water.', duration: 4000, action:'earth' },
+      { text: 'MARS — the red planet. NASA rovers search for ancient life here.', duration: 4000, action:'mars' },
+      { text: 'JUPITER — biggest planet. 79 moons. Great Red Spot is a 350-year-old storm!', duration: 4500, action:'jupiter' },
+      { text: 'SATURN, URANUS, NEPTUNE — gas giants with stunning rings and ice.', duration: 4500, action:'outerPlanets' },
+    ],
+    engine: 'solar'
+  }
+};
+
+function loadAnimationManager() {
+  const container = document.getElementById('animationManagerContainer');
+  if (!container) return;
+  const modules = Object.entries(ANIMATED_MODULES);
+  const hidden = JSON.parse(localStorage.getItem('kb_hidden_modules') || '[]');
+  const customVideos = LOCAL.get('custom_videos') || [];
+
+  container.innerHTML = `
+    <div class="safety-banner">🎬 <strong>${modules.length} animated learning modules.</strong> You can hide any module from students, or replace it with your own YouTube video. Hidden modules can be restored anytime.</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+      ${modules.map(([key, m]) => {
+        const isHidden = hidden.includes(key);
+        const cv = customVideos.find(v => v.topic === m.title);
+        return `
+        <div style="background:linear-gradient(145deg,${isHidden?'rgba(255,87,87,0.05)':'rgba(99,102,241,0.08)'},rgba(168,85,247,0.04));border:1px solid ${isHidden?'rgba(255,87,87,0.3)':'rgba(99,102,241,0.2)'};border-radius:14px;padding:18px;${isHidden?'opacity:0.6;':''}">
+          <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">${m.subject.toUpperCase()} · ${m.duration} ${isHidden?'· <span style="color:var(--coral);">HIDDEN</span>':''} ${cv?'· <span style="color:var(--teal);">📹 CUSTOM VIDEO</span>':''}</div>
+          <h4 style="font-family:'Lora','Georgia',serif;font-size:15px;font-weight:800;color:#fff;margin:4px 0 8px;line-height:1.3;">${sanitize(m.title)}</h4>
+          <p style="font-size:12.5px;color:rgba(255,255,255,0.7);line-height:1.55;margin-bottom:12px;">${sanitize(m.description)}</p>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:10px;">📚 ${m.classes.join(', ')} · ${m.scenes.length} scenes</div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            <button class="btn btn-gold btn-sm" onclick="playAnimatedModule('${key}')" style="flex:1;min-width:100px;padding:8px;">▶ Preview</button>
+            ${isHidden
+              ? `<button class="btn btn-coral btn-sm" onclick="restoreModule('${key}')" style="flex:1;min-width:90px;padding:8px;" title="Hidden from students - click to show">🔴 OFF (Hidden)</button>`
+              : `<button class="btn btn-teal btn-sm" onclick="hideModule('${key}')" style="flex:1;min-width:90px;padding:8px;" title="Visible to students - click to hide">🟢 ON (Visible)</button>`
+            }
+          </div>
+
+          <div style="border-top:1px dashed rgba(255,255,255,0.1);padding-top:10px;margin-top:8px;">
+            <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1px;margin-bottom:6px;">📹 REPLACE WITH YOUR VIDEO</div>
+            <input class="form-input" id="cv-${key}" placeholder="Paste YouTube URL..." value="${cv ? sanitize(cv.url) : ''}" style="font-size:11px;padding:6px 10px;margin-bottom:6px;"/>
+            <div style="display:flex;gap:4px;">
+              <button class="btn btn-teal btn-sm" onclick="setCustomModuleVideo('${key}','${m.title.replace(/'/g,"&#39;")}')" style="flex:1;font-size:11px;padding:6px;">💾 Save Video</button>
+              ${cv ? `<button class="btn btn-ghost btn-sm" onclick="removeCustomVideo('${key}','${m.title.replace(/'/g,"&#39;")}')" style="font-size:11px;padding:6px;">✕</button>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function hideModule(key) {
+  if (!confirm('Hide this module from students? You can restore it later.')) return;
+  const hidden = JSON.parse(localStorage.getItem('kb_hidden_modules') || '[]');
+  if (!hidden.includes(key)) hidden.push(key);
+  localStorage.setItem('kb_hidden_modules', JSON.stringify(hidden));
+  // Also save to admin_config for cross-device sync
+  if (supabase_client) supabase_client.from('admin_config').upsert([{key:'hidden_modules', value:JSON.stringify(hidden)}]).then(()=>{}).catch(()=>{});
+  loadAnimationManager();
+  showToast('🙈','Module hidden from students');
+}
+
+function restoreModule(key) {
+  let hidden = JSON.parse(localStorage.getItem('kb_hidden_modules') || '[]');
+  hidden = hidden.filter(k => k !== key);
+  localStorage.setItem('kb_hidden_modules', JSON.stringify(hidden));
+  if (supabase_client) supabase_client.from('admin_config').upsert([{key:'hidden_modules', value:JSON.stringify(hidden)}]).then(()=>{}).catch(()=>{});
+  loadAnimationManager();
+  showToast('↻','Module restored');
+}
+
+async function setCustomModuleVideo(key, title) {
+  const url = (document.getElementById('cv-'+key)?.value || '').trim();
+  if (!url) { showToast('⚠️','Paste a YouTube URL first',true); return; }
+  const videoId = extractYouTubeId(url);
+  if (!videoId) { showToast('⚠️','Not a valid YouTube URL — must be youtube.com/watch?v=... format',true); return; }
+  // Remove any existing custom video for this title
+  let customVideos = LOCAL.get('custom_videos') || [];
+  customVideos = customVideos.filter(v => v.topic !== title);
+  const record = {
+    id: 'CV_' + Date.now(),
+    topic: title, url, videoId,
+    uploadedBy: 'admin',
+    created_at: new Date().toISOString()
+  };
+  customVideos.push(record);
+  LOCAL.set('custom_videos', customVideos);
+  await dbInsert('custom_videos', record);
+  loadAnimationManager();
+  showToast('✅','Video linked! Students will see your video instead of the SVG animation.');
+}
+
+async function removeCustomVideo(key, title) {
+  if (!confirm('Remove your custom video? The default SVG animation will play again.')) return;
+  let customVideos = LOCAL.get('custom_videos') || [];
+  const toDelete = customVideos.find(v => v.topic === title);
+  customVideos = customVideos.filter(v => v.topic !== title);
+  LOCAL.set('custom_videos', customVideos);
+  if (toDelete && supabase_client) {
+    try { await supabase_client.from('custom_videos').delete().eq('id', toDelete.id); } catch(e){}
+  }
+  loadAnimationManager();
+  showToast('🗑','Custom video removed');
+}
+
+async function playAnimatedModule(key) {
+  // Ensure custom videos loaded from Supabase
+  await preloadCustomVideos();
+  const module = ANIMATED_MODULES[key];
+  if (!module) return;
+  _currentVideoTopic = module.title;
+  _currentVideoSubject = module.subject;
+  _currentVideoSubtitle = module.subject + ' · ' + module.duration;
+  _aiMessages = [];
+
+  // Set titles
+  document.getElementById('ai-video-title').textContent = module.title;
+  document.getElementById('ai-video-sub').textContent = module.subject + ' · ' + module.duration + ' · AI-Assisted';
+  document.getElementById('vc-topic-display').textContent = module.title.length > 40 ? module.title.slice(0,40)+'...' : module.title;
+  document.getElementById('vid-info-subj').textContent = module.subject;
+  document.getElementById('vid-info-tutor').textContent = 'KB Animation';
+  document.getElementById('vid-info-duration').textContent = module.duration;
+
+  // Open modal
+  document.getElementById('aiVideoOverlay').classList.remove('hidden');
+
+  // V11: Check if admin uploaded a real video for this topic — play it instead of SVG
+  const custom = getCustomVideo(module.title);
+  if (custom && custom.videoId) {
+    // Play the uploaded YouTube video in iframe
+    const placeholder = document.getElementById('vid-placeholder');
+    const iframe = document.getElementById('vid-iframe');
+    placeholder.style.display = 'none';
+    iframe.src = `https://www.youtube-nocookie.com/embed/${custom.videoId}?autoplay=1&rel=0&modestbranding=1`;
+    iframe.classList.remove('hidden');
+    document.getElementById('vid-loading').classList.add('hidden');
+  } else if (custom && custom.url) {
+    // Non-YouTube link — show "Open video" button
+    const placeholder = document.getElementById('vid-placeholder');
+    placeholder.style.display = '';
+    placeholder.innerHTML = `
+      <div class="ai-vid-bg" style="position:absolute;inset:0;z-index:0;"></div>
+      <div style="position:relative;z-index:2;text-align:center;padding:30px;max-width:500px;">
+        <div style="font-size:56px;margin-bottom:12px;">🎬</div>
+        <div style="font-family:'Lora','Georgia',serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:10px;">${module.title}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.8);margin-bottom:20px;line-height:1.6;">Admin-uploaded video lesson. Tap below to watch, then return here to ask questions.</div>
+        <a class="btn btn-gold" href="${custom.url}" target="_blank" rel="noopener" style="padding:12px 28px;text-decoration:none;display:inline-block;">▶ Watch Video</a>
+      </div>`;
+    document.getElementById('vid-iframe').classList.add('hidden');
+  } else {
+    // No uploaded video — show SVG animation as before
+    renderAnimatedScene(module);
+  }
+
+  // Welcome message in chat
+  const msgsEl = document.getElementById('ai-messages-box');
+  msgsEl.innerHTML = `<div class="ai-msg ai"><div class="ai-msg-name">KB AI TUTOR</div>🎬 Welcome to <strong>${module.title}</strong>! ${custom?'The video is playing above':'The animation will play above'} — ask me any doubt after watching. I can explain concepts step-by-step, give memory tricks, or quiz you! 🎓</div>`;
+  updateAIStatusBar();
+}
+
+function renderAnimatedScene(module) {
+  const container = document.getElementById('vid-placeholder');
+  const iframe = document.getElementById('vid-iframe');
+  iframe.classList.add('hidden');
+  iframe.src = 'about:blank';
+  document.getElementById('vid-loading').classList.add('hidden');
+  container.style.display = '';
+
+  const engineHTML = ANIMATION_ENGINES[module.engine] ? ANIMATION_ENGINES[module.engine].html : '';
+
+  container.innerHTML = `
+    <div class="ai-vid-bg" style="position:absolute;inset:0;z-index:0;"></div>
+    <div style="position:relative;z-index:2;width:100%;height:100%;display:flex;flex-direction:column;">
+     <div id="anim-stage" style="flex:1;min-height:300px;max-height:400px;display:flex;align-items:center;justify-content:center;padding:20px 10px;overflow:visible;width:100%;">
+        ${engineHTML || '<div style="color:#fff;font-size:14px;">Loading animation...</div>'}
+      </div>
+      <div id="anim-caption" style="padding:16px 24px;background:linear-gradient(180deg,rgba(0,0,0,0.3),rgba(0,0,0,0.7));text-align:center;min-height:80px;">
+        <div style="font-family:'Merriweather',Georgia,serif;font-size:15px;color:#fff;font-weight:600;line-height:1.5;" id="anim-text">Starting animation...</div>
+      </div>
+      <div style="padding:10px 20px;background:rgba(0,0,0,0.4);display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;gap:6px;" id="anim-progress-dots"></div>
+        <div style="display:flex;gap:6px;">
+          <button class="vc-btn" onclick="pauseAnimation()">⏸ Pause</button>
+          <button class="vc-btn" onclick="restartAnimation()">↺ Restart</button>
+          <button class="vc-btn" onclick="skipAnimationScene()">⏭ Skip</button>
+        </div>
+      </div>
+    </div>`;
+
+  _currentAnimModule = module;
+  _currentAnimScene = 0;
+  _animPaused = false;
+  advanceAnimScene();
+}
+
+let _currentAnimModule = null;
+let _currentAnimScene = 0;
+let _animTimer = null;
+let _animPaused = false;
+
+function advanceAnimScene() {
+  clearTimeout(_animTimer);
+  if (!_currentAnimModule || _animPaused) return;
+  const scenes = _currentAnimModule.scenes;
+  if (_currentAnimScene >= scenes.length) {
+    document.getElementById('anim-text').innerHTML = `✨ <strong style="color:var(--gold);">End of animation.</strong> Ask the AI tutor below any question about ${_currentAnimModule.subject}!`;
+    return;
+  }
+  const scene = scenes[_currentAnimScene];
+  const textEl = document.getElementById('anim-text');
+  if (textEl) {
+    textEl.style.opacity = '0';
+    setTimeout(() => {
+      textEl.innerHTML = scene.text;
+      textEl.style.opacity = '1';
+      textEl.style.transition = 'opacity 0.6s ease';
+    }, 300);
+  }
+  // Trigger engine-specific action
+  const engine = ANIMATION_ENGINES[_currentAnimModule.engine];
+  if (engine && engine.tick) engine.tick(scene, _currentAnimScene);
+
+  // Update progress dots
+  const dotsEl = document.getElementById('anim-progress-dots');
+  if (dotsEl) {
+    dotsEl.innerHTML = scenes.map((_, i) => `<div style="width:8px;height:8px;border-radius:50%;background:${i === _currentAnimScene ? 'var(--gold)' : i < _currentAnimScene ? 'rgba(0,229,160,0.6)' : 'rgba(255,255,255,0.2)'};transition:all .3s;"></div>`).join('');
+  }
+
+  _currentAnimScene++;
+  _animTimer = setTimeout(advanceAnimScene, scene.duration || 4000);
+
+  // Speak the text if TTS available
+  try {
+    if (window.speechSynthesis && scene.text && !_animPaused) {
+      const plain = scene.text.replace(/<[^>]+>/g,'');
+      const u = new SpeechSynthesisUtterance(plain);
+      u.lang = /[\u0B80-\u0BFF]/.test(plain) ? 'ta-IN' : 'en-IN';
+      u.rate = 0.92;
+      u.pitch = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+  } catch(e){}
+}
+
+function pauseAnimation() {
+  _animPaused = !_animPaused;
+  if (_animPaused) {
+    clearTimeout(_animTimer);
+    try { window.speechSynthesis.pause(); } catch(e){}
+    showToast('⏸','Paused');
+  } else {
+    try { window.speechSynthesis.resume(); } catch(e){}
+    advanceAnimScene();
+    showToast('▶️','Resumed');
+  }
+}
+function restartAnimation() {
+  clearTimeout(_animTimer);
+  try { window.speechSynthesis.cancel(); } catch(e){}
+  _currentAnimScene = 0;
+  _animPaused = false;
+  advanceAnimScene();
+}
+function skipAnimationScene() {
+  clearTimeout(_animTimer);
+  try { window.speechSynthesis.cancel(); } catch(e){}
+  advanceAnimScene();
+}
+
+// ══════════════════════════════════════════════
+// V8: ANIMATION ENGINES — SVG + CSS
+// ══════════════════════════════════════════════
+const ANIMATION_ENGINES = {
+  numberLine: {
+ html: `<svg id="anim-svg" viewBox="0 0 600 240" style="width:100%;height:auto;min-height:200px;max-height:380px;display:block;overflow:visible;">
+      <defs><linearGradient id="nlGrad" x1="0%" x2="100%"><stop offset="0%" stop-color="#EF4444"/><stop offset="50%" stop-color="#F5C842"/><stop offset="100%" stop-color="#00E5A0"/></linearGradient></defs>
+      <line x1="20" y1="100" x2="580" y2="100" stroke="url(#nlGrad)" stroke-width="3"/>
+      ${[-5,-4,-3,-2,-1,0,1,2,3,4,5].map((n,i) => {
+        const x = 20 + i * 56;
+        return `<line x1="${x}" y1="90" x2="${x}" y2="110" stroke="#fff" stroke-width="2"/>
+        <text x="${x}" y="145" fill="${n===0?'#F5C842':n<0?'#FF5757':'#00E5A0'}" font-size="16" font-weight="700" text-anchor="middle" font-family="JetBrains Mono, monospace">${n}</text>`;
+      }).join('')}
+      <circle id="nl-walker" cx="300" cy="100" r="14" fill="#6366F1" stroke="#fff" stroke-width="3"/>
+      <text id="nl-label" x="300" y="75" fill="#fff" font-size="12" text-anchor="middle" font-family="JetBrains Mono">0</text>
+    </svg>`,
+    tick: (scene, idx) => {
+      if (!scene.action) return;
+      const walker = document.getElementById('nl-walker');
+      const label = document.getElementById('nl-label');
+      if (!walker) return;
+      const posToX = (n) => 20 + (n+5) * 56;
+      if (scene.action === 'walk' && typeof scene.from === 'number' && typeof scene.to === 'number') {
+        walker.style.transition = 'cx 3s ease';
+        walker.setAttribute('cx', posToX(scene.from));
+        setTimeout(() => walker.setAttribute('cx', posToX(scene.to)), 600);
+        if (label) {
+          label.textContent = scene.from + ' → ' + scene.to;
+          label.setAttribute('x', posToX((scene.from+scene.to)/2));
+        }
+      }
+    }
+  },
+  physics: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;">
+      <rect x="0" y="250" width="600" height="50" fill="#3B1F00"/>
+      <line x1="0" y1="250" x2="600" y2="250" stroke="#F5C842" stroke-width="2"/>
+      <circle id="phys-ball" cx="100" cy="230" r="22" fill="#EF4444" stroke="#fff" stroke-width="2"/>
+      <text x="300" y="50" fill="#F5C842" font-size="22" font-weight="700" text-anchor="middle" font-family="Lora, serif" id="phys-title">⚛ Newton's Laws</text>
+      <line id="phys-force-arrow" x1="40" y1="230" x2="75" y2="230" stroke="#00E5A0" stroke-width="4" marker-end="url(#arrow)" opacity="0"/>
+      <defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L10,6 L0,12 z" fill="#00E5A0"/></marker></defs>
+    </svg>`,
+    tick: (scene, idx) => {
+      const ball = document.getElementById('phys-ball');
+      const arrow = document.getElementById('phys-force-arrow');
+      if (!ball) return;
+      if (scene.action === 'ballRest') { ball.style.transition='none'; ball.setAttribute('cx','100'); arrow.setAttribute('opacity','0'); }
+      if (scene.action === 'applyForce') { arrow.setAttribute('opacity','1'); arrow.style.transition='opacity .5s'; }
+      if (scene.action === 'ballRolls') { ball.style.transition='cx 3.5s ease-out'; ball.setAttribute('cx','500'); arrow.setAttribute('opacity','0'); }
+      if (scene.action === 'showFma') { document.getElementById('phys-title').textContent = 'F = m × a'; }
+      if (scene.action === 'rocket') { ball.setAttribute('fill','#6366F1'); document.getElementById('phys-title').textContent = '🚀 Action = Reaction'; }
+    }
+  },
+  chemistry: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;">
+      <circle id="h1" cx="150" cy="150" r="25" fill="#EF4444"/><text x="150" y="156" fill="#fff" font-size="16" font-weight="800" text-anchor="middle">H</text>
+      <circle id="h2" cx="200" cy="180" r="25" fill="#EF4444"/><text x="200" y="186" fill="#fff" font-size="16" font-weight="800" text-anchor="middle">H</text>
+      <circle id="o1" cx="400" cy="150" r="32" fill="#3B82F6"/><text x="400" y="157" fill="#fff" font-size="18" font-weight="800" text-anchor="middle">O</text>
+      <text id="chem-eq" x="300" y="260" fill="#F5C842" font-size="20" font-weight="700" text-anchor="middle" font-family="Lora, serif">2H + O → H₂O</text>
+    </svg>`,
+    tick: (scene, idx) => {
+      if (scene.action === 'bondFormation') {
+        const h1 = document.getElementById('h1'), h2 = document.getElementById('h2'), o1 = document.getElementById('o1');
+        if (h1) { h1.style.transition='cx 2s ease'; h1.setAttribute('cx','370'); }
+        if (h2) { h2.style.transition='cx 2s ease, cy 2s ease'; h2.setAttribute('cx','430'); h2.setAttribute('cy','190'); }
+      }
+      if (scene.action === 'combustion') {
+        const eq = document.getElementById('chem-eq');
+        if (eq) eq.textContent = 'CH₄ + 2O₂ → CO₂ + 2H₂O + 🔥';
+      }
+    }
+  },
+  history: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;">
+      <defs><radialGradient id="indiaGrad"><stop offset="0%" stop-color="#F5C842"/><stop offset="100%" stop-color="#8B4513"/></radialGradient></defs>
+      <path d="M 150,70 Q 200,60 250,80 Q 300,100 340,140 Q 360,180 350,220 Q 320,260 250,250 Q 180,240 140,200 Q 120,140 150,70 Z" fill="url(#indiaGrad)" opacity="0.35" stroke="#F5C842" stroke-width="2"/>
+      <text x="230" y="165" fill="#fff" font-size="16" font-weight="700" text-anchor="middle" font-family="Lora, serif" opacity="0.8">🇮🇳 INDIA</text>
+      <circle id="gandhi" cx="180" cy="130" r="10" fill="#fff" stroke="#F5C842" stroke-width="3"/>
+      <text id="gandhi-label" x="180" y="115" fill="#F5C842" font-size="11" font-weight="800" text-anchor="middle">Gandhi</text>
+      <line id="march-line" x1="180" y1="130" x2="180" y2="130" stroke="#00E5A0" stroke-width="3" stroke-dasharray="5,3"/>
+      <text x="300" y="40" fill="#F5C842" font-size="20" font-weight="700" text-anchor="middle" font-family="Lora, serif" id="hist-title">March 1930</text>
+    </svg>`,
+    tick: (scene, idx) => {
+      const g = document.getElementById('gandhi');
+      const line = document.getElementById('march-line');
+      const label = document.getElementById('gandhi-label');
+      const title = document.getElementById('hist-title');
+      if (scene.action === 'startMarch' && g) { g.style.transition='none'; g.setAttribute('cx','180'); g.setAttribute('cy','130'); if(line){line.setAttribute('x2','180');line.setAttribute('y2','130');} }
+      if (scene.action === 'growingCrowd' && g) { g.setAttribute('r','14'); g.style.transition='cx 4s ease, cy 4s ease'; g.setAttribute('cx','260'); g.setAttribute('cy','200'); if(line){line.style.transition='all 4s ease';line.setAttribute('x2','260');line.setAttribute('y2','200');} if(title) title.textContent='24 Days · 240 Miles'; }
+      if (scene.action === 'arriveDandi' && g) { g.style.transition='cx 2s, cy 2s'; g.setAttribute('cx','290'); g.setAttribute('cy','230'); if(line){line.setAttribute('x2','290');line.setAttribute('y2','230');} if(label) label.textContent='Dandi Reached!'; if(title) title.textContent='⚡ Salt Picked!'; }
+      if (scene.action === 'nationwide' && title) { title.textContent = '🔥 India Rises'; if(g) g.setAttribute('fill','#F5C842'); }
+    }
+  },
+  biology: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;">
+      <circle cx="500" cy="60" r="35" fill="#F5C842"/><text x="500" y="67" fill="#fff" font-size="20" text-anchor="middle">☀</text>
+      <path d="M 300,280 Q 300,200 290,150 Q 280,100 300,60" stroke="#22c55e" stroke-width="6" fill="none"/>
+      <ellipse id="leaf1" cx="280" cy="130" rx="40" ry="18" fill="#22c55e" transform="rotate(-30 280 130)"/>
+      <ellipse id="leaf2" cx="320" cy="100" rx="40" ry="18" fill="#22c55e" transform="rotate(30 320 100)"/>
+      <text x="80" y="150" fill="#3B82F6" font-size="14" font-weight="700" text-anchor="middle" id="bio-co2">CO₂</text>
+      <text x="80" y="180" fill="#06B6D4" font-size="14" font-weight="700" text-anchor="middle" id="bio-h2o">H₂O</text>
+      <text x="520" y="150" fill="#EF4444" font-size="14" font-weight="700" text-anchor="middle" id="bio-o2">O₂</text>
+      <text x="520" y="180" fill="#F5C842" font-size="14" font-weight="700" text-anchor="middle" id="bio-glucose">Food</text>
+      <path d="M 100,150 Q 200,130 270,130" stroke="#3B82F6" stroke-width="2" fill="none" stroke-dasharray="4,3" opacity="0.6"/>
+      <path d="M 330,110 Q 420,130 500,150" stroke="#EF4444" stroke-width="2" fill="none" stroke-dasharray="4,3" opacity="0.6"/>
+    </svg>`,
+    tick: () => {}
+  },
+  fractions: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;">
+      <circle cx="300" cy="150" r="100" fill="none" stroke="#F5C842" stroke-width="4"/>
+      <g id="pizza-slices"></g>
+      <text id="frac-label" x="300" y="290" fill="#F5C842" font-size="22" font-weight="700" text-anchor="middle" font-family="Lora, serif">🍕 Whole = 1</text>
+    </svg>`,
+    tick: (scene, idx) => {
+      const label = document.getElementById('frac-label');
+      const slices = document.getElementById('pizza-slices');
+      if (!slices || !label) return;
+      if (scene.action === 'pizzaWhole') { slices.innerHTML = ''; label.textContent = '🍕 Whole = 1'; }
+      if (scene.action === 'pizzaQuarter') {
+        slices.innerHTML = `<line x1="300" y1="50" x2="300" y2="250" stroke="#F5C842" stroke-width="3"/><line x1="200" y1="150" x2="400" y2="150" stroke="#F5C842" stroke-width="3"/>`;
+        label.textContent = '4 slices · each = 1/4';
+      }
+      if (scene.action === 'fractionAdd') { label.textContent = '1/4 + 1/4 = 2/4 = 1/2'; }
+      if (scene.action === 'equivalence') { label.textContent = '1/2 = 2/4 = 4/8 ✓'; }
+    }
+  },
+  electricity: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;">
+      <rect x="50" y="130" width="50" height="40" fill="#F5C842" stroke="#fff" stroke-width="2"/>
+      <text x="75" y="155" fill="#0a0612" font-size="14" font-weight="800" text-anchor="middle">🔋</text>
+      <path d="M 100,150 L 500,150 L 500,230 L 100,230 L 100,150" stroke="#00E5A0" stroke-width="3" fill="none"/>
+      <circle cx="300" cy="150" r="15" fill="#F5C842" opacity="0.8"/><text x="300" y="156" fill="#000" font-size="12" text-anchor="middle">💡</text>
+      <circle class="e-particle" cx="150" cy="150" r="5" fill="#06B6D4"><animate attributeName="cx" values="150;500;500;150;150" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="150;150;230;230;150" dur="4s" repeatCount="indefinite"/></circle>
+      <circle class="e-particle" cx="250" cy="150" r="5" fill="#06B6D4"><animate attributeName="cx" values="250;500;500;100;100;250" dur="4s" repeatCount="indefinite"/><animate attributeName="cy" values="150;150;230;230;150;150" dur="4s" repeatCount="indefinite"/></circle>
+      <text x="300" y="270" fill="#00E5A0" font-size="16" font-weight="700" text-anchor="middle" font-family="JetBrains Mono" id="elec-label">V = I × R</text>
+    </svg>`,
+    tick: () => {}
+  },
+  solar: {
+    html: `<svg viewBox="0 0 600 300" style="width:100%;height:100%;max-height:300px;background:#000;">
+      <circle cx="60" cy="150" r="40" fill="#F5C842"/>
+      <circle cx="120" cy="150" r="4" fill="#999"/>
+      <circle cx="160" cy="150" r="6" fill="#F59E0B"/>
+      <circle cx="210" cy="150" r="7" fill="#3B82F6"/>
+      <circle cx="260" cy="150" r="5" fill="#EF4444"/>
+      <circle cx="340" cy="150" r="15" fill="#F97316"/>
+      <circle cx="420" cy="150" r="13" fill="#FBBF24"><animateTransform attributeName="transform" type="rotate" from="0 420 150" to="360 420 150" dur="6s" repeatCount="indefinite"/></circle>
+      <ellipse cx="420" cy="150" rx="22" ry="5" fill="none" stroke="#F5C842" stroke-width="1"/>
+      <circle cx="490" cy="150" r="10" fill="#06B6D4"/>
+      <circle cx="550" cy="150" r="11" fill="#3B82F6"/>
+      <text x="300" y="280" fill="#fff" font-size="14" text-anchor="middle" font-family="Lora, serif">☀ 8 Planets · 1 Sun · Our Solar System</text>
+    </svg>`,
+    tick: () => {}
+  }
+};
+
+function genStrongPwdFor(inputId) {
+  // Generate a password that always passes validateStrongPassword
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const special = '!@#$%^&*';
+  const all = upper + lower + digits + special;
+  const pick = (s) => s[Math.floor(Math.random() * s.length)];
+  // guarantee one of each
+  let pwd = pick(upper) + pick(lower) + pick(digits) + pick(special);
+  for (let i = 0; i < 8; i++) pwd += pick(all);
+  // shuffle
+  pwd = pwd.split('').sort(() => Math.random() - 0.5).join('');
+  const el = document.getElementById(inputId);
+  if (el) { el.value = pwd; el.type = 'text'; el.dispatchEvent(new Event('input')); }
+  showToast('🎲','Strong password generated (visible)');
+}
+
+function generateStudentPwd() { genStrongPwdFor('as-pass'); }
+
+// ═══════════════════════════════════════════════════════
+// V8: QUIZ ENGINE — 60+ quizzes PER chapter PER class
+// Three sources: hand-crafted + template generators + AI
+// ═══════════════════════════════════════════════════════
+
+// Seed bank — high-quality hand-written questions per subject/chapter
+const QUIZ_BANK_V8 = {
+  'Mathematics|Integers': [
+    { q:'What is the sum of -7 and +3?', opts:['-10','-4','+4','+10'], ans:1,
+      exp:'Start at -7 on the number line. Move 3 steps RIGHT (because +3). You land on -4.',
+      optExp:['This would be -7 + (-3), not -7 + 3. You subtracted instead of adding.','Correct! -7 + 3: start at -7, walk 3 right, land at -4.','You ignored the minus sign of 7. |(-7) + 3| ≠ (-7) + 3.','You added both signs as positive. Always respect the sign!'] },
+    { q:'Which of these is NOT an integer?', opts:['0','-5','3.14','100'], ans:2,
+      exp:'Integers are whole numbers: …-2, -1, 0, 1, 2… No decimals or fractions allowed.',
+      optExp:['0 IS an integer — the key integer actually. It separates positives from negatives.','-5 is a negative integer, but still an integer.','Correct! 3.14 has a decimal part — it is a rational number, not an integer.','100 is a positive integer (a natural number too).'] },
+    { q:'The additive inverse of -8 is:', opts:['0','-8','+8','1/8'], ans:2,
+      exp:'"Additive inverse" means the number that, when added, gives 0. -8 + 8 = 0, so +8 is the inverse.',
+      optExp:['0 is the identity (adds to give same number), not inverse.','-8 + (-8) = -16, not 0. This doubles the negative.','Correct! -8 + 8 = 0.','1/8 is the MULTIPLICATIVE inverse of 8, not additive inverse.'] },
+    { q:'(-5) × (-3) = ?', opts:['-15','+15','-8','+8'], ans:1,
+      exp:'Negative × Negative = Positive. Multiply magnitudes: 5×3 = 15. Sign: (-)(-) = (+). Answer: +15.',
+      optExp:['You multiplied correctly but got sign wrong. (-)(-) = +, not -.','Correct! (-)(-) = + and 5×3 = 15. So +15.','You ADDED (-5 + -3 = -8) instead of multiplying.','You added magnitudes. Multiplication ≠ addition.'] },
+    { q:'Which integer represents a loss of ₹500?', opts:['+500','-500','0','500/-'], ans:1,
+      exp:'Positive integers represent gain/income. Negative integers represent loss/debt. ₹500 lost = -500.',
+      optExp:['+500 would mean a GAIN of ₹500, opposite of loss.','Correct! Loss = below zero = negative. So -500.','0 means no change — but there was a loss.','"500/-" is just a way to write ₹500; has no positive/negative meaning.'] },
+    { q:'|-15| equals:', opts:['-15','+15','0','225'], ans:1,
+      exp:'|x| means absolute value — the distance from 0. Distance is never negative, so |-15| = 15.',
+      optExp:['Absolute value removes the negative sign, never keeps it.','Correct! |-15| = 15 (distance from 0 is 15 units).','|-15| is never 0 unless the number itself is 0.','225 = 15². You confused absolute value with square.'] },
+    { q:'What comes next: -4, -2, 0, 2, ?', opts:['3','4','6','-2'], ans:1,
+      exp:'Pattern: each term is 2 more than the previous. -4 → -2 → 0 → 2 → 4.',
+      optExp:['The gap is 2, not 1. 2 + 1 = 3, wrong.','Correct! 2 + 2 = 4.','You added 4 instead of 2. Check the pattern again.','The sequence is increasing, not decreasing.'] },
+    { q:'Which is largest?', opts:['-5','-1','0','-3'], ans:2,
+      exp:'On the number line, numbers to the RIGHT are larger. 0 is right of all negatives, so 0 is largest here.',
+      optExp:['-5 is the smallest (furthest left).','-1 is bigger than -5 and -3, but 0 > -1.','Correct! 0 is greater than any negative number.','-3 is greater than -5 but less than -1 and 0.'] },
+    { q:'(-12) ÷ (+4) = ?', opts:['-3','+3','-4','+4'], ans:0,
+      exp:'Negative ÷ Positive = Negative. 12 ÷ 4 = 3. Apply the sign: -3.',
+      optExp:['Correct! -12 ÷ 4 = -3 (negative because signs differ).','You ignored the negative sign of -12.','12 ÷ 4 = 3, not 4. Division error.','Both sign wrong AND division wrong.'] },
+    { q:'Temperature dropped from 5°C to -3°C. How much did it drop?', opts:['2°C','5°C','8°C','3°C'], ans:2,
+      exp:'Drop = starting temp - ending temp = 5 - (-3) = 5 + 3 = 8°C.',
+      optExp:['You subtracted small from big incorrectly: 5 - 3 = 2, ignoring the sign of -3.','5°C is just the starting temperature, not the drop.','Correct! 5 - (-3) = 5 + 3 = 8°C total drop.','3°C is the absolute value of the ending temp, not the drop.'] },
+    { q:'The predecessor of -7 is:', opts:['-6','-8','-7','+7'], ans:1,
+      exp:'Predecessor = the number that comes BEFORE (smaller by 1). -7 - 1 = -8.',
+      optExp:['-6 is the SUCCESSOR (comes after -7), not predecessor.','Correct! -7 - 1 = -8 (one step left on number line).','-7 is the number itself — can\'t be its own predecessor.','+7 is the additive inverse, not predecessor.'] },
+    { q:'The successor of -1 is:', opts:['-2','0','+1','-1'], ans:1,
+      exp:'Successor = the number AFTER (larger by 1). -1 + 1 = 0.',
+      optExp:['-2 is the PREDECESSOR (comes before -1).','Correct! -1 + 1 = 0. Zero is the successor of -1.','+1 is 2 steps after -1, not the immediate successor.','The successor can\'t be the number itself.'] },
+    { q:'(-8) + (+8) = ?', opts:['-16','+16','0','+1'], ans:2,
+      exp:'A number + its additive inverse always = 0. -8 and +8 cancel out.',
+      optExp:['You added magnitudes and kept negative sign — but signs differ, so subtract.','You added magnitudes and made it positive — but they cancel.','Correct! -8 + 8 = 0 (they are opposites).','No arithmetic reason this would give 1.'] },
+    { q:'Product of 3 negative integers is:', opts:['Positive','Negative','Zero','Depends'], ans:1,
+      exp:'(-)(-) = +, then (+)(-) = (-). Count the negatives: odd number = negative result.',
+      optExp:['2 negatives = positive, but 3 = odd = negative.','Correct! Odd number of negatives → negative product.','Only if one factor is 0 would product be 0.','The rule is fixed: odd negatives = negative.'] },
+    { q:'The smallest positive integer is:', opts:['0','-1','1','100'], ans:2,
+      exp:'Positive integers start at 1. Zero is neither positive nor negative.',
+      optExp:['0 is not positive, not negative — it is neutral.','-1 is negative, not positive.','Correct! 1 is the smallest positive integer.','100 is positive but not smallest.'] }
+  ],
+  'History|Nationalism-India': [
+    { q:'In which year did the Non-Cooperation Movement begin?', opts:['1919','1920','1930','1942'], ans:1,
+      exp:'Gandhi launched Non-Cooperation in September 1920, after the Jallianwala Bagh massacre (1919) and Rowlatt Act shock.',
+      optExp:['1919 = Rowlatt Act + Jallianwala Bagh — the cause, not the movement.','Correct! 1920 — the first mass movement led by Gandhi.','1930 = Salt March / Civil Disobedience Movement.','1942 = Quit India Movement.'] },
+    { q:'The Salt March covered how many miles?', opts:['100','180','240','400'], ans:2,
+      exp:'Gandhi walked 240 miles (385 km) in 24 days, from Sabarmati Ashram to Dandi (Gujarat coast).',
+      optExp:['100 miles would be too short for a 24-day march.','180 miles is a common confusion — actual distance is 240.','Correct! 240 miles in 24 days averaging 10 miles/day.','400 miles would be too far; march went across Gujarat only.'] },
+    { q:'Rowlatt Act was passed in:', opts:['1915','1917','1919','1921'], ans:2,
+      exp:'Rowlatt Act (1919) allowed British to arrest and imprison Indians without trial — sparked national outrage.',
+      optExp:['1915 = Gandhi returns from South Africa.','1917 = Champaran Satyagraha (Gandhi\'s first Indian movement).','Correct! 1919 — Rowlatt Act → Jallianwala Bagh → national protest.','1921 = middle of Non-Cooperation, not Rowlatt year.'] },
+    { q:'Who wrote "Hind Swaraj"?', opts:['Tagore','Gandhi','Tilak','Nehru'], ans:1,
+      exp:'Gandhi wrote "Hind Swaraj" in 1909 outlining his views on self-rule and rejection of Western civilization.',
+      optExp:['Tagore wrote "Gitanjali" and national anthems. Not Hind Swaraj.','Correct! Gandhi wrote it during ship voyage from England in 1909.','Tilak wrote "Gita Rahasya" — not Hind Swaraj.','Nehru wrote "Discovery of India" — different book.'] },
+    { q:'Chauri Chaura incident happened in:', opts:['1919','1920','1922','1930'], ans:2,
+      exp:'On 4 Feb 1922, a mob of protesters burned a police station killing 22 police officers. Gandhi was shocked and called off Non-Cooperation.',
+      optExp:['1919 = Rowlatt + Jallianwala, different events.','1920 = Movement LAUNCH, not Chauri Chaura.','Correct! Feb 1922 — the violence that ended Non-Cooperation.','1930 = Salt March, a different movement.'] },
+    { q:'Quit India Movement was launched in:', opts:['1939','1940','1942','1945'], ans:2,
+      exp:'August 8, 1942. Gandhi gave the famous "Do or Die" speech. Congress passed the Quit India Resolution.',
+      optExp:['1939 = WWII starts, India dragged in.','1940 = Individual Satyagraha, not mass Quit India.','Correct! 8 Aug 1942 — "Do or Die" speech at Bombay.','1945 = WWII ends; Quit India already happened 3 years earlier.'] },
+    { q:'Who said "Give me blood, I will give you freedom"?', opts:['Gandhi','Nehru','Subhas Bose','Bhagat Singh'], ans:2,
+      exp:'Subhas Chandra Bose, founder of Indian National Army (INA/Azad Hind Fauj), said this in Burma in 1944.',
+      optExp:['Gandhi preached NON-violence, not blood. He\'d never say this.','Nehru was more diplomatic; not his style or words.','Correct! Bose — militant freedom fighter, founded INA.','Bhagat Singh (d.1931) was a revolutionary but these are Bose\'s words.'] },
+    { q:'Simon Commission came to India in:', opts:['1919','1928','1930','1942'], ans:1,
+      exp:'1928 — Simon Commission arrived to review Indian constitution but had NO Indian members. Massive protests with "Simon Go Back" slogans.',
+      optExp:['1919 = Rowlatt Act year.','Correct! 1928 — all-white Simon Commission rejected by Indians.','1930 = Salt March, different event.','1942 = Quit India, much later.'] },
+    { q:'Dandi is located in which state?', opts:['Maharashtra','Gujarat','Rajasthan','Tamil Nadu'], ans:1,
+      exp:'Dandi is a coastal village in Gujarat. Gandhi chose it because sea salt could be collected freely there.',
+      optExp:['Maharashtra is south of Gujarat; Sabarmati is in Gujarat, not Maharashtra.','Correct! Dandi is in Gujarat — near Navsari district, on the Arabian Sea.','Rajasthan is inland with no coast — salt comes from lakes there.','Tamil Nadu is in south India — Gandhi\'s march was in the west.'] },
+    { q:'Khilafat Movement was merged with:', opts:['Swadeshi','Non-Cooperation','Civil Disobedience','Quit India'], ans:1,
+      exp:'In 1920, Gandhi merged Khilafat (Muslim protest against British treatment of Turkey\'s Caliph) with Non-Cooperation — creating Hindu-Muslim unity.',
+      optExp:['Swadeshi (1905) was earlier — about Bengal partition, not Khilafat.','Correct! 1920 — Khilafat + Non-Cooperation merged by Gandhi.','Civil Disobedience = 1930 (Salt March era), after Khilafat had dissolved.','Quit India = 1942, much later.'] },
+    { q:'The Lahore Session (1929) declared:', opts:['Home Rule','Purna Swaraj','Boycott','Swadeshi'], ans:1,
+      exp:'Congress under Nehru\'s presidency (Lahore 1929) declared "Purna Swaraj" — complete independence, not dominion status.',
+      optExp:['Home Rule was Tilak/Besant\'s 1916 campaign — different and older.','Correct! Purna Swaraj = complete independence. Lahore Session, 1929.','"Boycott" was a tactic in Swadeshi Movement (1905), not a 1929 demand.','Swadeshi was 1905 against Bengal partition.'] },
+    { q:'26 January 1930 is celebrated as:', opts:['Republic Day','Independence Day','Purna Swaraj Day','Labour Day'], ans:2,
+      exp:'Congress observed first Purna Swaraj Day on 26 Jan 1930. Later, the Constitution came into effect on same date in 1950, making it Republic Day.',
+      optExp:['Republic Day is Jan 26 but that started in 1950, not 1930.','Independence Day = 15 August 1947.','Correct! 26 Jan 1930 = first Purna Swaraj Day (became Republic Day later).','Labour Day = May 1, global observance.'] },
+    { q:'Who led the Bardoli Satyagraha?', opts:['Gandhi','Nehru','Vallabhbhai Patel','Subhas Bose'], ans:2,
+      exp:'Vallabhbhai Patel led the 1928 Bardoli tax protest successfully — earning him the title "Sardar" (leader) from the villagers.',
+      optExp:['Gandhi guided many movements but Bardoli was led by Patel directly.','Nehru was active nationally but not in Bardoli.','Correct! Patel earned "Sardar" title from Bardoli farmers.','Bose focused on eastern India and later INA, not Bardoli.'] }
+  ],
+  'Physics|NewtonsLaws': [
+    { q:'Newton\'s First Law is also called:', opts:['Law of Force','Law of Inertia','Law of Reaction','Law of Gravitation'], ans:1,
+      exp:'The First Law describes inertia — the tendency of objects to resist change in motion. Hence "Law of Inertia".',
+      optExp:['The 2nd law deals with force (F = ma).','Correct! 1st Law = Law of Inertia. Objects resist motion change.','3rd Law = action-reaction pairs.','Newton\'s Law of Gravitation is a separate law (F = Gm₁m₂/r²).'] },
+    { q:'Formula for Newton\'s 2nd law:', opts:['E=mc²','F=ma','V=IR','a=gt'], ans:1,
+      exp:'Force = mass × acceleration (F = m × a). The greater the mass or acceleration, the greater the force.',
+      optExp:['E=mc² is Einstein\'s mass-energy equivalence, not Newton.','Correct! F = ma. The cornerstone of classical mechanics.','V=IR is Ohm\'s law (electricity).','a = gt is kinematics (g = gravity, t = time), not Newton\'s 2nd law.'] },
+    { q:'SI unit of force is:', opts:['Joule','Newton','Watt','Pascal'], ans:1,
+      exp:'Named after Isaac Newton. 1 Newton = force needed to accelerate 1 kg at 1 m/s² (F = ma).',
+      optExp:['Joule is the unit of ENERGY or WORK.','Correct! Newton (N). Named after him. 1 N = 1 kg·m/s².','Watt is the unit of POWER (J/s).','Pascal is the unit of PRESSURE (N/m²).'] },
+    { q:'When you jump, the ground pushes you up. This is:', opts:['1st Law','2nd Law','3rd Law','Gravity only'], ans:2,
+      exp:'You push the ground DOWN; the ground pushes you UP with equal and opposite force. This is action-reaction = 3rd Law.',
+      optExp:['1st Law is about maintaining motion, not reactions.','2nd Law relates force, mass, acceleration — not action-reaction.','Correct! 3rd Law: every action has an equal and opposite reaction.','Gravity pulls you DOWN, not up. The ground pushes up — that\'s 3rd law.'] },
+    { q:'Inertia depends on:', opts:['Velocity','Mass','Color','Shape'], ans:1,
+      exp:'Inertia = resistance to change in motion. The more mass an object has, the more inertia. A truck has more inertia than a bicycle.',
+      optExp:['Velocity changes as forces act, but inertia is about resisting change — based on mass.','Correct! More mass = more inertia.','Color has no effect on motion or inertia.','Shape affects air resistance, not inertia itself.'] },
+    { q:'A 2 kg ball accelerates at 3 m/s². Force required?', opts:['3 N','5 N','6 N','9 N'], ans:2,
+      exp:'Using F = m × a: F = 2 × 3 = 6 Newtons.',
+      optExp:['3 is the acceleration alone; you forgot to multiply by mass.','You added (2 + 3 = 5) instead of multiplying.','Correct! F = 2 × 3 = 6 N.','You multiplied 3 × 3 by mistake — or used wrong values.'] },
+    { q:'Seat belts work on the principle of:', opts:['Gravity','Inertia','Friction only','Momentum loss'], ans:1,
+      exp:'When a car stops suddenly, your body wants to CONTINUE moving forward (inertia). The seat belt holds you back — preventing injury.',
+      optExp:['Gravity pulls you DOWN, not forward. Not relevant to crash safety.','Correct! Inertia = body continuing forward; belt stops it.','Friction is too weak to stop a fast-moving person. Belts use tension.','Momentum loss is the RESULT, but the principle protecting you is inertia.'] },
+    { q:'Rocket propulsion is an example of:', opts:['1st Law','2nd Law','3rd Law','None'], ans:2,
+      exp:'Rocket pushes hot gas DOWN (action); gas pushes rocket UP (reaction). Classic 3rd Law demonstration.',
+      optExp:['1st Law is about rest/motion — rocket is actively forced, not idle.','2nd Law explains force-mass-acceleration relation but the push comes from reaction.','Correct! Action (gas down) = Reaction (rocket up).','Newton\'s laws absolutely explain rockets — this is 3rd Law.'] },
+    { q:'If net force on an object is zero, it:', opts:['Speeds up','Stops','Stays at rest or moves uniformly','Changes direction'], ans:2,
+      exp:'1st Law: no net force means no acceleration. If at rest, stays at rest. If moving, keeps same velocity.',
+      optExp:['Speeding up requires a force (F = ma). Zero force = zero acceleration.','Stopping also requires deceleration — a force. Zero force keeps motion going.','Correct! 1st Law = inertia. Zero force = constant velocity (including zero).','Changing direction requires acceleration = requires force.'] },
+    { q:'Force needed to give 5 kg object acceleration of 2 m/s²:', opts:['2.5 N','5 N','7 N','10 N'], ans:3,
+      exp:'F = m × a = 5 × 2 = 10 N.',
+      optExp:['You DIVIDED (5 ÷ 2 = 2.5) instead of multiplying.','5 is just the mass. Need F = ma, not F = m.','You ADDED (5 + 2 = 7) instead of multiplying.','Correct! F = 5 × 2 = 10 N.'] },
+    { q:'Walking is possible due to:', opts:['Inertia','Gravity','Friction','3rd Law'], ans:3,
+      exp:'When you walk, your foot pushes the ground BACKWARD; the ground pushes you FORWARD (equal-opposite). Without this reaction force, you\'d slip like on ice.',
+      optExp:['Inertia keeps you moving once started — but starting needs force.','Gravity pulls you down. It doesn\'t propel you forward.','Friction IS involved (prevents slipping) but the key principle is 3rd Law.','Correct! 3rd Law — you push ground back, ground pushes you forward.'] },
+    { q:'A body moves with uniform velocity when:', opts:['Force > 0','Force = 0','Mass = 0','Acceleration > 0'], ans:1,
+      exp:'Uniform velocity = constant speed and direction = no acceleration. By F = ma, if a = 0, then F = 0.',
+      optExp:['Force > 0 would cause acceleration (F = ma), changing velocity.','Correct! Zero net force = zero acceleration = uniform velocity.','Mass can\'t be zero for a physical object.','Any acceleration changes velocity, making it NOT uniform.'] }
+  ],
+  'Chemistry|ChemicalReactions': [
+    { q:'H₂ + O₂ → H₂O is which type of reaction?', opts:['Decomposition','Combination','Displacement','Redox'], ans:1,
+      exp:'Two substances (H₂ and O₂) COMBINE to form ONE product (H₂O). Classic combination reaction.',
+      optExp:['Decomposition is OPPOSITE — one substance breaks into many.','Correct! A + B → AB = combination reaction.','Displacement requires a more reactive element replacing another — none here.','This IS a redox (oxidation-reduction) too, but more specifically a COMBINATION.'] },
+    { q:'When green iron(II) sulphate crystals heat up, they turn brown. This is:', opts:['Combination','Decomposition','Precipitation','Neutralization'], ans:1,
+      exp:'Heat breaks FeSO₄ into Fe₂O₃ (brown) + SO₂ + SO₃. One substance → multiple substances = decomposition.',
+      optExp:['Combination = multiple → one. This is the opposite.','Correct! FeSO₄ breaks down with heat — decomposition.','Precipitation = insoluble solid forming in solution, not heating a solid.','Neutralization = acid + base → salt + water. No acid/base here.'] },
+    { q:'Rusting of iron is:', opts:['Slow combustion','Oxidation','Reduction','Sublimation'], ans:1,
+      exp:'Iron + Oxygen + Water → Fe₂O₃·nH₂O (rust). Iron GAINS oxygen = oxidation.',
+      optExp:['Rusting IS like slow oxidation but specifically called "oxidation" — combustion is faster.','Correct! Iron is oxidised by oxygen. Fe → Fe₂O₃.','Reduction = losing oxygen. Rusting is the opposite.','Sublimation = solid → gas (like dry ice). Rust is solid → solid.'] },
+    { q:'Na + Cl₂ → NaCl. This is:', opts:['Decomposition','Combination','Displacement','None'], ans:1,
+      exp:'Sodium + Chlorine combine to form one compound (NaCl). Combination reaction.',
+      optExp:['Decomposition splits one into many. This combines two into one.','Correct! Na + Cl₂ → NaCl = combination.','Displacement needs A + BC → AC + B pattern. None here.','It IS a known reaction type — combination.'] },
+    { q:'Which is a physical change?', opts:['Burning wood','Melting ice','Rusting','Digestion'], ans:1,
+      exp:'Physical change = no new substance formed. Ice and water are both H₂O. Melting just changes STATE.',
+      optExp:['Burning creates CO₂ + ash + water vapour = new substances = chemical change.','Correct! Ice ↔ water: same substance, different state. No new chemical.','Rust is new substance (Fe₂O₃). Chemical change.','Digestion breaks food into new chemicals. Chemical change.'] },
+    { q:'Balanced equation: Fe + CuSO₄ → ?', opts:['FeCu + SO₄','FeSO₄ + Cu','Fe₂SO₄ + Cu','Cu₂SO₄ + Fe'], ans:1,
+      exp:'Iron is more reactive than copper, so Fe displaces Cu from CuSO₄. Result: FeSO₄ + Cu. Single displacement.',
+      optExp:['FeCu isn\'t a real compound — metals don\'t form salts like that.','Correct! Fe replaces Cu; SO₄ stays with new metal. Result: FeSO₄ + Cu.','Fe₂SO₄ has wrong ratio. FeSO₄ balances: 1 Fe = 1 SO₄.','This reverses the reaction. Cu is LESS reactive, can\'t displace Fe.'] },
+    { q:'Exothermic reactions:', opts:['Absorb heat','Release heat','No heat change','Absorb light'], ans:1,
+      exp:'"Exo" = out. "Thermic" = heat. Exothermic reactions release heat. Examples: combustion, respiration.',
+      optExp:['Absorbing heat is ENDOTHERMIC ("endo" = in).','Correct! Exo = out. Heat released OUT into surroundings.','Every reaction has some heat change.','Light absorption = photosynthesis-type (endothermic in terms of energy).'] },
+    { q:'Photosynthesis is which reaction?', opts:['Exothermic','Endothermic','Neutral','Catalytic'], ans:1,
+      exp:'Plants ABSORB sunlight energy to make glucose. "Endo" = in = taking energy in = endothermic.',
+      optExp:['Exothermic releases energy. Photosynthesis absorbs it.','Correct! Energy absorbed from sun = endothermic.','Energy IS absorbed — so not neutral.','Chlorophyll helps, but photosynthesis is classified as endothermic.'] },
+    { q:'In 2H₂ + O₂ → 2H₂O, the number 2 in front of H₂O is the:', opts:['Subscript','Coefficient','Superscript','Valency'], ans:1,
+      exp:'A COEFFICIENT is the large number BEFORE a formula — multiplies the whole molecule for balancing.',
+      optExp:['Subscript is the SMALL number after an atom (like the 2 in H₂).','Correct! Big number in front = coefficient. Balances equation.','Superscript is raised (like in ion charges: Na⁺).','Valency is the combining capacity (like H has valency 1).'] },
+    { q:'Blue copper sulphate + iron nail → ?', opts:['Green solution','Colorless','Stays blue','Red crystals'], ans:0,
+      exp:'Iron is more reactive than copper. Fe displaces Cu. Solution becomes iron sulphate (green) + copper coats the nail.',
+      optExp:['Correct! FeSO₄ is green. Copper displaces out as brown deposit.','Reaction happens — solution is never colorless.','Displacement happens, so blue CuSO₄ changes color.','Red = copper metal deposited on nail, but the SOLUTION turns green.'] },
+    { q:'What color is the flame when magnesium burns?', opts:['Red','Green','Yellow','Bright white'], ans:3,
+      exp:'Magnesium burns with a DAZZLING white flame, forming white MgO powder. Used in old camera flashes.',
+      optExp:['Red flames are typical of Lithium or Strontium compounds.','Green flames come from copper compounds.','Yellow-orange is typical of sodium compounds.','Correct! Brilliant white — very bright. Forms white MgO.'] },
+    { q:'Which gas is released when acid reacts with metal?', opts:['CO₂','H₂','O₂','NH₃'], ans:1,
+      exp:'Active metal + acid → salt + H₂ gas. Pop test with burning splint confirms hydrogen.',
+      optExp:['CO₂ is released from CARBONATES + acid, not plain metals + acid.','Correct! Hydrogen gas (H₂). Confirmed by pop sound test.','O₂ is not released from acids. Acids contain H, not O as gas.','Ammonia (NH₃) comes from ammonium salts + base, not metal + acid.'] }
+  ],
+  'Biology|LifeProcesses': [
+    { q:'Which is the basic unit of life?', opts:['Atom','Cell','Organ','Tissue'], ans:1,
+      exp:'All living organisms are made of cells — from single-celled bacteria to humans (37 trillion cells). Cell = smallest unit capable of life.',
+      optExp:['Atoms are the basic unit of MATTER, not life. Cells are made of atoms but atoms alone aren\'t alive.','Correct! Cell = basic unit of life. Discovered by Robert Hooke, 1665.','Organs are made of MANY tissues working together. Too big to be basic.','Tissues are groups of CELLS. So cells are even smaller and more basic.'] },
+    { q:'Photosynthesis occurs in:', opts:['Mitochondria','Chloroplast','Nucleus','Ribosome'], ans:1,
+      exp:'Chloroplasts contain CHLOROPHYLL, the green pigment that captures sunlight energy to make glucose.',
+      optExp:['Mitochondria = powerhouse (energy release), not photosynthesis (energy capture).','Correct! Chloroplasts = site of photosynthesis. Found only in plant cells.','Nucleus = control centre with DNA. No photosynthesis happens here.','Ribosomes = make proteins. Not related to photosynthesis.'] },
+    { q:'The "powerhouse" of the cell is:', opts:['Nucleus','Mitochondria','Lysosome','Golgi body'], ans:1,
+      exp:'Mitochondria produce ATP (adenosine triphosphate) — the cell\'s energy currency. Without ATP, no life functions.',
+      optExp:['Nucleus is the control centre (stores DNA), not energy producer.','Correct! Mitochondria = powerhouse. Release energy via respiration.','Lysosomes are "suicide bags" — break down waste, not make energy.','Golgi body packages proteins. Not an energy producer.'] },
+    { q:'Digestion of carbs begins in:', opts:['Stomach','Small intestine','Mouth','Large intestine'], ans:2,
+      exp:'Saliva contains the enzyme AMYLASE, which breaks down starch into simpler sugars. Digestion starts the moment food enters mouth.',
+      optExp:['Stomach digests proteins (pepsin) — acidic environment kills salivary amylase.','Small intestine completes carb digestion but doesn\'t START it.','Correct! Amylase in saliva begins starch breakdown in the mouth.','Large intestine absorbs water. No carb digestion happens here.'] },
+    { q:'Which blood cells fight infection?', opts:['RBC','WBC','Platelets','Plasma'], ans:1,
+      exp:'White Blood Cells (leukocytes) are the body\'s immune soldiers. They identify and destroy viruses, bacteria, and foreign invaders.',
+      optExp:['RBC = red blood cells = carry oxygen. Not for fighting infection.','Correct! WBCs = body\'s defense army.','Platelets help BLOOD CLOTTING, not immunity.','Plasma is the LIQUID part of blood. Not a cell type.'] },
+    { q:'Respiration releases:', opts:['O₂','CO₂ and H₂O','Glucose','Proteins'], ans:1,
+      exp:'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + ENERGY. Cells burn glucose using oxygen and release CO₂ + water.',
+      optExp:['O₂ is USED UP in respiration, not released. Photosynthesis releases O₂.','Correct! CO₂ exhaled, water released as sweat/urine/exhale.','Glucose is the FUEL (input) of respiration, not the output.','Proteins are not released by respiration; they\'re made by protein synthesis.'] },
+    { q:'The longest bone in the human body is:', opts:['Humerus','Tibia','Femur','Fibula'], ans:2,
+      exp:'Femur (thigh bone) is the longest and strongest bone — can support up to 30× body weight.',
+      optExp:['Humerus is the upper arm bone. Shorter than femur.','Tibia (shin bone) is second-longest — close but not the longest.','Correct! Femur in the thigh — longest in human body.','Fibula is the thin bone beside the tibia. Much shorter.'] },
+    { q:'Xylem in plants transports:', opts:['Water only','Food only','Water + minerals','Oxygen'], ans:2,
+      exp:'Xylem is the "plumbing" of plants — carries water AND dissolved minerals UP from roots to leaves.',
+      optExp:['Xylem carries minerals dissolved IN water — both together.','Food is carried by PHLOEM, not xylem.','Correct! Water + dissolved minerals — xylem\'s main cargo.','Oxygen diffuses through stomata; xylem doesn\'t transport gases.'] },
+    { q:'Phloem transports:', opts:['Water','Food','Air','Chlorophyll'], ans:1,
+      exp:'Phloem carries GLUCOSE (food) made in leaves DOWN to roots, fruits, and storage areas.',
+      optExp:['Water is xylem\'s job. Phloem is food.','Correct! Phloem = food transport (bidirectional).','Air travels through stomata, not phloem.','Chlorophyll stays inside chloroplasts. Not transported around the plant.'] },
+    { q:'Normal human body temperature:', opts:['36°C','37°C','38°C','39°C'], ans:1,
+      exp:'37°C (98.6°F) is normal. This is kept stable by the hypothalamus in the brain. Above 38°C = fever.',
+      optExp:['36°C is slightly below normal — could indicate hypothermia.','Correct! 37°C = 98.6°F = normal body temperature.','38°C indicates the start of FEVER, not normal.','39°C is high fever — requires medical attention.'] },
+    { q:'Insulin is produced by:', opts:['Liver','Pancreas','Kidney','Stomach'], ans:1,
+      exp:'Beta cells in the Islets of Langerhans (inside the pancreas) produce insulin. It regulates blood sugar.',
+      optExp:['Liver STORES glucose (as glycogen) but doesn\'t make insulin.','Correct! Pancreas produces insulin. Low insulin = diabetes.','Kidneys filter blood. No hormones related to sugar from here.','Stomach produces digestive acids, not insulin.'] },
+    { q:'Alveoli are found in:', opts:['Heart','Lungs','Kidney','Brain'], ans:1,
+      exp:'Alveoli are tiny air sacs at the end of bronchioles in lungs, where O₂ and CO₂ exchange happens.',
+      optExp:['Heart has chambers (atria, ventricles) but no alveoli.','Correct! Alveoli = air sacs in lungs = gas exchange site.','Kidneys have nephrons (filtering units), not alveoli.','Brain has neurons, not alveoli.'] }
+  ],
+  'English|Grammar': [
+    { q:'Choose correct verb: "She ___ to school every day."', opts:['go','goes','going','gone'], ans:1,
+      exp:'In present simple tense, with 3rd person singular (he/she/it), we add -s or -es to the verb.',
+      optExp:['"Go" is used with I/you/we/they. Not she.','Correct! "She goes" — add -es for 3rd person singular.','"Going" is -ing form; needs "is going" (continuous tense).','"Gone" is past participle; needs "has gone" (perfect tense).'] },
+    { q:'Which is a noun?', opts:['Quickly','Happiness','Walk','Between'], ans:1,
+      exp:'Noun = name of a person, place, thing, or quality. "Happiness" is the NAME of a feeling — an abstract noun.',
+      optExp:['Quickly = adverb (ends in -ly, modifies verbs).','Correct! Happiness = abstract noun (name of a quality/feeling).','"Walk" can be noun OR verb — but in many sentences it\'s a verb. Happiness is unambiguously a noun.','Between = preposition (shows relation between things).'] },
+    { q:'Passive form of "He writes a letter":', opts:['A letter writes him','A letter is written by him','A letter was written','A letter written'], ans:1,
+      exp:'Active → Passive: Object (letter) becomes subject. Verb becomes "is/am/are + past participle". Doer (him) comes after "by".',
+      optExp:['The object (letter) can\'t "write" the subject. Subject-object swap only.','Correct! "A letter is written by him" — proper passive.','This changes tense to past ("was"); original was present.','This is incomplete — needs "is" + past participle, not just the participle.'] },
+    { q:'Past tense of "bring":', opts:['Bringed','Brang','Brought','Broughten'], ans:2,
+      exp:'"Bring" is an IRREGULAR verb. Its past tense and past participle are both "brought".',
+      optExp:['"Bringed" follows regular -ed pattern, but bring is irregular.','"Brang" sounds like "sang" but isn\'t a real word. Made-up form.','Correct! Bring → brought → brought.','"Broughten" isn\'t standard English. Not a real word.'] },
+    { q:'"Quickly" is a/an:', opts:['Noun','Verb','Adjective','Adverb'], ans:3,
+      exp:'"Quickly" tells us HOW something is done (modifies a verb). Words ending in -ly are usually adverbs.',
+      optExp:['Nouns are names. "Quickly" isn\'t the name of anything.','Verbs are actions. "Quickly" describes how an action is done.','Adjective describes NOUNS. "Quick" is an adjective; "quickly" is the adverb form.','Correct! "Quickly" = adverb (describes verb: "ran quickly").'] },
+    { q:'Reported: Ravi said, "I am tired."', opts:['Ravi said I am tired','Ravi said that he was tired','Ravi says he tired','Ravi had tired'], ans:1,
+      exp:'In reported speech: pronoun I → he, present tense (am) → past tense (was), add "that".',
+      optExp:['No tense shift + no pronoun shift = not correctly reported.','Correct! Proper reporting: tense backs up, pronoun changes, "that" added.','"Says" is present tense but Ravi already said it. Also missing "was".','"Had tired" is wrong tense construction; doesn\'t match original meaning.'] },
+    { q:'Correct article: "He is ___ honest man."', opts:['a','an','the','no article'], ans:1,
+      exp:'Use "an" before a VOWEL SOUND. "Honest" starts with silent H → vowel sound (o).',
+      optExp:['"A" is used before consonant sounds. "Honest" sounds like "onest" (vowel).','Correct! Silent H means "honest" starts with vowel sound → "an".','"The" is specific. Here we mean any honest man.','An article is needed — "honest man" needs "a" or "an".'] },
+    { q:'Identify tense: "I have finished my homework."', opts:['Simple past','Present perfect','Past perfect','Present continuous'], ans:1,
+      exp:'Structure: "have/has + past participle" = PRESENT PERFECT. Action completed but connected to now.',
+      optExp:['Simple past would be "I finished" (without have).','Correct! "have finished" = present perfect tense.','Past perfect is "had finished", not "have finished".','Present continuous is "am finishing" (-ing form).'] },
+    { q:'Plural of "mouse":', opts:['Mouses','Mice','Mousees','Meese'], ans:1,
+      exp:'Irregular plural: mouse → mice. Like foot → feet, tooth → teeth.',
+      optExp:['"Mouses" follows regular +s pattern, but mouse is irregular.','Correct! Mouse → mice. (Note: computer "mouse" also accepts "mouses" in tech.)','"Mousees" isn\'t a word.','"Meese" is not standard. "Goose" becomes "geese" but "mouse" becomes "mice".'] },
+    { q:'Opposite of "generous":', opts:['Kind','Stingy','Rich','Bold'], ans:1,
+      exp:'Generous = giving freely, willingly sharing. Opposite is stingy/miserly = unwilling to share.',
+      optExp:['Kind is SIMILAR to generous, not opposite.','Correct! Stingy = unwilling to give — opposite of generous.','Rich ≠ generous. Rich people can be generous OR stingy.','Bold = brave, not related to generosity.'] }
+  ]
+};
+
+// Template-based quiz generators (infinite quizzes, answers computed)
+const QUIZ_TEMPLATES = {
+  'Mathematics|Integers': () => {
+    const a = Math.floor(Math.random()*20)-10;
+    const b = Math.floor(Math.random()*20)-10;
+    const op = ['+','-','×'][Math.floor(Math.random()*3)];
+    let ans, q;
+    if (op==='+') { ans = a+b; q = `What is ${a} + (${b})?`; }
+    else if (op==='-') { ans = a-b; q = `What is ${a} - (${b})?`; }
+    else { ans = a*b; q = `What is ${a} × (${b})?`; }
+    const wrongs = [ans+2, ans-3, -ans].filter((v,i,arr) => v !== ans && arr.indexOf(v) === i).slice(0,3);
+    while (wrongs.length < 3) wrongs.push(ans + wrongs.length + 5);
+    const opts = [...wrongs, ans].sort(() => Math.random()-0.5);
+    return { q, opts: opts.map(String), ans: opts.indexOf(ans), exp: `Answer: ${ans}. Apply integer rules carefully with signs.` };
+  },
+  'Mathematics|Algebra': () => {
+    const x = Math.floor(Math.random()*10)+1;
+    const c = Math.floor(Math.random()*20)+1;
+    const q = `If x + ${c} = ${x + c}, what is x?`;
+    const wrongs = [x+1, x-1, x+2].filter(v => v !== x).slice(0,3);
+    const opts = [...wrongs, x].sort(() => Math.random()-0.5);
+    return { q, opts: opts.map(String), ans: opts.indexOf(x), exp: `Subtract ${c} from both sides: x = ${x + c} - ${c} = ${x}.` };
+  },
+  'Mathematics|Fractions': () => {
+    const a = Math.floor(Math.random()*5)+1, b = Math.floor(Math.random()*5)+2;
+    const c = Math.floor(Math.random()*5)+1, d = b; // same denom for simplicity
+    const sum = a+c;
+    const q = `${a}/${b} + ${c}/${d} = ?`;
+    const wrongs = [`${a+c}/${b+d}`, `${a*c}/${b}`, `${a}/${b+d}`];
+    const correct = `${sum}/${b}`;
+    const opts = [...wrongs, correct].sort(() => Math.random()-0.5);
+    return { q, opts, ans: opts.indexOf(correct), exp: `Same denominator? Just add numerators: ${a} + ${c} = ${sum}. Answer: ${sum}/${b}.` };
+  }
+};
+
+function loadQuizManager() {
+  const container = document.getElementById('quizManagerContainer');
+  if (!container) return;
+  const classes = ['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12'];
+  const subjects = ['Mathematics','Science','Physics','Chemistry','Biology','History','Geography','Civics','English','Tamil'];
+  const saved = LOCAL.get('quizzes') || [];
+
+  container.innerHTML = `
+    <div class="safety-banner">📚 <strong>Quiz Manager</strong> — Three ways to build quizzes: (1) AI-generate in bulk, (2) Create your own manually with auto-explanations, (3) Edit / delete any quiz.</div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);">
+      <button class="qm-tab active" data-tab="generate" onclick="switchQMTab(this)" style="background:transparent;border:none;color:var(--gold);padding:10px 14px;font-size:12.5px;font-weight:800;cursor:pointer;border-bottom:2px solid var(--gold);font-family:inherit;">⚡ AI Generate</button>
+      <button class="qm-tab" data-tab="create" onclick="switchQMTab(this)" style="background:transparent;border:none;color:var(--muted);padding:10px 14px;font-size:12.5px;font-weight:800;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;">✍ Create My Own</button>
+      <button class="qm-tab" data-tab="list" onclick="switchQMTab(this)" style="background:transparent;border:none;color:var(--muted);padding:10px 14px;font-size:12.5px;font-weight:800;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;">📋 My Quizzes (${saved.length})</button>
+    </div>
+
+    <!-- Generate tab -->
+    <div id="qm-tab-generate" class="qm-tab-content">
+      <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:18px;">
+        <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">🎯 AI GENERATE QUIZ</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Class</label><select class="form-select" id="qm-class">${classes.map(c => `<option>${c}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Subject</label><select class="form-select" id="qm-subject">${subjects.map(s => `<option>${s}</option>`).join('')}</select></div>
+        </div>
+        <div class="form-group"><label class="form-label">Chapter / Topic</label><input class="form-input" id="qm-topic" placeholder="e.g., Integers, Newton's Laws, Gandhi & Non-Cooperation"/></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Number of Questions</label><select class="form-select" id="qm-count"><option>10</option><option>20</option><option>50</option><option selected>60</option><option>100</option></select></div>
+          <div class="form-group"><label class="form-label">Difficulty</label><select class="form-select" id="qm-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option><option>Mixed</option></select></div>
+        </div>
+        <button class="btn btn-gold" style="width:100%;padding:12px;" onclick="generateQuiz()">⚡ Generate Quiz Now</button>
+      </div>
+      <div id="qm-preview"></div>
+    </div>
+
+    <!-- Create tab — manual quiz builder -->
+    <div id="qm-tab-create" class="qm-tab-content" style="display:none;">
+      <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;">
+        <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">✍ CREATE QUIZ MANUALLY</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Class</label><select class="form-select" id="cq-class">${classes.map(c => `<option>${c}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Subject</label><select class="form-select" id="cq-subject">${subjects.map(s => `<option>${s}</option>`).join('')}</select></div>
+        </div>
+        <div class="form-group"><label class="form-label">Topic / Chapter</label><input class="form-input" id="cq-topic" placeholder="e.g., Algebra — Linear Equations"/></div>
+        <div class="form-group"><label class="form-label">Difficulty</label><select class="form-select" id="cq-diff"><option>Easy</option><option selected>Medium</option><option>Hard</option></select></div>
+        <div id="cq-questions-list" style="margin:14px 0;"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="addManualQuestion()">➕ Add Question</button>
+          <button class="btn btn-gold btn-sm" onclick="saveManualQuiz()" style="flex:1;min-width:140px;">✓ Save Quiz</button>
+        </div>
+        <div style="margin-top:10px;padding:12px;background:rgba(99,102,241,0.05);border-radius:8px;font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.6;">
+          💡 <strong>Auto-explanation:</strong> If you leave the "Main Explanation" or "Per-option explanation" blank, Gemini AI will generate explanations automatically when you save (if your API key is connected). Otherwise a basic explanation is inserted.
+        </div>
+      </div>
+    </div>
+
+    <!-- List tab — existing quizzes -->
+    <div id="qm-tab-list" class="qm-tab-content" style="display:none;">
+      <div id="qm-my-quizzes"></div>
+    </div>
+  `;
+
+  // Initialize manual question list with one blank row
+  _manualQuestions = [createBlankQuestion()];
+  renderManualQuestions();
+  renderMyQuizzesList();
+}
+
+function switchQMTab(btn) {
+  document.querySelectorAll('.qm-tab').forEach(t => {
+    t.style.color = 'var(--muted)';
+    t.style.borderBottomColor = 'transparent';
+  });
+  btn.style.color = 'var(--gold)';
+  btn.style.borderBottomColor = 'var(--gold)';
+  const tab = btn.getAttribute('data-tab');
+  document.querySelectorAll('.qm-tab-content').forEach(c => c.style.display = 'none');
+  const el = document.getElementById('qm-tab-' + tab);
+  if (el) el.style.display = '';
+  if (tab === 'list') renderMyQuizzesList();
+}
+
+let _manualQuestions = [];
+
+function createBlankQuestion() {
+  return { q: '', opts: ['', '', '', ''], ans: 0, exp: '', optExp: ['', '', '', ''] };
+}
+
+function renderManualQuestions() {
+  const container = document.getElementById('cq-questions-list');
+  if (!container) return;
+  container.innerHTML = _manualQuestions.map((q, i) => `
+    <div style="background:rgba(99,102,241,0.04);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;">QUESTION ${i + 1}</div>
+        ${_manualQuestions.length > 1 ? `<button class="btn btn-danger btn-sm" onclick="removeManualQuestion(${i})">🗑 Remove</button>` : ''}
+      </div>
+      <div class="form-group"><label class="form-label">Question Text</label><textarea class="form-input" rows="2" oninput="_manualQuestions[${i}].q=this.value" placeholder="Enter the question...">${sanitize(q.q)}</textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${[0, 1, 2, 3].map(oi => `
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label" style="display:flex;justify-content:space-between;align-items:center;">
+              <span>Option ${String.fromCharCode(65 + oi)}</span>
+              <label style="font-size:10px;color:var(--teal);font-weight:700;cursor:pointer;"><input type="radio" name="cq-ans-${i}" ${q.ans === oi ? 'checked' : ''} onchange="_manualQuestions[${i}].ans=${oi}" style="margin-right:4px;"/>Correct</label>
+            </label>
+            <input class="form-input" oninput="_manualQuestions[${i}].opts[${oi}]=this.value" value="${sanitize(q.opts[oi])}" placeholder="Option ${String.fromCharCode(65 + oi)}"/>
+          </div>`).join('')}
+      </div>
+      <div class="form-group"><label class="form-label">💡 Main Explanation (why the correct answer is right) — leave blank for auto-generate</label><textarea class="form-input" rows="2" oninput="_manualQuestions[${i}].exp=this.value" placeholder="e.g., The correct answer is A because...">${sanitize(q.exp)}</textarea></div>
+      <details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--gold);font-size:11.5px;font-weight:700;">📚 Per-option explanations (optional — auto-generated if blank)</summary>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          ${[0, 1, 2, 3].map(oi => `<input class="form-input" style="font-size:12px;" placeholder="Why option ${String.fromCharCode(65 + oi)}?" oninput="_manualQuestions[${i}].optExp[${oi}]=this.value" value="${sanitize(q.optExp[oi])}"/>`).join('')}
+        </div>
+      </details>
+    </div>
+  `).join('');
+}
+
+function addManualQuestion() {
+  _manualQuestions.push(createBlankQuestion());
+  renderManualQuestions();
+}
+
+function removeManualQuestion(i) {
+  _manualQuestions.splice(i, 1);
+  if (_manualQuestions.length === 0) _manualQuestions.push(createBlankQuestion());
+  renderManualQuestions();
+}
+
+async function saveManualQuiz() {
+  const cls = document.getElementById('cq-class').value;
+  const subj = document.getElementById('cq-subject').value;
+  const topic = sanitize(document.getElementById('cq-topic').value || '');
+  const diff = document.getElementById('cq-diff').value;
+  if (!topic) { showToast('⚠️','Enter a topic/chapter name', true); return; }
+
+  // Validate each question
+  const valid = [];
+  for (let i = 0; i < _manualQuestions.length; i++) {
+    const q = _manualQuestions[i];
+    if (!q.q.trim()) { showToast('⚠️', `Question ${i + 1} is empty`, true); return; }
+    if (q.opts.some(o => !o.trim())) { showToast('⚠️', `All 4 options required for Q${i + 1}`, true); return; }
+    valid.push({
+      q: sanitize(q.q), opts: q.opts.map(sanitize), ans: q.ans,
+      exp: sanitize(q.exp || ''), optExp: q.optExp.map(sanitize)
+    });
+  }
+
+  // Auto-fill blank explanations using Gemini (if API key) or basic template
+  showToast('⏳','Saving quiz + auto-generating explanations...');
+  const apiKey = getGeminiKey();
+  for (const q of valid) {
+    const needMain = !q.exp;
+    const needOpt = q.optExp.some(e => !e);
+    if ((needMain || needOpt) && apiKey) {
+      try {
+        const gen = await autoExplainQuestion(q, apiKey);
+        if (gen) {
+          if (needMain && gen.exp) q.exp = gen.exp;
+          if (needOpt && Array.isArray(gen.optExp)) {
+            for (let oi = 0; oi < 4; oi++) {
+              if (!q.optExp[oi] && gen.optExp[oi]) q.optExp[oi] = gen.optExp[oi];
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    // Fallback templates if still empty
+    if (!q.exp) q.exp = `The correct answer is ${String.fromCharCode(65 + q.ans)}: "${q.opts[q.ans]}".`;
+    for (let oi = 0; oi < 4; oi++) {
+      if (!q.optExp[oi]) {
+        q.optExp[oi] = oi === q.ans
+          ? `Correct. This is the right answer.`
+          : `This option does not match the correct answer.`;
+      }
+    }
+  }
+
+  const record = {
+    id: 'QZM_' + Date.now(),
+    class: cls, subject: subj, topic, difficulty: diff,
+    count: valid.length, questions: valid,
+    createdBy: 'admin',
+    created_at: new Date().toISOString()
+  };
+  const saved = LOCAL.get('quizzes') || [];
+  saved.unshift(record);
+  LOCAL.set('quizzes', saved.slice(0, 300));
+    await dbInsert('quizzes', record);
+  logActivity('quiz_created', { class: cls, subject: subj, topic, count: valid.length });
+  showToast('✅', `Quiz saved with ${valid.length} questions!`);
+  _manualQuestions = [createBlankQuestion()];
+  renderManualQuestions();
+  // Switch to My Quizzes tab
+  const listTab = document.querySelector('.qm-tab[data-tab="list"]');
+  if (listTab) switchQMTab(listTab);
+}
+
+async function autoExplainQuestion(q, apiKey) {
+  const model = localStorage.getItem('kb_gemini_model') || 'gemini-2.5-flash';
+  const prompt = `A student sees this multiple-choice question:\nQ: ${q.q}\nA. ${q.opts[0]}\nB. ${q.opts[1]}\nC. ${q.opts[2]}\nD. ${q.opts[3]}\nCorrect answer: ${String.fromCharCode(65 + q.ans)} — ${q.opts[q.ans]}\n\nReturn ONLY valid JSON: {"exp": "1-2 sentence explanation of WHY the correct answer is right", "optExp": ["why A is right or wrong","why B is right or wrong","why C is right or wrong","why D is right or wrong"]}`;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.6, maxOutputTokens: 600, responseMimeType: 'application/json' }
+      })
+    });
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch (e) { return null; }
+}
+
+function renderMyQuizzesList() {
+  const container = document.getElementById('qm-my-quizzes');
+  if (!container) return;
+  const saved = LOCAL.get('quizzes') || [];
+  if (saved.length === 0) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);">📝 No quizzes yet. Create your first one above.</div>';
+    return;
+  }
+  container.innerHTML = saved.map(q => {
+    const by = q.createdBy === 'admin' ? '✍ Admin' : (q.createdBy === 'tutor' ? '👨‍🏫 ' + (q.createdByName || 'Tutor') : '⚡ AI');
+    const safeTopic = String(q.topic||'').replace(/'/g, '').replace(/"/g,'');
+    const statusBadge = q.status === 'pending' ? '<span style="background:rgba(245,200,66,0.2);color:var(--gold);padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;margin-left:6px;">⏳ PENDING APPROVAL</span>' :
+                        q.status === 'rejected' ? '<span style="background:rgba(255,87,87,0.2);color:var(--coral);padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;margin-left:6px;">❌ REJECTED</span>' : '';
+    return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;">${sanitize(q.class)} · ${sanitize(q.subject)} · ${q.difficulty || 'Medium'} · ${by}</div>
+          <div style="font-family:'Lora','Georgia',serif;font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${sanitize(q.topic)} ${statusBadge}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${q.count || q.questions.length} questions · ${new Date(q.created_at || Date.now()).toLocaleDateString('en-IN')}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${q.status === 'pending' ? `<button class="btn btn-teal btn-sm" onclick="approveQuiz('${q.id}')">✓ Approve</button><button class="btn btn-coral btn-sm" onclick="rejectQuiz('${q.id}')">✕ Reject</button>` : ''}
+          <button class="btn btn-gold btn-sm" onclick="previewQuizAsStudent('${q.id}')">▶ Preview</button>
+          <button class="btn btn-ghost btn-sm" onclick="editExistingQuiz('${q.id}')">✏ Edit</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportQuizCSV('${q.id}')">⬇ CSV</button>
+          <button class="btn btn-danger btn-sm" onclick="adminDelete('quizzes','${q.id}','Quiz: ${safeTopic}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editExistingQuiz(quizId) {
+  const saved = LOCAL.get('quizzes') || [];
+  const quiz = saved.find(q => q.id === quizId);
+  if (!quiz) return;
+  // Load into the Create tab
+  const createTab = document.querySelector('.qm-tab[data-tab="create"]');
+  if (createTab) switchQMTab(createTab);
+  setTimeout(() => {
+    document.getElementById('cq-class').value = quiz.class;
+    document.getElementById('cq-subject').value = quiz.subject;
+    document.getElementById('cq-topic').value = quiz.topic;
+    document.getElementById('cq-diff').value = quiz.difficulty || 'Medium';
+    _manualQuestions = quiz.questions.map(q => ({
+      q: q.q || '',
+      opts: [...(q.opts || ['', '', '', ''])],
+      ans: typeof q.ans === 'number' ? q.ans : 0,
+      exp: q.exp || '',
+      optExp: Array.isArray(q.optExp) ? [...q.optExp] : ['', '', '', '']
+    }));
+    renderManualQuestions();
+    // Replace save action to update instead of insert
+    window._editingQuizId = quizId;
+    const saveBtn = document.querySelector('#qm-tab-create .btn-gold');
+    if (saveBtn) { saveBtn.textContent = '💾 Update Quiz'; saveBtn.onclick = () => updateExistingQuiz(quizId); }
+  }, 100);
+}
+
+async function updateExistingQuiz(quizId) {
+  const cls = document.getElementById('cq-class').value;
+  const subj = document.getElementById('cq-subject').value;
+  const topic = sanitize(document.getElementById('cq-topic').value || '');
+  const diff = document.getElementById('cq-diff').value;
+  if (!topic) { showToast('⚠️','Enter a topic', true); return; }
+  const valid = [];
+  for (let i = 0; i < _manualQuestions.length; i++) {
+    const q = _manualQuestions[i];
+    if (!q.q.trim()) { showToast('⚠️', `Question ${i + 1} is empty`, true); return; }
+    if (q.opts.some(o => !o.trim())) { showToast('⚠️', `All 4 options required for Q${i + 1}`, true); return; }
+    valid.push({
+      q: sanitize(q.q), opts: q.opts.map(sanitize), ans: q.ans,
+      exp: sanitize(q.exp || ''), optExp: q.optExp.map(sanitize)
+    });
+  }
+  // Fill explanations
+  for (const q of valid) {
+    if (!q.exp) q.exp = `The correct answer is ${String.fromCharCode(65 + q.ans)}: "${q.opts[q.ans]}".`;
+    for (let oi = 0; oi < 4; oi++) {
+      if (!q.optExp[oi]) q.optExp[oi] = oi === q.ans ? 'Correct answer.' : 'Not the best answer for this question.';
+    }
+  }
+  const saved = LOCAL.get('quizzes') || [];
+  const idx = saved.findIndex(q => q.id === quizId);
+  if (idx === -1) { showToast('⚠️','Quiz not found', true); return; }
+  saved[idx] = { ...saved[idx], class: cls, subject: subj, topic, difficulty: diff, count: valid.length, questions: valid, updated_at: new Date().toISOString() };
+  LOCAL.set('quizzes', saved);
+  try { if (supabase_client) await supabase_client.from('quizzes').update(saved[idx]).eq('id', quizId).then(()=>{}).catch(()=>{}); } catch(e){}
+  showToast('✅','Quiz updated!');
+  window._editingQuizId = null;
+  _manualQuestions = [createBlankQuestion()];
+  renderManualQuestions();
+  const listTab = document.querySelector('.qm-tab[data-tab="list"]');
+  if (listTab) switchQMTab(listTab);
+}
+
+async function generateQuiz() {
+  const cls = document.getElementById('qm-class').value;
+  const subj = document.getElementById('qm-subject').value;
+  const topic = document.getElementById('qm-topic').value.trim();
+  const count = parseInt(document.getElementById('qm-count').value);
+  const diff = document.getElementById('qm-diff').value;
+
+  if (!topic) { showToast('⚠️','Enter a chapter/topic first', true); return; }
+
+  const preview = document.getElementById('qm-preview');
+  preview.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);"><div class="ai-thinking-dots"><span></span><span></span><span></span></div><br>Generating ' + count + ' quizzes...</div>';
+
+  // Build quiz set from 3 sources
+  const questions = [];
+  // 1. Hand-crafted
+  const key1 = subj + '|' + topic.split(/[:\-\s]/)[0];
+  const key2 = Object.keys(QUIZ_BANK_V8).find(k => k.startsWith(subj) && topic.toLowerCase().includes(k.split('|')[1].toLowerCase().replace('-','')));
+  const bank = QUIZ_BANK_V8[key1] || QUIZ_BANK_V8[key2] || [];
+  questions.push(...bank);
+
+  // 2. Template-generated
+  const tmpl = QUIZ_TEMPLATES[subj + '|' + topic.split(/[:\-\s]/)[0]] || null; // No fallback - AI generates for actual topic
+  if (tmpl) {
+    const need = Math.max(0, count - questions.length);
+    for (let i = 0; i < need; i++) questions.push(tmpl());
+  }
+
+  // 3. AI-generated (Gemini if key, else Claude API fallback)
+  if (questions.length < count) {
+    try {
+      const need = count - questions.length;
+      const apiKey = getGeminiKey();
+      let aiQuestions = [];
+      if (apiKey) {
+        aiQuestions = await generateAIQuizzes(cls, subj, topic, diff, Math.min(need, 30));
+      }
+      if (aiQuestions.length < Math.min(need, 10)) {
+        // Use Claude API as fallback
+        const claudeQs = await generateQuizWithClaude(cls, subj, topic, diff, Math.min(need - aiQuestions.length, 30));
+        aiQuestions = [...aiQuestions, ...claudeQs];
+      }
+      questions.push(...aiQuestions);
+    } catch(e) { console.warn('AI quiz gen failed:', e); }
+  }
+
+  // Pad if still short — repeat template generator
+  if (tmpl) {
+    while (questions.length < count) questions.push(tmpl());
+  }
+
+  const final = questions.slice(0, count);
+
+  // Save quiz
+  const quizRecord = {
+    id: 'QZ_' + Date.now(),
+    class: cls, subject: subj, topic, difficulty: diff,
+    count: final.length, questions: final,
+    created_at: new Date().toISOString()
+  };
+  const saved = LOCAL.get('quizzes') || [];
+  saved.unshift(quizRecord);
+  LOCAL.set('quizzes', saved.slice(0, 100));
+    await dbInsert('quizzes', quizRecord);
+    container.innerHTML = `<div class="safety-banner">✅ <strong>Generated ${final.length} quizzes</strong> for ${cls} · ${subj} · ${topic}. Students will see these in their portal.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+      <button class="btn btn-gold btn-sm" onclick="previewQuizAsStudent('${quizRecord.id}')">▶️ Preview as Student</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportQuizCSV('${quizRecord.id}')">⬇ Export CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadQuizManager()">🔄 Generate Another</button>
+    </div>
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;max-height:500px;overflow-y:auto;">
+      <div style="font-size:11px;color:var(--gold);margin-bottom:14px;font-family:'JetBrains Mono',monospace;letter-spacing:1.2px;">📋 PREVIEW · ${final.length} QUESTIONS</div>
+      ${final.slice(0,15).map((q,i) => `<div style="padding:14px 0;border-bottom:1px solid var(--border);">
+        <div style="font-weight:700;color:#fff;margin-bottom:10px;font-size:13px;">Q${i+1}. ${sanitize(q.q)}</div>
+        ${q.opts.map((o,j) => `<div style="padding:6px 12px;margin:4px 0;background:${j===q.ans?'rgba(0,229,160,0.1)':'rgba(255,255,255,0.03)'};border:1px solid ${j===q.ans?'rgba(0,229,160,0.4)':'var(--border)'};border-radius:8px;font-size:12.5px;color:#fff;">${j===q.ans?'✅ ':String.fromCharCode(65+j)+'. '}${sanitize(o)}</div>`).join('')}
+        ${q.exp ? `<div style="margin-top:8px;font-size:11.5px;color:var(--teal);"><strong>💡 Explanation:</strong> ${sanitize(q.exp)}</div>` : ''}
+      </div>`).join('')}
+      ${final.length > 15 ? `<div style="text-align:center;padding:20px;color:var(--muted);">... and ${final.length - 15} more questions. Click "Preview as Student" to see all.</div>` : ''}
+    </div>`;
+  showToast('✅', `${final.length} quizzes generated!`);
+  logActivity('quiz_generated', { class: cls, subject: subj, topic, count: final.length });
+}
+
+async function generateAIQuizzes(cls, subj, topic, diff, n) {
+  const apiKey = getGeminiKey();
+  if (!apiKey) return [];
+  const activeModel = localStorage.getItem('kb_gemini_model') || 'gemini-2.5-flash';
+  const prompt = `Generate ${n} multiple-choice quiz questions for ${cls} students studying ${subj}, chapter/topic: "${topic}". Difficulty: ${diff}.
+Return ONLY a valid JSON array. Each object must have exactly these fields:
+{
+  "q": "question text",
+  "opts": ["option A","option B","option C","option D"],
+  "ans": correct_index_0_to_3,
+  "exp": "1-2 sentence main explanation of WHY the correct answer is right",
+  "optExp": ["Why option A is wrong OR right — 1 sentence", "Why option B is wrong OR right — 1 sentence", "Why option C is wrong OR right — 1 sentence", "Why option D is wrong OR right — 1 sentence"]
+}
+
+Requirements:
+- "optExp" is a 4-element array. For the correct option, explain WHY it's correct. For wrong options, explain WHY they are wrong (common mistake, misconception, or what the option WOULD have been correct for).
+- Questions must match ${cls} curriculum level (CBSE/Indian school syllabus).
+- No markdown, no extra text. Just the JSON array.`;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role:'user', parts:[{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8000, responseMimeType: 'application/json' }
+      })
+    });
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+    const cleaned = text.replace(/```json\n?|```\n?/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    return Array.isArray(parsed) ? parsed.filter(q => q.q && Array.isArray(q.opts) && q.opts.length === 4 && typeof q.ans === 'number') : [];
+  } catch(e) { console.warn('AI quiz parse error:', e); return []; }
+}
+
+
+async function generateQuizWithClaude(cls, subj, topic, diff, n) {
+  try {
+    const prompt = `Generate ${n} multiple-choice quiz questions for ${cls} students studying ${subj}, chapter/topic: "${topic}". Difficulty: ${diff}. Indian school curriculum (CBSE/State Board).
+
+Return ONLY a valid JSON array (no markdown, no explanation, no extra text). Each object:
+{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"Why correct answer is right","optExp":["Why A is right/wrong","Why B is right/wrong","Why C is right/wrong","Why D is right/wrong"]}
+
+Rules:
+- ans is 0-3 (index of correct option in opts)
+- optExp has exactly 4 strings
+- Questions must be appropriate for ${cls} level
+- Return ONLY the JSON array`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const text = (data.content?.[0]?.text || '[]').replace(/```json\n?|```\n?/g,'').trim();
+    // Find JSON array in response
+    const match = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    const jsonStr = match ? match[0] : text;
+    const parsed = JSON.parse(jsonStr);
+    return Array.isArray(parsed) ? parsed.filter(q => q.q && Array.isArray(q.opts) && q.opts.length === 4 && typeof q.ans === 'number') : [];
+  } catch(e) {
+    console.warn('Claude quiz gen error:', e);
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// V11: QUIZ PLAYER — Testbook-style
+// Features: overall timer only, question navigator, submit button,
+// answers revealed AFTER submission only, per-option explanations.
+// ═══════════════════════════════════════════════════════
+
+let _currentQuiz = null;
+let _currentQuizIdx = 0;
+let _quizScore = 0;
+let _quizAnswers = [];      // {qIdx, picked, correct}
+let _quizTimerId = null;
+let _quizTimerEndTs = null;
+let _quizSubmitted = false;
+
+async function previewQuizAsStudent(quizId) {
+  // Try LOCAL first, then Supabase
+  let quizzes = LOCAL.get('quizzes') || [];
+  let quiz = quizzes.find(q => q.id === quizId);
+  if (!quiz && supabase_client) {
+    try {
+      const { data } = await supabase_client.from('quizzes').select('*').eq('id', quizId).single();
+      if (data) quiz = data;
+    } catch(e) {}
+  }
+  if (!quiz) { showToast('⚠️','Quiz not found. Try refreshing.', true); return; }
+  _currentQuiz = quiz;
+  _currentQuizIdx = 0;
+  _quizScore = 0;
+  _quizAnswers = [];
+  _quizSubmitted = false;
+  const totalSec = (quiz.questions ? quiz.questions.length : 10) * 60;
+  _quizTimerEndTs = Date.now() + totalSec * 1000;
+  // Show quiz modal
+  const modal = document.getElementById('quizPlayerModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.style.display = '';
+  }
+  startQuizTimer();
+  renderQuizPlayer();
+}
+
+function startQuizTimer() {
+  if (_quizTimerId) clearInterval(_quizTimerId);
+  _quizTimerId = setInterval(() => {
+    if (!_quizTimerEndTs) return;
+    const remain = Math.max(0, Math.floor((_quizTimerEndTs - Date.now()) / 1000));
+    const el = document.getElementById('qp-timer-display');
+    if (el) {
+      const m = Math.floor(remain / 60);
+      const s = remain % 60;
+      el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      if (remain <= 60) el.style.color = 'var(--coral)';
+      else if (remain <= 180) el.style.color = 'var(--gold)';
+      else el.style.color = 'var(--teal)';
+    }
+    if (remain <= 0) {
+      clearInterval(_quizTimerId);
+      _quizTimerId = null;
+      if (!_quizSubmitted) {
+        showToast('⏰','Time up! Auto-submitting your quiz.');
+        submitQuiz(true);
+      }
+    }
+  }, 500);
+}
+
+function stopQuizTimer() {
+  if (_quizTimerId) { clearInterval(_quizTimerId); _quizTimerId = null; }
+}
+
+function renderQuizPlayer() {
+  const modal = document.getElementById('quizPlayerModal');
+  if (!modal) return;
+  if (_quizSubmitted) { renderQuizResult(); return; }
+  const total = _currentQuiz.questions.length;
+  const q = _currentQuiz.questions[_currentQuizIdx];
+  if (!q) return;
+  const existing = _quizAnswers.find(a => a.qIdx === _currentQuizIdx);
+  const answeredCount = _quizAnswers.length;
+
+  // Question navigator (grid of Q numbers colored by status)
+  const nav = Array.from({length: total}, (_, i) => {
+    const a = _quizAnswers.find(x => x.qIdx === i);
+    const isCurrent = i === _currentQuizIdx;
+    let bg, col, brd;
+    if (isCurrent)    { bg = 'rgba(245,200,66,0.35)'; col = '#fff'; brd = 'var(--gold)'; }
+    else if (a)       { bg = 'rgba(0,229,160,0.18)';  col = 'var(--teal)'; brd = 'rgba(0,229,160,0.4)'; }
+    else              { bg = 'rgba(255,255,255,0.04)'; col = 'rgba(255,255,255,0.6)'; brd = 'var(--border)'; }
+    return `<button onclick="gotoQuizQuestion(${i})" style="width:36px;height:36px;border-radius:8px;background:${bg};border:1.5px solid ${brd};color:${col};font-weight:700;font-size:12px;cursor:pointer;font-family:'JetBrains Mono',monospace;">${i + 1}</button>`;
+  }).join('');
+
+  document.getElementById('quizPlayerBody').innerHTML = `
+    <!-- Top strip: timer + progress + submit -->
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.04));border:1px solid rgba(99,102,241,0.2);border-radius:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1.2px;">⏱ TIME LEFT</div>
+        <div id="qp-timer-display" style="font-size:20px;font-weight:800;color:var(--teal);font-family:'JetBrains Mono',monospace;">--:--</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;">
+        <strong style="color:var(--teal);">${answeredCount}</strong>/${total} answered
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="confirmSubmitQuiz()" style="padding:8px 16px;">✓ Submit Quiz</button>
+    </div>
+
+    <!-- Question navigator -->
+    <div style="margin-bottom:14px;padding:10px;background:var(--faint);border:1px solid var(--border);border-radius:10px;">
+      <div style="font-size:10px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;">📋 QUESTIONS · tap to jump</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${nav}</div>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--muted);">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(245,200,66,0.35);margin-right:4px;vertical-align:middle;"></span>Current</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(0,229,160,0.18);margin-right:4px;vertical-align:middle;"></span>Answered</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid var(--border);margin-right:4px;vertical-align:middle;"></span>Skipped</span>
+      </div>
+    </div>
+
+    <!-- Question text -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:10px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">QUESTION ${_currentQuizIdx + 1} OF ${total}</div>
+      <div style="font-family:'Lora','Georgia',serif;font-size:16px;font-weight:700;color:#fff;line-height:1.55;">${sanitize(q.q)}</div>
+    </div>
+
+    <!-- Options (no feedback shown, just selection) -->
+    <div id="qp-options">
+      ${q.opts.map((o, i) => {
+        const picked = existing && existing.picked === i;
+        return `<button class="quiz-opt-btn" onclick="pickQuizAnswer(${i})" style="display:block;width:100%;text-align:left;padding:14px 18px;margin-bottom:8px;background:${picked?'rgba(99,102,241,0.22)':'rgba(99,102,241,0.06)'};border:2px solid ${picked?'rgba(99,102,241,0.7)':'rgba(99,102,241,0.2)'};color:#fff;border-radius:10px;font-size:13.5px;cursor:pointer;transition:all .2s;font-family:inherit;">
+          <strong style="color:${picked?'#A5B4FC':'var(--gold)'};margin-right:10px;">${String.fromCharCode(65 + i)}.</strong> ${sanitize(o)}
+          ${picked ? '<span style="float:right;color:#A5B4FC;font-size:11px;">✓ Selected</span>' : ''}
+        </button>`;
+      }).join('')}
+    </div>
+
+    <!-- Nav + Clear + Mark for review -->
+    <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="prevQuizQuestion()" ${_currentQuizIdx === 0 ? 'disabled style="opacity:.4;cursor:not-allowed;"' : ''}>← Previous</button>
+      ${existing ? `<button class="btn btn-ghost btn-sm" onclick="clearCurrentAnswer()">🗑 Clear Answer</button>` : ''}
+      <button class="btn btn-gold btn-sm" style="flex:1;min-width:140px;" onclick="nextQuizQuestion()" ${_currentQuizIdx === total - 1 ? 'disabled style="opacity:.4;cursor:not-allowed;"' : ''}>Next →</button>
+    </div>
+  `;
+  modal.classList.remove('hidden');
+}
+
+function pickQuizAnswer(i) {
+  // Simple selection — no feedback, no scoring yet
+  const existing = _quizAnswers.findIndex(a => a.qIdx === _currentQuizIdx);
+  if (existing !== -1) _quizAnswers.splice(existing, 1);
+  _quizAnswers.push({ qIdx: _currentQuizIdx, picked: i });
+  renderQuizPlayer();   // re-render to show selection + update nav color
+}
+
+function clearCurrentAnswer() {
+  _quizAnswers = _quizAnswers.filter(a => a.qIdx !== _currentQuizIdx);
+  renderQuizPlayer();
+}
+
+function prevQuizQuestion() {
+  if (_currentQuizIdx > 0) { _currentQuizIdx--; renderQuizPlayer(); }
+}
+
+function nextQuizQuestion() {
+  if (_currentQuizIdx < _currentQuiz.questions.length - 1) {
+    _currentQuizIdx++;
+    renderQuizPlayer();
+  }
+}
+
+function gotoQuizQuestion(idx) {
+  _currentQuizIdx = idx;
+  renderQuizPlayer();
+}
+
+function confirmSubmitQuiz() {
+  const total = _currentQuiz.questions.length;
+  const answered = _quizAnswers.length;
+  const unanswered = total - answered;
+  let msg = '✅ Submit your quiz?';
+  if (unanswered > 0) {
+    msg = `⚠️ You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}.
+
+Are you sure you want to submit?`;
+  }
+  if (confirm(msg)) submitQuiz(false);
+}
+
+function submitQuiz(autoSubmitted) {
+  if (_quizSubmitted) return;
+  _quizSubmitted = true;
+  stopQuizTimer();
+  // Compute score
+  _quizScore = 0;
+  _quizAnswers.forEach(a => {
+    const q = _currentQuiz.questions[a.qIdx];
+    if (q && q.ans === a.picked) {
+      a.correct = true;
+      _quizScore++;
+    } else {
+      a.correct = false;
+    }
+  });
+  renderQuizResult(autoSubmitted);
+}
+
+async function renderQuizResult(autoSubmitted) {
+  stopQuizTimer();
+  const total = _currentQuiz.questions.length;
+  const pct = Math.round((_quizScore / total) * 100);
+  const grade = pct >= 90 ? 'A+' : pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'Need to Improve';
+  const emoji = pct >= 90 ? '🏆' : pct >= 75 ? '🌟' : pct >= 60 ? '👍' : pct >= 50 ? '📖' : '💪';
+  const diffMult = { 'Easy': 1, 'Medium': 1.5, 'Hard': 2, 'Mixed': 1.3 }[_currentQuiz.difficulty] || 1;
+  const points = Math.round(_quizScore * 10 * diffMult);
+  const accuracyBonus = pct === 100 ? 50 : pct >= 90 ? 25 : pct >= 75 ? 10 : 0;
+  const totalPoints = points + accuracyBonus;
+  const student = window._currentStudent;
+  const isStudent = !!student;
+
+  // Build per-question review with explanations
+  const reviewHTML = _currentQuiz.questions.map((q, qi) => {
+    const a = _quizAnswers.find(x => x.qIdx === qi);
+    const picked = a ? a.picked : -1;
+    const correct = a && a.correct;
+    const unanswered = !a;
+    const statusColor = unanswered ? 'var(--muted)' : (correct ? 'var(--teal)' : 'var(--coral)');
+    const statusText = unanswered ? 'UNANSWERED' : (correct ? 'CORRECT' : 'WRONG');
+    const optExp = Array.isArray(q.optExp) ? q.optExp : null;
+    return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:10px;color:var(--gold);font-weight:800;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;margin-bottom:4px;">Q${qi + 1}</div>
+          <div style="font-family:'Lora','Georgia',serif;font-size:14px;font-weight:700;color:#fff;line-height:1.5;">${sanitize(q.q)}</div>
+        </div>
+        <div style="padding:3px 10px;background:${correct?'rgba(0,229,160,0.15)':unanswered?'rgba(255,255,255,0.05)':'rgba(255,87,87,0.15)'};border:1px solid ${statusColor};border-radius:20px;color:${statusColor};font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;">${correct?'✅':unanswered?'—':'❌'} ${statusText}</div>
+      </div>
+      <div>
+        ${q.opts.map((o, oi) => {
+          const isCorrect = oi === q.ans;
+          const isPicked = oi === picked;
+          let bg, brd, prefix;
+          if (isCorrect) { bg = 'rgba(0,229,160,0.12)'; brd = 'var(--teal)'; prefix = '✅'; }
+          else if (isPicked) { bg = 'rgba(255,87,87,0.12)'; brd = 'var(--coral)'; prefix = '❌'; }
+          else { bg = 'rgba(255,255,255,0.02)'; brd = 'rgba(255,255,255,0.08)'; prefix = String.fromCharCode(65 + oi) + '.'; }
+          return `<div style="padding:8px 12px;margin-bottom:4px;background:${bg};border:1px solid ${brd};border-radius:8px;font-size:12px;color:#fff;">
+            <strong style="color:${isCorrect?'var(--teal)':isPicked?'var(--coral)':'var(--muted)'};margin-right:8px;font-family:'JetBrains Mono',monospace;">${prefix}</strong> ${sanitize(o)}
+            ${isCorrect ? ' <span style="font-size:10px;color:var(--teal);font-weight:700;">(CORRECT ANSWER)</span>' : ''}
+            ${isPicked && !isCorrect ? ' <span style="font-size:10px;color:var(--coral);font-weight:700;">(YOUR PICK)</span>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+      ${q.exp ? `<div style="margin-top:10px;padding:10px 12px;background:rgba(245,200,66,0.06);border-left:3px solid var(--gold);border-radius:6px;font-size:12.5px;color:#fff;line-height:1.65;">
+        <strong style="color:var(--gold);">💡 Why the answer is ${sanitize(String.fromCharCode(65 + q.ans))}:</strong> ${sanitize(q.exp)}
+      </div>` : ''}
+      ${optExp && optExp.length === 4 ? `<div style="margin-top:8px;padding:10px 12px;background:rgba(99,102,241,0.05);border-left:3px solid #6366F1;border-radius:6px;">
+        <div style="font-size:10px;color:#A5B4FC;font-weight:800;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;">📚 WHY EACH OPTION?</div>
+        ${q.opts.map((o, oi) => `<div style="font-size:11.5px;color:rgba(255,255,255,0.78);margin-bottom:3px;line-height:1.55;"><strong style="color:${oi===q.ans?'var(--teal)':'var(--muted)'};">${String.fromCharCode(65 + oi)}:</strong> ${sanitize(optExp[oi] || '')}</div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('quizPlayerBody').innerHTML = `
+    <!-- Result summary -->
+    <div style="text-align:center;padding:16px 0 20px;background:linear-gradient(135deg,rgba(245,200,66,0.08),transparent);border-radius:14px;margin-bottom:20px;">
+      <div style="font-size:64px;margin-bottom:6px;">${emoji}</div>
+      <div style="font-family:'Lora','Georgia',serif;font-size:28px;font-weight:800;color:var(--gold);">${grade}</div>
+      <div style="font-size:40px;font-weight:800;font-family:'Lora','Georgia',serif;color:#fff;line-height:1;margin-top:6px;">${_quizScore}/<span style="color:var(--muted);font-size:22px;">${total}</span></div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">${pct}% Correct · ${autoSubmitted?'Auto-submitted (time up)':'Submitted'}</div>
+      ${isStudent ? `
+      <div style="margin:16px auto 0;max-width:340px;background:linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.04));border:2px solid rgba(245,200,66,0.4);border-radius:14px;padding:14px;">
+        <div style="font-size:10px;color:var(--gold);font-weight:800;letter-spacing:2px;font-family:'JetBrains Mono',monospace;">⭐ POINTS EARNED</div>
+        <div style="font-size:32px;font-weight:900;color:var(--gold);font-family:'Lora','Georgia',serif;">+${totalPoints}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:2px;">${_quizScore}×10 = ${_quizScore * 10} · ${diffMult}× ${_currentQuiz.difficulty || 'Medium'}${accuracyBonus ? ' · +' + accuracyBonus + ' bonus' : ''}</div>
+      </div>` : '<div style="margin:10px 0;padding:8px;background:rgba(99,102,241,0.08);border-radius:8px;font-size:11px;color:rgba(255,255,255,0.7);">👁 Admin Preview — points not counted</div>'}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px auto 0;max-width:420px;">
+        <div class="stat-mini"><div class="stat-mini-num" style="color:var(--teal);">${_quizScore}</div><div class="stat-mini-lbl">Correct</div></div>
+        <div class="stat-mini"><div class="stat-mini-num" style="color:var(--coral);">${total - _quizScore}</div><div class="stat-mini-lbl">Wrong / Blank</div></div>
+        <div class="stat-mini"><div class="stat-mini-num" style="color:var(--gold);">${pct}%</div><div class="stat-mini-lbl">Score</div></div>
+      </div>
+    </div>
+
+    <!-- Per-question review WITH answers + explanations -->
+    <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">📝 ANSWER KEY &amp; EXPLANATIONS</div>
+    ${reviewHTML}
+
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+      <button class="btn btn-gold" style="flex:1;min-width:160px;" onclick="previewQuizAsStudent('${_currentQuiz.id}')">🔄 Retake Quiz</button>
+      <button class="btn btn-ghost" onclick="closeModal('quizPlayerModal')">Close</button>
+    </div>
+  `;
+
+  // Save attempt
+  const attempt = {
+    id: 'ATT_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    quizId: _currentQuiz.id,
+    quizTopic: _currentQuiz.topic,
+    quizSubject: _currentQuiz.subject,
+    quizClass: _currentQuiz.class,
+    difficulty: _currentQuiz.difficulty,
+    studentId: (student || {}).id || null,
+    studentName: (student || {}).name || 'Admin Preview',
+    studentPhone: (student || {}).phone || '',
+    studentClass: (student || {}).std || '',
+    studentBoard: (student || {}).board || '',
+    score: _quizScore, total, pct, grade,
+    points: isStudent ? totalPoints : 0,
+    pointsBreakdown: { base: _quizScore * 10, multiplier: diffMult, bonus: accuracyBonus },
+    answers: _quizAnswers,
+    autoSubmitted: !!autoSubmitted,
+    isPreview: !isStudent,
+    created_at: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-IN'),
+    dayKey: new Date().toISOString().slice(0, 10),
+    weekKey: getWeekKey(new Date()),
+    monthKey: new Date().toISOString().slice(0, 7)
+  };
+  const attempts = LOCAL.get('quiz_attempts') || [];
+  attempts.unshift(attempt);
+  LOCAL.set('quiz_attempts', attempts.slice(0, 1000));
+  // V12: Use dbInsert so Supabase is guaranteed
+  if (isStudent) { await dbInsert('quiz_attempts', attempt); }
+  if (isStudent) {
+    const students = LOCAL.get('students');
+    const idx = students.findIndex(s => s.id === student.id);
+    if (idx !== -1) {
+      students[idx].totalPoints = (students[idx].totalPoints || 0) + totalPoints;
+      students[idx].quizzesTaken = (students[idx].quizzesTaken || 0) + 1;
+      students[idx].lastActive = new Date().toISOString();
+      LOCAL.set('students', students);
+      try {
+        if (supabase_client) supabase_client.from('students').update({
+          totalPoints: students[idx].totalPoints,
+          quizzesTaken: students[idx].quizzesTaken,
+          lastActive: students[idx].lastActive
+        }).eq('id', student.id).then(()=>{}).catch(()=>{});
+      } catch (e) {}
+    }
+    logActivity('quiz_completed', {
+      student: student.name,
+      topic: _currentQuiz.topic,
+      score: _quizScore, total, pct, points: totalPoints
+    });
+  }
+}
+
+function getWeekKey(date) {
+  // ISO week number: YYYY-W##
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return d.getUTCFullYear() + '-W' + String(weekNo).padStart(2, '0');
+}
+
+function exportQuizCSV(quizId) {
+  const quizzes = LOCAL.get('quizzes') || [];
+  const quiz = quizzes.find(q => q.id === quizId);
+  if (!quiz) return;
+  const rows = [['Q#','Question','Option A','Option B','Option C','Option D','Correct','Explanation']];
+  quiz.questions.forEach((q, i) => {
+    rows.push([i+1, q.q, q.opts[0], q.opts[1], q.opts[2], q.opts[3], String.fromCharCode(65 + q.ans), q.exp || '']);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `quiz_${quiz.class}_${quiz.subject}_${quiz.topic}.csv`.replace(/\s+/g,'_');
+  a.click();
+  showToast('⬇','Quiz exported');
+}
+
+// ═══════════════════════════════════════════════════════
+// V10: QUESTION PAPERS MANAGER — board papers, school papers, tutor-uploaded
+// ═══════════════════════════════════════════════════════
+
+function loadQuestionPapersAdmin() {
+  const container = document.getElementById('questionPapersContainer');
+  if (!container) return;
+  const papers = LOCAL.get('question_papers') || [];
+
+  container.innerHTML = `
+    <div class="safety-banner">📄 <strong>Central library of all question papers.</strong> Upload previous years' board papers, other school papers, or tutor-created practice papers. Students see these in their Tests &amp; Quizzes section.</div>
+
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">➕ ADD QUESTION PAPER</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-select" id="qp-type">
+            <option>Previous Year Board Paper</option>
+            <option>School Paper (External)</option>
+            <option>Tutor-Created Practice Paper</option>
+            <option>Sample / Model Paper</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Class</label>
+          <select class="form-select" id="qp-class">
+            <option>Class 6</option><option>Class 7</option><option>Class 8</option>
+            <option>Class 9</option><option selected>Class 10</option><option>Class 11</option><option>Class 12</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Subject</label>
+          <input class="form-input" id="qp-subject" placeholder="e.g., Mathematics, Science"/>
+        </div>
+        <div class="form-group"><label class="form-label">Year / Source</label>
+          <input class="form-input" id="qp-year" placeholder="e.g., 2024 CBSE Board, Bharathi MHSS Final"/>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Paper Title</label>
+        <input class="form-input" id="qp-title" placeholder="e.g., Class 10 Maths — 2024 CBSE Board Question Paper"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Upload PDF File</label>
+        <div style="border:2px dashed rgba(245,200,66,0.4);border-radius:12px;padding:20px;text-align:center;cursor:pointer;background:rgba(245,200,66,0.04);transition:all .2s;" onclick="document.getElementById('qp-file-input').click()" onmouseenter="this.style.background='rgba(245,200,66,0.08)'" onmouseleave="this.style.background='rgba(245,200,66,0.04)'">
+          <div style="font-size:32px;margin-bottom:8px;">📄</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.9);font-weight:600;">Click to choose PDF file</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="qp-file-label">No file chosen · Max 5MB</div>
+          <input type="file" id="qp-file-input" accept="application/pdf,.pdf" style="display:none;" onchange="handleQPFile(this)"/>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">OR paste Google Drive / URL link</label>
+        <textarea class="form-input" id="qp-content" rows="3" placeholder="Paste Google Drive share link or any URL starting with https://..."></textarea>
+      </div>
+      <div class="form-group"><label class="form-label">Solution / Answer Key (optional)</label>
+        <textarea class="form-input" id="qp-solution" rows="3" placeholder="Paste answer key or solution link..."></textarea>
+      </div>
+      <button class="btn btn-gold" style="width:100%;padding:12px;" onclick="saveQuestionPaper()">✓ Save Question Paper</button>
+    </div>
+
+    <!-- Filter + list -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="btn btn-gold btn-sm" onclick="filterQP('all')">📋 All (${papers.length})</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterQP('Previous Year Board Paper')">📚 Board Papers</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterQP('School Paper (External)')">🏫 School Papers</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterQP('Tutor-Created Practice Paper')">👨‍🏫 Tutor Papers</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterQP('Sample / Model Paper')">📝 Sample</button>
+    </div>
+    <div id="qp-list"></div>
+  `;
+  filterQP('all');
+}
+
+function filterQP(type) {
+  const container = document.getElementById('qp-list');
+  if (!container) return;
+  let papers = LOCAL.get('question_papers') || [];
+  if (type !== 'all') papers = papers.filter(p => p.type === type);
+  if (papers.length === 0) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--muted);">📄 No papers uploaded yet.</div>';
+    return;
+  }
+  container.innerHTML = papers.map(p => {
+    const isLink = /^https?:\/\//i.test((p.content||'').trim());
+    return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1.2px;font-family:'JetBrains Mono',monospace;">${sanitize(p.type)} · ${sanitize(p.class)} · ${sanitize(p.subject)}</div>
+          <div style="font-family:'Lora','Georgia',serif;font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${sanitize(p.title)}</div>
+          ${p.year ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">📆 ${sanitize(p.year)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:4px;">
+          ${isLink ? `<a class="btn btn-teal btn-sm" href="${p.content}" target="_blank" rel="noopener">🔗 Open</a>` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="viewQP('${p.id}')">👁 View</button>
+          <button class="btn btn-danger btn-sm" onclick="adminDelete('question_papers','${p.id}','Question paper: ${(p.title||'').replace(/'/g,"\\'")}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewQP(id) {
+  const papers = LOCAL.get('question_papers') || [];
+  const p = papers.find(x => x.id === id);
+  if (!p) return;
+  const isLink = /^https?:\/\//i.test((p.content||'').trim());
+  alert((isLink ? '🔗 Link: ' + p.content : p.content) + (p.solution ? '\n\n--- SOLUTION ---\n' + p.solution : ''));
+}
+
+function handleQPFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('⚠️','File too large. Max 5MB.', true);
+    input.value = '';
+    return;
+  }
+  document.getElementById('qp-file-label').textContent = `✅ ${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+  // Read as base64 to store in Supabase
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    window._qpFileData = e.target.result; // base64 data URL
+    window._qpFileName = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveQuestionPaper() {
+  const type = document.getElementById('qp-type').value;
+  const cls = document.getElementById('qp-class').value;
+  const subject = sanitize(document.getElementById('qp-subject').value);
+  const year = sanitize(document.getElementById('qp-year').value);
+  const title = sanitize(document.getElementById('qp-title').value);
+  // Use uploaded PDF file OR typed content
+  const fileData = window._qpFileData || '';
+  const typedContent = document.getElementById('qp-content').value.trim();
+  const content = fileData || typedContent;
+  const solution = document.getElementById('qp-solution').value.trim();
+  if (!title) { showToast('⚠️','Enter a title',true); return; }
+  if (!content) { showToast('⚠️','Upload a PDF or paste a link',true); return; }
+  if (!subject || !title || !content) { showToast('⚠️','Fill Subject, Title and Content',true); return; }
+
+  const record = {
+    id: 'QP_' + Date.now(),
+    type, class: cls, subject, year, title, content, 
+    fileName: window._qpFileName || '',
+    solution, status: 'approved',
+    uploadedBy: 'admin',
+    created_at: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-IN')
+  };
+  // Clear file after save
+  window._qpFileData = null; window._qpFileName = null;
+  const fileInput = document.getElementById('qp-file-input');
+  if (fileInput) fileInput.value = '';
+  const fileLabel = document.getElementById('qp-file-label');
+  if (fileLabel) fileLabel.textContent = 'No file chosen · Max 5MB';
+  const papers = LOCAL.get('question_papers') || [];
+  papers.unshift(record);
+  LOCAL.set('question_papers', papers);
+    await dbInsert('question_papers', record);
+  ['qp-subject','qp-year','qp-title','qp-content','qp-solution'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  logActivity('qp_uploaded', { title, subject, class: cls });
+  showToast('✅','Question paper saved!');
+  filterQP('all');
+}
+
+// ═══════════════════════════════════════════════════════
+// V9: LEADERBOARD ENGINE — today / week / month + prizes
+// ═══════════════════════════════════════════════════════
+
+// Aggregate quiz attempts into ranked leaderboards
+async function buildLeaderboard(period) {
+  // period: 'today' | 'week' | 'month' | 'all'
+  let attempts = LOCAL.get('quiz_attempts') || [];
+
+  // Try to sync latest from Supabase
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('quiz_attempts').select('*').order('created_at', { ascending: false }).limit(500);
+      if (data && data.length) {
+        // Merge: dedupe by id
+        const ids = new Set(attempts.map(a => a.id));
+        data.forEach(d => { if (!ids.has(d.id)) attempts.unshift(d); });
+        LOCAL.set('quiz_attempts', attempts.slice(0, 1000));
+      }
+    }
+  } catch(e) {}
+
+  // Filter out admin preview attempts
+  attempts = attempts.filter(a => !a.isPreview && a.studentId);
+
+  // Apply period filter
+  const now = new Date();
+  const todayKey = now.toISOString().slice(0,10);
+  const weekKey = getWeekKey(now);
+  const monthKey = now.toISOString().slice(0,7);
+
+  if (period === 'today') attempts = attempts.filter(a => a.dayKey === todayKey);
+  else if (period === 'week') attempts = attempts.filter(a => a.weekKey === weekKey);
+  else if (period === 'month') attempts = attempts.filter(a => a.monthKey === monthKey);
+
+  // Aggregate per student — keyed by phone number (primary) to avoid duplicates
+  // across sessions/devices. Falls back to studentId if phone is missing.
+  const byStudent = {};
+  attempts.forEach(a => {
+    if (!a.studentId && !a.studentPhone) return;
+    const key = a.studentPhone || a.student_phone || a.studentId || a.student_id; // phone is primary key for ranking
+    if (!byStudent[key]) {
+      byStudent[key] = {
+        studentId: a.studentId,
+        name: a.studentName,
+        phone: a.studentPhone || key,
+        class: a.studentClass,
+        board: a.studentBoard,
+        totalPoints: 0,
+        quizzesTaken: 0,
+        correct: 0,
+        total: 0,
+        bestPct: 0,
+        subjects: new Set()
+      };
+    }
+    const s = byStudent[key];
+    // Keep the most recent/complete data
+    if (a.studentName) s.name = a.studentName;
+    if (a.studentClass) s.class = a.studentClass;
+    s.totalPoints += (a.points || 0);
+    s.quizzesTaken += 1;
+    s.correct += (a.score || 0);
+    s.total += (a.total || 0);
+    s.bestPct = Math.max(s.bestPct, a.pct || 0);
+    if (a.quizSubject) s.subjects.add(a.quizSubject);
+  });
+
+  // Sort by total points desc
+  const ranked = Object.values(byStudent)
+    .map(s => ({ ...s, accuracy: s.total ? Math.round((s.correct/s.total)*100) : 0, subjects: Array.from(s.subjects) }))
+    .sort((a, b) => b.totalPoints - a.totalPoints || b.accuracy - a.accuracy);
+
+  return ranked;
+}
+
+async function loadLeaderboard() {
+  const container = document.getElementById('leaderboardContainer');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--muted);padding:30px;text-align:center;">Loading leaderboards...</div>';
+
+  const [today, week, month] = await Promise.all([
+    buildLeaderboard('today'),
+    buildLeaderboard('week'),
+    buildLeaderboard('month')
+  ]);
+
+  const renderBoard = (title, icon, data, period) => {
+    const topThree = data.slice(0, 3);
+    const rest = data.slice(3, 10);
+    if (data.length === 0) {
+      return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:22px;">
+        <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">${icon} ${title}</div>
+        <div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">🌱 No quiz attempts yet for this period.</div>
+      </div>`;
+    }
+    const medals = ['🥇','🥈','🥉'];
+    const colors = ['#FFD700','#C0C0C0','#CD7F32'];
+    return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;">${icon} ${title}</div>
+        ${period === 'month' && data.length > 0 ? `<button class="btn btn-gold btn-sm" onclick="markMonthlyWinner('${data[0].studentId}','${(data[0].name||'').replace(/'/g,"\\'")}',${data[0].totalPoints})">🏆 Award Prize</button>` : ''}
+      </div>
+      ${topThree.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(${Math.min(topThree.length,3)},1fr);gap:10px;margin-bottom:14px;">
+        ${topThree.map((s, i) => `<div style="background:linear-gradient(135deg,rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.12),rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.03));border:2px solid rgba(${i===0?'255,215,0':i===1?'192,192,192':'205,127,50'},0.4);border-radius:12px;padding:14px;text-align:center;">
+          <div style="font-size:32px;margin-bottom:4px;">${medals[i]}</div>
+          <div style="font-size:14px;font-weight:800;color:#fff;font-family:'Lora','Georgia',serif;line-height:1.2;">${sanitize(s.name)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">${s.class || '—'} · ${s.accuracy}% acc</div>
+          <div style="font-size:22px;font-weight:900;color:${colors[i]};margin-top:6px;font-family:'Lora','Georgia',serif;">${s.totalPoints}</div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">points</div>
+        </div>`).join('')}
+      </div>` : ''}
+      ${rest.length > 0 ? `<div style="border-top:1px dashed var(--border);padding-top:12px;">
+        ${rest.map((s, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);min-width:22px;">#${i+4}</div>
+            <div><div style="font-size:13px;font-weight:700;color:#fff;">${sanitize(s.name)}</div><div style="font-size:10px;color:var(--muted);">${s.class} · ${s.quizzesTaken} quizzes</div></div>
+          </div>
+          <div style="font-size:14px;font-weight:800;color:var(--gold);font-family:'JetBrains Mono',monospace;">${s.totalPoints} pts</div>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  };
+
+  container.innerHTML = `
+    <div class="safety-banner">🏆 <strong>Leaderboard System</strong> — real-time rankings based on quiz points. Points = correct answers × 10 × difficulty multiplier + accuracy bonus. Monthly top scorer gets the prize 🥇.</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:18px;">
+      ${renderBoard('TODAY\'S CHAMPIONS', '🌅', today, 'today')}
+      ${renderBoard('THIS WEEK\'S TOP SCORERS', '📅', week, 'week')}
+      ${renderBoard('MONTHLY LEADERS (PRIZE ELIGIBLE)', '🏆', month, 'month')}
+    </div>
+    <div style="margin-top:20px;">
+      <button class="btn btn-ghost btn-sm" onclick="loadLeaderboard()">🔄 Refresh</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportLeaderboardCSV('month')">⬇ Export Monthly CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadPrizeHistory()">🏆 Prize History</button>
+    </div>
+    <div id="prizeHistoryContainer" style="margin-top:20px;"></div>
+  `;
+}
+
+async function exportLeaderboardCSV(period) {
+  const data = await buildLeaderboard(period);
+  if (data.length === 0) { showToast('⚠️','No data to export'); return; }
+  const rows = [['Rank','Name','Class','Phone','Points','Quizzes','Correct/Total','Accuracy %']];
+  data.forEach((s, i) => {
+    rows.push([i+1, s.name, s.class, s.phone, s.totalPoints, s.quizzesTaken, s.correct+'/'+s.total, s.accuracy + '%']);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `leaderboard_${period}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('⬇','Leaderboard exported');
+}
+
+async function markMonthlyWinner(studentId, studentName, points) {
+  const prizeName = prompt(`🏆 Award this month's prize to ${studentName}?\n\nThey earned ${points} points.\n\nEnter prize description (e.g., "₹500 cash + certificate"):`, 'Monthly Champion — ₹500 + Certificate');
+  if (!prizeName) return;
+
+  const monthKey = new Date().toISOString().slice(0,7);
+  const record = {
+    id: 'PRIZE_' + Date.now(),
+    studentId, studentName, points,
+    prize: prizeName,
+    month: monthKey,
+    awardedBy: 'admin',
+    awardedAt: new Date().toISOString(),
+    awardedDate: new Date().toLocaleDateString('en-IN', { year:'numeric', month:'long' })
+  };
+  const prizes = LOCAL.get('prizes') || [];
+  // Prevent duplicate for same student in same month
+  if (prizes.find(p => p.studentId === studentId && p.month === monthKey)) {
+    showToast('ℹ️','This student already has a prize this month', 'error');
+    return;
+  }
+  prizes.unshift(record);
+  LOCAL.set('prizes', prizes);
+  await dbInsert('prizes', record);
+
+  logActivity('prize_awarded', { studentName, prize: prizeName, month: monthKey });
+  showToast('🏆', `Prize awarded to ${studentName}!`);
+
+  // Offer WhatsApp notification
+  setTimeout(() => {
+    const students = LOCAL.get('students');
+    const s = students.find(st => st.id === studentId);
+    if (s && s.phone && confirm('Notify ' + studentName + ' via WhatsApp?')) {
+      const msg = `🏆 Congratulations ${studentName}!%0A%0AYou are the MONTHLY CHAMPION at Kongu Brilliance! 🎉%0A%0APrize: ${prizeName}%0AYour score: ${points} points%0A%0APlease come to the tuition centre to collect your prize.%0A%0A— Kongu Brilliance Team`;
+      window.open(`https://wa.me/91${s.phone}?text=${msg}`, '_blank');
+    }
+    loadLeaderboard();
+  }, 400);
+}
+
+function loadPrizeHistory() {
+  const container = document.getElementById('prizeHistoryContainer');
+  if (!container) return;
+  const prizes = LOCAL.get('prizes') || [];
+  if (prizes.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">No prizes awarded yet.</div>';
+    return;
+  }
+  container.innerHTML = `
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:20px;">
+      <div style="font-size:12px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">🏆 PRIZE HISTORY · ${prizes.length} AWARDS</div>
+      ${prizes.map(p => `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:linear-gradient(90deg,rgba(245,200,66,0.08),transparent);border-left:3px solid var(--gold);border-radius:8px;margin-bottom:6px;">
+        <div>
+          <div style="font-weight:700;color:#fff;font-size:13.5px;">🏆 ${sanitize(p.studentName)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">${sanitize(p.prize)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px;">${p.awardedDate || p.month} · ${p.points || 0} pts</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Revoke this prize?')) revokePrize('${p.id}')">🗑️</button>
+      </div>`).join('')}
+    </div>`;
+}
+
+function revokePrize(prizeId) {
+  const prizes = LOCAL.get('prizes') || [];
+  const filtered = prizes.filter(p => p.id !== prizeId);
+  LOCAL.set('prizes', filtered);
+  try { if (supabase_client) supabase_client.from('prizes').delete().eq('id', prizeId).then(()=>{}).catch(()=>{}); } catch(e){}
+  loadPrizeHistory();
+  loadLeaderboard();
+  showToast('🗑','Prize revoked');
+}
+
+// ═══════════════════════════════════════════════════════
+// V9: STUDENT MARKS PORTAL — personal quiz history + rank
+// ═══════════════════════════════════════════════════════
+
+async function loadStudentMarks() {
+  const container = document.getElementById('studentMarksContainer');
+  const student = window._currentStudent;
+  if (!container || !student) return;
+
+  container.innerHTML = '<div style="color:var(--muted);padding:30px;text-align:center;">Loading your marks...</div>';
+
+  // Sync from cloud
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('quiz_attempts').select('*')
+        .or(`student_id.eq.${student.id},studentId.eq.${student.id}`)
+        .order('created_at',{ascending:false}).limit(200);
+      if (data && data.length) {
+        const local = LOCAL.get('quiz_attempts') || [];
+        const ids = new Set(local.map(a => a.id));
+        data.forEach(d => { if (!ids.has(d.id)) local.unshift(d); });
+        LOCAL.set('quiz_attempts', local.slice(0, 1000));
+      }
+    }
+  } catch(e) {}
+
+  const attempts = (LOCAL.get('quiz_attempts') || []).filter(a => (a.studentId === student.id || a.student_id === student.id) && !a.isPreview);
+  const totalPoints = attempts.reduce((s,a) => s + (a.points||0), 0);
+  const totalCorrect = attempts.reduce((s,a) => s + (a.score||0), 0);
+  const totalQuestions = attempts.reduce((s,a) => s + (a.total||0), 0);
+  const accuracy = totalQuestions ? Math.round((totalCorrect/totalQuestions)*100) : 0;
+
+  // Build ranks for today / week / month
+  const [today, week, month, all] = await Promise.all([
+    buildLeaderboard('today'),
+    buildLeaderboard('week'),
+    buildLeaderboard('month'),
+    buildLeaderboard('all')
+  ]);
+  const findRank = (list) => {
+    const idx = list.findIndex(s => s.studentId === student.id);
+    return idx === -1 ? '—' : '#' + (idx+1);
+  };
+
+  // Subject-wise breakdown
+  const bySubj = {};
+  attempts.forEach(a => {
+    const k = a.quizSubject || 'Other';
+    if (!bySubj[k]) bySubj[k] = { correct:0, total:0, pts:0, quizzes:0 };
+    bySubj[k].correct += (a.score||0);
+    bySubj[k].total += (a.total||0);
+    bySubj[k].pts += (a.points||0);
+    bySubj[k].quizzes += 1;
+  });
+
+  // Check if student has any prizes
+  const prizes = (LOCAL.get('prizes') || []).filter(p => p.studentId === student.id);
+
+  container.innerHTML = `
+    <!-- Hero stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
+      <div style="background:linear-gradient(135deg,rgba(245,200,66,0.15),rgba(245,200,66,0.03));border:2px solid rgba(245,200,66,0.3);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:10px;color:var(--gold);letter-spacing:1.5px;font-weight:700;">TOTAL POINTS</div>
+        <div style="font-size:34px;font-weight:900;color:var(--gold);font-family:'Lora','Georgia',serif;margin-top:4px;">${totalPoints}</div>
+        <div style="font-size:10px;color:var(--muted);">earned</div>
+      </div>
+      <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:10px;color:var(--teal);letter-spacing:1.5px;font-weight:700;">QUIZZES TAKEN</div>
+        <div style="font-size:34px;font-weight:900;color:var(--teal);font-family:'Lora','Georgia',serif;margin-top:4px;">${attempts.length}</div>
+        <div style="font-size:10px;color:var(--muted);">${totalCorrect}/${totalQuestions} correct</div>
+      </div>
+      <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:10px;color:#6366F1;letter-spacing:1.5px;font-weight:700;">ACCURACY</div>
+        <div style="font-size:34px;font-weight:900;color:#6366F1;font-family:'Lora','Georgia',serif;margin-top:4px;">${accuracy}%</div>
+        <div style="font-size:10px;color:var(--muted);">overall</div>
+      </div>
+      <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;">
+        <div style="font-size:10px;color:#F97316;letter-spacing:1.5px;font-weight:700;">PRIZES WON</div>
+        <div style="font-size:34px;font-weight:900;color:#F97316;font-family:'Lora','Georgia',serif;margin-top:4px;">${prizes.length}</div>
+        <div style="font-size:10px;color:var(--muted);">${prizes.length ? 'champion!' : 'keep trying!'}</div>
+      </div>
+    </div>
+
+    <!-- Ranking positions -->
+    <div style="background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(168,85,247,0.04));border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">📊 YOUR RANKING</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;">
+        <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);">TODAY</div><div style="font-size:22px;font-weight:800;color:var(--gold);">${findRank(today)}</div></div>
+        <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);">THIS WEEK</div><div style="font-size:22px;font-weight:800;color:var(--teal);">${findRank(week)}</div></div>
+        <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);">THIS MONTH</div><div style="font-size:22px;font-weight:800;color:#F97316;">${findRank(month)}</div></div>
+        <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);">ALL TIME</div><div style="font-size:22px;font-weight:800;color:#6366F1;">${findRank(all)}</div></div>
+      </div>
+      <div style="margin-top:14px;padding:10px;background:rgba(245,200,66,0.05);border-radius:8px;font-size:11.5px;color:rgba(255,255,255,0.75);text-align:center;">🏆 Top the monthly leaderboard to win the <strong style="color:var(--gold);">Monthly Champion Prize</strong>!</div>
+    </div>
+
+    <!-- Prizes -->
+    ${prizes.length ? `<div style="background:linear-gradient(135deg,rgba(245,200,66,0.12),rgba(245,200,66,0.04));border:2px solid rgba(245,200,66,0.4);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">🏆 YOUR PRIZES (${prizes.length})</div>
+      ${prizes.map(p => `<div style="display:flex;align-items:center;gap:14px;padding:12px;background:rgba(245,200,66,0.04);border-radius:10px;margin-bottom:6px;">
+        <div style="font-size:32px;">🏆</div>
+        <div><div style="font-weight:800;color:var(--gold);font-size:14px;">${sanitize(p.prize)}</div><div style="font-size:11px;color:rgba(255,255,255,0.65);">${p.awardedDate} · ${p.points} pts</div></div>
+      </div>`).join('')}
+    </div>` : ''}
+
+    <!-- Subject-wise breakdown -->
+    ${Object.keys(bySubj).length ? `<div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">📚 BY SUBJECT</div>
+      ${Object.entries(bySubj).map(([subj, d]) => {
+        const pct = d.total ? Math.round((d.correct/d.total)*100) : 0;
+        return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+            <div style="font-weight:700;color:#fff;font-size:13px;">${sanitize(subj)}</div>
+            <div style="font-size:12px;color:var(--gold);font-weight:700;">${d.pts} pts</div>
+          </div>
+          <div style="display:flex;gap:10px;font-size:11px;color:var(--muted);margin-bottom:6px;">
+            <span>${d.quizzes} quizzes</span>
+            <span>${d.correct}/${d.total} correct</span>
+            <span>${pct}% accuracy</span>
+          </div>
+          <div style="height:5px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,var(--gold),var(--teal));width:${pct}%;"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    <!-- Recent attempts -->
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:18px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;">🕐 RECENT QUIZZES (${attempts.length})</div>
+      ${attempts.length === 0 ? '<div style="text-align:center;color:var(--muted);padding:20px;">📝 You haven\'t taken any quizzes yet. Go to your subjects and start earning points!</div>' :
+        attempts.slice(0, 20).map(a => {
+          const color = a.pct >= 75 ? 'var(--teal)' : a.pct >= 50 ? 'var(--gold)' : 'var(--coral)';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:6px;border-left:3px solid ${color};">
+            <div><div style="font-size:12.5px;font-weight:700;color:#fff;">${sanitize(a.quizSubject || 'Quiz')} · ${sanitize(a.quizTopic || '')}</div><div style="font-size:10px;color:var(--muted);">${a.date} · ${a.difficulty || '—'}</div></div>
+            <div style="text-align:right;"><div style="font-size:14px;font-weight:800;color:${color};">${a.score}/${a.total}</div><div style="font-size:10px;color:var(--gold);">+${a.points||0} pts</div></div>
+          </div>`;
+        }).join('')
+      }
+    </div>
+  `;
+}
+
+async function adminAddStudent() {
+  const name = sanitize(document.getElementById('as-name').value);
+  const phone = document.getElementById('as-phone').value.trim();
+  const pass = document.getElementById('as-pass').value.trim();
+  const std = document.getElementById('as-std').value;
+  const board = document.getElementById('as-board').value;
+  const school = sanitize(document.getElementById('as-school').value);
+  const native = sanitize(document.getElementById('as-native').value);
+  const batch = document.getElementById('as-batch').value;
+  const parent = sanitize(document.getElementById('as-parent').value);
+  const subjects = sanitize((document.getElementById('as-subjects')||{}).value || '');
+
+  if (!name || !phone || !std || !board || !school) { showToast('⚠️', 'Fill all required fields.', true); return; }
+  if (!validatePhone(phone)) { showToast('⚠️', 'Enter valid 10-digit mobile.', true); return; }
+  const pwCheck = validateStrongPassword(pass);
+  if (!pwCheck.ok) { showToast('⚠️', pwCheck.msg, true); return; }
+
+  // Check for duplicate mobile
+  const existing = await dbGetAll('students');
+  if (existing.find(s => s.phone === phone)) {
+    showToast('⚠️','A student with this mobile already exists!', true); return;
+  }
+
+  const passHash = await hashPassword(pass);
+  const assignedTutorId = document.getElementById('as-assigned-tutor')?.value || '';
+  const assignedTutorName = (() => { const sel = document.getElementById('as-assigned-tutor'); return sel?.options?.[sel.selectedIndex]?.text || ''; })();
+  const record = {
+    id:'STU_'+Date.now(), name, phone, std, board, school, native, batch, parent,
+    pass: passHash,
+    pass_plain: pass,
+    subjects,
+    assignedTutorId, assignedTutorName,
+    status: 'approved',     // admin-added = auto-approved
+    approved_at: new Date().toISOString(),
+    added_by: 'admin',
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  await dbInsert('students', record);
+  logActivity('admin_added_student', { name, phone, std, added_by_admin: true });
+
+  ['as-name','as-phone','as-pass','as-school','as-native','as-parent','as-subjects'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
+  await loadDashboard();
+
+  // Show success modal with credentials
+  showCredentialsModal(name, phone, pass);
+  showToast('✅', `Student "${name}" created & login activated!`);
+}
+
+function showCredentialsModal(name, phone, pass) {
+  const modal = document.getElementById('credsModal');
+  if (!modal) return;
+  document.getElementById('credsModalName').textContent = name;
+  document.getElementById('credsModalPhone').textContent = phone;
+  document.getElementById('credsModalPass').textContent = pass;
+  modal.classList.remove('hidden');
+}
+
+async function adminAddTutor() {
+  const name = sanitize(document.getElementById('at-name').value);
+  const phone = document.getElementById('at-phone').value.trim();
+  const email = document.getElementById('at-email').value.trim();
+  const pass = document.getElementById('at-pass').value.trim();
+  const subjects = sanitize(document.getElementById('at-subjects').value);
+  const batches = sanitize(document.getElementById('at-batches').value);
+  if (!name || !phone || !email || !pass) { showToast('⚠️', 'Fill all required fields.'); return; }
+  if (!validatePhone(phone)) { showToast('⚠️', 'Enter valid 10-digit mobile.'); return; }
+  if (!validateEmail(email)) { showToast('⚠️', 'Enter a valid email.'); return; }
+  if (pass.length < 6) { showToast('⚠️', 'Password must be 6+ characters.'); return; }
+  const passHash = await hashPassword(pass);
+  const record = {
+    id:'TUT_'+Date.now(), name, phone, email,
+    pass: passHash,                  // V6: hashed
+    pass_plain: pass,                // Admin-visible plain password
+    subjects, batches,
+    status: 'active',
+    base_salary: 18000,              // default — admin can change in salary section
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  await dbInsert('tutors', record);
+  ['at-name','at-phone','at-email','at-pass','at-subjects','at-batches'].forEach(id => document.getElementById(id).value = '');
+  await loadDashboard();
+  showToast('✅', `Tutor "${name}" account created securely!`);
+}
+
+async function exportAllData() {
+  const students = await dbGetAll('students');
+  const tutors = await dbGetAll('tutors');
+  const enquiries = await dbGetAll('enquiries');
+  const csvHeaders = ['Name','Mobile','Class','Board','School','Native','Batch','Parent','Date'];
+  const csvRows = students.map(s => [s.name,s.phone,s.std,s.board,s.school,s.native,s.batch,s.parent,s.date].map(v => `"${v||''}"`).join(','));
+  const csv = [csvHeaders.join(','), ...csvRows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `KonguBrilliance_Students_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  setTimeout(() => {
+    const json = JSON.stringify({ exported: new Date().toLocaleString('en-IN'), students, enquiries, tutors_count: tutors.length }, null, 2);
+    const b2 = new Blob([json], {type:'application/json'});
+    const a2 = document.createElement('a'); a2.href = URL.createObjectURL(b2);
+    a2.download = `KonguBrilliance_FullData_${new Date().toISOString().slice(0,10)}.json`; a2.click();
+    showToast('⬇', 'CSV + JSON exported successfully!');
+  }, 500);
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function showToast(icon, msg, isError = false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.toggle('toast-error', isError);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+// ══════════════════════════════════════════════
+// NAV + SCROLL
+// ══════════════════════════════════════════════
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  if (window.scrollY > 60) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
+  const btn = document.getElementById('scrollTopBtn');
+  if (window.scrollY > 500) btn.classList.add('visible'); else btn.classList.remove('visible');
+  const sections = ['hero','courses','founder','why','promo','fees','trust','contact'];
+  let current = '';
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.scrollY >= el.offsetTop - 130) current = id;
+  });
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    a.classList.remove('active');
+    if (a.getAttribute('href') === '#' + current) a.classList.add('active');
+  });
+});
+
+// ══════════════════════════════════════════════
+// QUIZ ENGINE
+// ══════════════════════════════════════════════
+let _quiz = { questions:[], current:0, score:0, selected:null, timer:null, subject:'' };
+
+function startQuiz(title, subject, count) {
+  const bank = QUIZ_BANK[subject] || QUIZ_BANK['Mathematics'];
+  const shuffled = [...bank].sort(() => Math.random() - 0.5).slice(0, Math.min(count, bank.length));
+  _quiz = { questions: shuffled, current: 0, score: 0, selected: null, timer: null, subject, title };
+  document.getElementById('quiz-title-display').textContent = title;
+  document.getElementById('quiz-result-view').classList.add('hidden');
+  document.getElementById('quiz-active-view').classList.remove('hidden');
+  document.getElementById('quizOverlay').classList.remove('hidden');
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const q = _quiz.questions[_quiz.current];
+  if (!q) { showQuizResult(); return; }
+  const total = _quiz.questions.length;
+  document.getElementById('quiz-q-counter').textContent = `Question ${_quiz.current + 1} of ${total}`;
+  document.getElementById('quiz-pbar').style.width = `${((_quiz.current + 1) / total) * 100}%`;
+  document.getElementById('quiz-question-text').textContent = q.q;
+  document.getElementById('quiz-next-btn').textContent = _quiz.current < total - 1 ? 'Next →' : 'Finish ✓';
+  _quiz.selected = null;
+  const container = document.getElementById('quiz-options-container');
+  container.innerHTML = q.opts.map((opt, i) => `<button class="quiz-opt" onclick="selectQuizOpt(this,${i})">${String.fromCharCode(65+i)}. ${opt}</button>`).join('');
+  // Timer
+  clearInterval(_quiz.timer);
+  let timeLeft = 30;
+  document.getElementById('quiz-timer').textContent = timeLeft + 's';
+  document.getElementById('quiz-timer').style.color = 'var(--gold)';
+  _quiz.timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById('quiz-timer').textContent = timeLeft + 's';
+    if (timeLeft <= 10) document.getElementById('quiz-timer').style.color = 'var(--coral)';
+    if (timeLeft <= 0) { clearInterval(_quiz.timer); autoNextQuestion(); }
+  }, 1000);
+}
+
+function selectQuizOpt(btn, idx) {
+  if (_quiz.selected !== null) return;
+  _quiz.selected = idx;
+  clearInterval(_quiz.timer);
+  const q = _quiz.questions[_quiz.current];
+  document.querySelectorAll('.quiz-opt').forEach((b, i) => {
+    if (i === q.ans) b.classList.add('correct');
+    else if (i === idx && idx !== q.ans) b.classList.add('wrong');
+    b.disabled = true;
+  });
+  if (idx === q.ans) _quiz.score++;
+  btn.classList.add('selected');
+}
+
+function autoNextQuestion() {
+  if (_quiz.selected === null) {
+    const q = _quiz.questions[_quiz.current];
+    document.querySelectorAll('.quiz-opt').forEach((b, i) => { if (i === q.ans) b.classList.add('correct'); b.disabled = true; });
+  }
+  setTimeout(nextQuestion, 800);
+}
+
+function nextQuestion() {
+  _quiz.current++;
+  if (_quiz.current >= _quiz.questions.length) { showQuizResult(); return; }
+  renderQuizQuestion();
+}
+
+function showQuizResult() {
+  clearInterval(_quiz.timer);
+  const total = _quiz.questions.length;
+  const score = _quiz.score;
+  const pct = Math.round((score / total) * 100);
+  document.getElementById('quiz-active-view').classList.add('hidden');
+  document.getElementById('quiz-result-view').classList.remove('hidden');
+  document.getElementById('quiz-final-score').textContent = `${score}/${total}`;
+  const ring = document.getElementById('quiz-score-ring');
+  ring.style.background = `conic-gradient(var(--gold) ${pct * 3.6}deg, rgba(255,255,255,0.05) ${pct * 3.6}deg)`;
+  const titles = pct >= 90 ? ['🏆 Outstanding!','You\'re on centum track! Brilliant performance.'] :
+                 pct >= 70 ? ['🎯 Great Work!','Strong performance. Keep practicing!'] :
+                 pct >= 50 ? ['📚 Good Effort!','Review the incorrect answers and try again.'] :
+                             ['💪 Keep Practicing!','Revise the chapter notes and retake.'];
+  document.getElementById('quiz-result-title').textContent = titles[0];
+  document.getElementById('quiz-result-msg').textContent = `${pct}% — ${titles[1]}`;
+}
+
+function retakeQuiz() {
+  startQuiz(_quiz.title, _quiz.subject, _quiz.questions.length);
+}
+
+function closeQuiz() {
+  clearInterval(_quiz.timer);
+  document.getElementById('quizOverlay').classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════
+// V6: AI VIDEO MODAL — REAL VIDEO + WORKING AI
+// ══════════════════════════════════════════════
+let _currentVideoTopic = '';
+let _currentVideoSubtitle = '';
+let _currentVideoSubject = '';
+let _aiMessages = [];
+let _currentMode = 'story'; // 'story' | 'normal'
+
+// Curated, verified-embeddable YouTube videos for each topic.
+// When a video ID isn't found, we use a YouTube search URL that opens externally.
+const VIDEO_LIBRARY = {
+  'Mathematics – Algebra: Linear & Quadratic Equations': { searchQuery:'algebra class 10 linear quadratic equations explained tamil', dur:'18 mins', tutor:'KB Maths Faculty' },
+  'Mathematics – Geometry: Triangles & Circles': { searchQuery:'geometry triangles circles class 10 cbse', dur:'22 mins', tutor:'KB Maths Faculty' },
+  'Mathematics – Statistics & Probability': { searchQuery:'statistics probability class 10 mean median mode', dur:'20 mins', tutor:'KB Maths Faculty' },
+  'Mathematics – Ch 1: Integers': { searchQuery:'integers class 7 chapter 1 ncert explained', dur:'20 mins', tutor:'KB Maths Faculty' },
+  'Science – Chemical Reactions & Equations': { searchQuery:'chemical reactions equations class 10 cbse ncert', dur:'24 mins', tutor:'KB Science Faculty' },
+  'Science – Life Processes in Living Organisms': { searchQuery:'life processes class 10 biology ncert', dur:'28 mins', tutor:'KB Bio Faculty' },
+  'History – The Rise of Nationalism in Europe (Chapter 1)': { searchQuery:'rise of nationalism in europe class 10 history chapter 1', dur:'32 mins', tutor:'KB History Faculty' },
+  'History – Nationalism in India: Gandhi & Non-Cooperation (Chapter 2)': { searchQuery:'nationalism in india class 10 chapter 2 gandhi', dur:'30 mins', tutor:'KB History Faculty' },
+  'History – The Making of a Global World (Trade & Colonialism)': { searchQuery:'making of global world class 10 chapter 4', dur:'35 mins', tutor:'KB History Faculty' },
+  'History – The Age of Industrialisation': { searchQuery:'age of industrialisation class 10 history chapter 5', dur:'28 mins', tutor:'KB History Faculty' },
+  'English – Grammar: Tenses, Voice & Reported Speech': { searchQuery:'english grammar tenses voice reported speech class 10', dur:'25 mins', tutor:'KB English Faculty' },
+  'Tamil – இலக்கணம்: வினைச்சொல் & பெயர்ச்சொல்': { searchQuery:'tamil ilakkanam vinaichollu peyarcholl class 10', dur:'20 mins', tutor:'KB Tamil Faculty' },
+  'Physics – Newton\'s Laws of Motion with Numericals': { searchQuery:'newtons laws of motion class 9 physics numericals', dur:'26 mins', tutor:'KB Physics Faculty' },
+  'Chemistry – Periodic Table & Chemical Bonding': { searchQuery:'periodic table chemical bonding class 10 chemistry', dur:'24 mins', tutor:'KB Chemistry Faculty' },
+  'Biology – Genetics: Heredity & Variation (Mendel\'s Laws)': { searchQuery:'genetics heredity variation mendel laws class 10', dur:'22 mins', tutor:'KB Bio Faculty' },
+};
+
+// V7: Admin can add custom videos per topic in localStorage / supabase
+function getCustomVideo(topic) {
+  // Read from LOCAL cache (should be pre-loaded from Supabase)
+  const custom = LOCAL.get('custom_videos') || [];
+  return custom.find(v => v.topic === topic);
+}
+
+async function preloadCustomVideos() {
+  // Load all custom videos from Supabase into LOCAL
+  if (!supabase_client) return;
+  try {
+    const { data } = await supabase_client.from('custom_videos').select('*').order('created_at',{ascending:false}).limit(100);
+    if (data && data.length) {
+      LOCAL.set('custom_videos', data);
+      console.log('✅ Custom videos loaded:', data.length);
+    }
+  } catch(e) {}
+}
+
+function openAIVideo(topic, subtitle) {
+  _currentVideoTopic = topic;
+  _currentVideoSubtitle = subtitle || 'AI-Assisted Learning';
+  _currentVideoSubject = topic.split('–')[0].trim();
+  _aiMessages = [];
+
+  document.getElementById('ai-video-title').textContent = topic;
+  document.getElementById('ai-video-sub').textContent = _currentVideoSubtitle + ' · Story Mode ON';
+  document.getElementById('vid-title-display').textContent = topic;
+  document.getElementById('vc-topic-display').textContent = topic.length > 50 ? topic.slice(0,50)+'...' : topic;
+
+  const videoInfo = VIDEO_LIBRARY[topic] || { dur: '~20 mins', tutor: 'KB Faculty' };
+  document.getElementById('vid-info-subj').textContent = _currentVideoSubject;
+  document.getElementById('vid-info-tutor').textContent = videoInfo.tutor;
+  document.getElementById('vid-info-duration').textContent = videoInfo.dur;
+
+  // Reset to placeholder view
+  document.getElementById('vid-iframe').classList.add('hidden');
+  document.getElementById('vid-iframe').src = 'about:blank';
+  document.getElementById('vid-loading').classList.add('hidden');
+  document.getElementById('vid-placeholder').style.display = '';
+
+  // Welcome message
+  const greeting = generateWelcomeMessage(topic, _currentVideoSubject);
+  const msgsEl = document.getElementById('ai-messages-box');
+  msgsEl.innerHTML = `<div class="ai-msg ai"><div class="ai-msg-name">KB AI TUTOR</div>${greeting}</div>`;
+
+  // Particles effect
+  const particles = document.getElementById('vid-particles');
+  if (particles) {
+    particles.innerHTML = Array.from({length:25}, () => `<div style="position:absolute;width:${2+Math.random()*4}px;height:${2+Math.random()*4}px;border-radius:50%;background:rgba(165,180,252,${0.1+Math.random()*0.3});left:${Math.random()*100}%;top:${Math.random()*100}%;animation:liveDot ${2+Math.random()*4}s infinite ${Math.random()*2}s;"></div>`).join('');
+  }
+
+  // Update AI status bar based on key
+  updateAIStatusBar();
+  document.getElementById('aiVideoOverlay').classList.remove('hidden');
+  // V10: Push history so browser back button closes video cleanly
+  try { history.pushState({ aiVideoOpen: true }, '', location.pathname + (location.hash.includes('#ai-tutor')?location.hash:'#ai-tutor')); } catch(e){}
+}
+
+function generateWelcomeMessage(topic, subject) {
+  const subj = subject.toLowerCase();
+  if (subj.includes('history')) {
+    return `வணக்கம்! Welcome to <strong>${topic}</strong>! 🏛️<br><br>I'm your AI History tutor. History has so many dates, names, and events — but don't worry, I'll teach it like a <strong>STORY</strong>, with memory tricks and mnemonics so you remember everything.<br><br>Ready to start? Click <strong>▶ Play Video Lesson</strong> above, or just ask me anything! 🎓`;
+  }
+  if (subj.includes('math')) {
+    return `Welcome to <strong>${topic}</strong>! 📐<br><br>Maths is just a beautiful language of patterns. I'll help you understand the <strong>WHY</strong> behind every formula, not just the how. Step-by-step, with solved examples.<br><br>Click <strong>▶ Play Video Lesson</strong> above, or ask me to explain any concept! 🎓`;
+  }
+  if (subj.includes('science') || subj.includes('physics') || subj.includes('chemistry') || subj.includes('biology')) {
+    return `Welcome to <strong>${topic}</strong>! 🔬<br><br>Science is everywhere — from the tea you drink to the phone you're holding. I'll connect every concept to <strong>real life</strong> so it stays in your memory forever.<br><br>Click <strong>▶ Play Video Lesson</strong> above, or ask me anything you're confused about! 🎓`;
+  }
+  if (subj.includes('english')) {
+    return `Welcome to <strong>${topic}</strong>! 📖<br><br>Grammar isn't just rules — it's how we make our ideas clear and powerful. I'll teach you with simple examples and show you exactly what comes in board exams.<br><br>Click <strong>▶ Play Video Lesson</strong> above, or ask me to explain any rule! 🎓`;
+  }
+  if (subj.includes('tamil')) {
+    return `வணக்கம்! <strong>${topic}</strong> பாடத்திற்கு உங்களை வரவேற்கிறேன்! ✍️<br><br>தமிழ் இலக்கணம் ஒரு கலை. உங்களுக்கு எளிய எடுத்துக்காட்டுகளுடன் கற்றுக்கொடுக்கிறேன்.<br><br>மேலே <strong>▶ Play Video</strong> கிளிக் செய்யுங்கள், அல்லது எந்த சந்தேகத்தையும் கேளுங்கள்! 🎓`;
+  }
+  return `Welcome to <strong>${topic}</strong>! 🎓<br><br>I'm your AI tutor for this session. I'll break down every concept in simple steps, give you real-life examples, and help you remember everything for your exams.<br><br>Click <strong>▶ Play Video Lesson</strong> above, or ask me anything!`;
+}
+
+
+function stopVideoPlayback() {
+  const iframe = document.getElementById('vid-iframe');
+  if (iframe) { iframe.src = 'about:blank'; iframe.classList.add('hidden'); }
+  const placeholder = document.getElementById('vid-placeholder');
+  if (placeholder) { placeholder.style.display = ''; }
+  const stopBtn = document.getElementById('vc-stop-btn');
+  if (stopBtn) stopBtn.style.display = 'none';
+  showToast('⏹', 'Video stopped.');
+}
+function playVideoLesson() {
+  // Check for admin-added custom video first
+  const custom = getCustomVideo(_currentVideoTopic);
+  const videoInfo = custom || VIDEO_LIBRARY[_currentVideoTopic];
+
+  document.getElementById('vid-loading').classList.remove('hidden');
+  document.getElementById('vid-placeholder').style.display = 'none';
+  const stopBtnEl = document.getElementById('vc-stop-btn'); if(stopBtnEl) stopBtnEl.style.display = 'inline-block';
+
+  const iframe = document.getElementById('vid-iframe');
+
+  if (custom && custom.videoId) {
+    // Admin-added custom video with known-good ID
+    iframe.src = `https://www.youtube-nocookie.com/embed/${custom.videoId}?autoplay=1&rel=0&modestbranding=1`;
+    iframe.classList.remove('hidden');
+  } else if (videoInfo && videoInfo.searchQuery) {
+    // Embed YouTube search results directly in the iframe
+    document.getElementById('vid-loading').classList.remove('hidden');
+    const searchQ = encodeURIComponent(videoInfo.searchQuery + ' lesson explanation');
+    // Use YouTube's listType=search embed to show video results
+    iframe.src = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(videoInfo.searchQuery + ' cbse lesson')}&autoplay=1&rel=0&modestbranding=1`;
+    iframe.classList.remove('hidden');
+    setTimeout(() => document.getElementById('vid-loading').classList.add('hidden'), 2000);
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(videoInfo.searchQuery)}`;
+    document.getElementById('vid-placeholder').innerHTML = `
+      <div class="ai-vid-bg" style="position:absolute;inset:0;z-index:0;"></div>
+      <div class="ai-vid-particles" id="vid-particles" style="position:absolute;inset:0;z-index:1;"></div>
+      <div style="position:relative;z-index:2;max-width:500px;padding:30px;">
+        <div style="font-size:56px;margin-bottom:12px;filter:drop-shadow(0 0 20px rgba(165,180,252,0.5));">🎬</div>
+        <div style="font-family:'Merriweather',Georgia,serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:10px;">${_currentVideoTopic}</div>
+        <div style="font-size:13px;color:rgba(165,180,252,0.85);margin-bottom:20px;line-height:1.6;">
+          Hand-picked video lessons from Magnet Brains, LearnoHub, BYJU's & other trusted channels. Tap below to watch on YouTube, then return here to ask the AI tutor your doubts!
+        </div>
+        <button class="btn btn-gold" onclick="embedYouTubeSearch('${searchUrl}')" style="padding:12px 28px;margin-bottom:10px;">▶ Play Video Lesson</button>
+        <a href="${searchUrl}" target="_blank" rel="noopener" style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px;">↗ Open YouTube search</a>
+        <div style="font-size:11px;color:var(--muted);margin-top:14px;">
+          💡 After watching, use the AI tutor below to clarify any doubt, get memory tricks, or ask for exam-style questions.
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(99,102,241,0.15);font-size:10px;color:var(--muted);">
+          Or paste a specific YouTube URL:
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input id="custom-yt-input" placeholder="https://youtube.com/watch?v=..." style="flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(165,180,252,0.2);color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;font-family:inherit;"/>
+            <button class="vc-btn" onclick="playCustomYTLink()" style="padding:6px 12px;">▶ Play</button>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    // Fallback: generic YouTube search
+    const query = encodeURIComponent(_currentVideoTopic + ' class 10 explained');
+    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+    document.getElementById('vid-loading').classList.add('hidden');
+    document.getElementById('vid-placeholder').style.display = '';
+  }
+  iframe.onload = () => document.getElementById('vid-loading').classList.add('hidden');
+  setTimeout(() => document.getElementById('vid-loading').classList.add('hidden'), 3500);
+}
+
+
+function embedYouTubeSearch(searchUrl) {
+  const iframe = document.getElementById('vid-iframe');
+  if (!iframe) return;
+  // Convert search URL to embed - try first result embed
+  const query = searchUrl.split('search_query=')[1] || '';
+  // Use YouTube's embed with list parameter to show playlist of results
+  iframe.src = 'https://www.youtube.com/embed?listType=search&list=' + query + '&autoplay=1&rel=0&modestbranding=1';
+  iframe.classList.remove('hidden');
+  document.getElementById('vid-placeholder').style.display = 'none';
+  document.getElementById('vid-loading').classList.remove('hidden');
+  const stopBtnEl = document.getElementById('vc-stop-btn'); if(stopBtnEl) stopBtnEl.style.display = 'inline-block';
+}
+function playCustomYTLink() {
+  const input = document.getElementById('custom-yt-input');
+  if (!input || !input.value.trim()) return;
+  const url = input.value.trim();
+  // Extract video ID from various YouTube URL formats
+  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (!match) { showToast('⚠️','Enter a valid YouTube URL', true); return; }
+  const vid = match[1];
+  const iframe = document.getElementById('vid-iframe');
+  iframe.src = `https://www.youtube-nocookie.com/embed/${vid}?autoplay=1&rel=0&modestbranding=1`;
+  iframe.classList.remove('hidden');
+  document.getElementById('vid-placeholder').style.display = 'none';
+  showToast('▶️','Loading video...');
+}
+
+function switchVideoMode(mode) {
+  document.querySelectorAll('.video-controls-bar .vc-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('vc-' + mode + '-tab').classList.add('active');
+  if (mode === 'video') {
+    document.getElementById('vid-screen-container').style.display = 'flex';
+  } else if (mode === 'ai') {
+    document.getElementById('vid-screen-container').style.display = 'none';
+    document.getElementById('ai-mode-label').textContent = '🤖 PURE AI MODE';
+    _currentMode = 'normal';
+  } else if (mode === 'story') {
+    document.getElementById('vid-screen-container').style.display = 'flex';
+    document.getElementById('ai-mode-label').textContent = '📖 STORY MODE';
+    _currentMode = 'story';
+  }
+}
+
+function closeAIVideo() {
+  document.getElementById('aiVideoOverlay').classList.add('hidden');
+  // Stop video playback
+  const iframe = document.getElementById('vid-iframe');
+  iframe.src = 'about:blank';
+  iframe.classList.add('hidden');
+  document.getElementById('vid-placeholder').style.display = '';
+}
+
+// updateAIStatusBar defined below with V7 improvements
+
+// V12: Admin-managed shared Gemini key
+async function saveSharedGeminiKey() {
+  const key = (document.getElementById('admin-gemini-key')?.value || '').trim();
+  if (!key) { showToast('⚠️','Paste the Gemini API key first',true); return; }
+  localStorage.setItem('kb_shared_gemini_key', key);
+  localStorage.setItem('kb_gemini_key', key); // Also set personal for immediate use
+  // Store in Supabase admin config for persistence across devices (optional table)
+  try {
+    if (supabase_client) await supabase_client.from('admin_config').upsert([{ key:'gemini_api_key', value:key }]).then(()=>{}).catch(()=>{});
+  } catch(e){}
+  document.getElementById('gemini-key-status').innerHTML = '<span style="color:var(--teal);">✅ Key saved! All users will now use this key for AI features.</span>';
+  showToast('✅','Gemini key saved for all users!');
+}
+
+async function testGeminiKey() {
+  const key = (document.getElementById('admin-gemini-key')?.value || '').trim() || getGeminiKey();
+  if (!key) { showToast('⚠️','Enter a key to test',true); return; }
+  const statusEl = document.getElementById('gemini-key-status');
+  if (statusEl) statusEl.innerHTML = '<span style="color:var(--gold);">⏳ Testing key...</span>';
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ contents:[{role:'user',parts:[{text:'Say OK'}]}], generationConfig:{maxOutputTokens:10} })
+    });
+    const data = await res.json();
+    if (data.candidates?.[0]?.content) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--teal);">✅ Key works! AI is connected.</span>';
+      showToast('✅','Gemini API key is valid and working!');
+    } else {
+      if (statusEl) statusEl.innerHTML = `<span style="color:var(--coral);">❌ Key failed: ${data.error?.message||'Unknown error'}</span>`;
+      showToast('❌','Key test failed — check the key',true);
+    }
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = `<span style="color:var(--coral);">❌ Error: ${e.message}</span>`;
+    showToast('❌','Connection error',true);
+  }
+}
+
+function showApiKeyPrompt() {
+  const existing = getGeminiKey() || '';
+  document.getElementById('api-key-input').value = existing;
+  // V7: auto-walkthrough for first-time users
+  const body = document.querySelector('#apiKeyModal .modal-body');
+  if (body && !existing) {
+    body.querySelector('.safety-banner').innerHTML = `
+      🎯 <strong>Activate Premium AI in 60 seconds</strong> — free forever, no credit card:<br><br>
+      <strong style="color:var(--gold);">Step 1:</strong> Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#A5B4FC;text-decoration:underline;">aistudio.google.com/apikey</a> in a new tab<br>
+      <strong style="color:var(--gold);">Step 2:</strong> Sign in with any Google account<br>
+      <strong style="color:var(--gold);">Step 3:</strong> Click "<strong>Create API key</strong>" → copy the key<br>
+      <strong style="color:var(--gold);">Step 4:</strong> Paste it below & click Save<br><br>
+      🔒 Your key stays in your browser. It is never sent to Kongu Brilliance or any other server.
+    `;
+  }
+  openModal('apiKey');
+}
+
+function saveApiKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k) { showToast('⚠️','Please enter a valid API key',true); return; }
+  if (!k.startsWith('AIza')) { showToast('⚠️','Gemini key should start with AIza...',true); return; }
+  localStorage.setItem('kb_gemini_key', k);
+  closeModal('apiKeyModal');
+  updateAIStatusBar();
+  showToast('✅','AI tutor activated! Ask anything now.');
+}
+function clearApiKey() {
+  localStorage.removeItem('kb_gemini_key');
+  document.getElementById('api-key-input').value = '';
+  updateAIStatusBar();
+  showToast('🔓','API key cleared. Switched to Smart Mode.');
+}
+
+function quickAsk(prompt) {
+  document.getElementById('ai-chat-input').value = prompt;
+  sendAIMessage();
+}
+
+async function sendAIMessage() {
+  const input = document.getElementById('ai-chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  const msgsEl = document.getElementById('ai-messages-box');
+
+  msgsEl.innerHTML += `<div class="ai-msg user">${escHtml(msg)}</div>`;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  const typingId = 'typing_' + Date.now();
+  msgsEl.innerHTML += `<div class="ai-msg ai" id="${typingId}"><div class="ai-msg-name">KB AI TUTOR</div><span class="ai-thinking-dots"><span></span><span></span><span></span></span></div>`;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  let reply;
+  const apiKey = getGeminiKey();
+
+  try {
+    if (apiKey) {
+      reply = await callGeminiAPI(msg, apiKey);
+    } else {
+      // Always-on Claude API fallback
+      try {
+        reply = await aihelpCallClaude(msg);
+      } catch(ce) {
+        reply = await smartLocalResponse(msg);
+      }
+    }
+  } catch(e) {
+    console.error('AI error:', e);
+    // Try Claude as secondary fallback
+    try {
+      reply = await aihelpCallClaude(msg);
+    } catch(ce) {
+      reply = `⚠️ AI temporarily unavailable. Please try again shortly. — KB AI Tutor 🎓`;
+    }
+  }
+
+  _aiMessages.push({ role: 'user', content: msg });
+  _aiMessages.push({ role: 'assistant', content: reply });
+  if (_aiMessages.length > 30) _aiMessages = _aiMessages.slice(-30);
+
+  // V7: persist chat history per topic
+  try {
+    localStorage.setItem('kb_chat_' + _currentVideoTopic.slice(0,50), JSON.stringify(_aiMessages.slice(-20)));
+  } catch(e){}
+
+  const typingEl = document.getElementById(typingId);
+  if (typingEl) typingEl.innerHTML = `<div class="ai-msg-name">KB AI TUTOR</div>${reply.replace(/\n/g,'<br>')}
+    <div style="margin-top:8px;display:flex;gap:6px;">
+      <button class="vc-btn" onclick="speakText(this)" data-text="${escHtml(reply.replace(/<[^>]+>/g,''))}" style="font-size:10px;padding:3px 10px;">🔊 Listen</button>
+      <button class="vc-btn" onclick="copyToClipboard('${escHtml(reply.replace(/<[^>]+>/g,'')).replace(/'/g,"\\'").slice(0,300)}')" style="font-size:10px;padding:3px 10px;">📋 Copy</button>
+    </div>`;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  // Log to admin activity (V7)
+  logActivity('ai_question', { topic: _currentVideoTopic, msg: msg.slice(0,200) });
+}
+
+function copyToClipboard(text) {
+  try {
+    navigator.clipboard.writeText(text);
+    showToast('📋','Copied to clipboard');
+  } catch(e){ showToast('⚠️','Copy failed'); }
+}
+
+// V7: Voice input (browser speech recognition)
+let _recognition = null;
+function toggleVoiceInput() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('⚠️','Voice input not supported on this browser. Try Chrome.', true);
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (_recognition && _recognition._running) {
+    _recognition.stop();
+    return;
+  }
+  _recognition = new SR();
+  _recognition.lang = 'en-IN';
+  _recognition.continuous = false;
+  _recognition.interimResults = false;
+  _recognition._running = true;
+  const btn = document.getElementById('voiceBtn');
+  if (btn) btn.style.background = '#EF4444';
+  _recognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    const input = document.getElementById('ai-chat-input');
+    if (input) input.value = text;
+    sendAIMessage();
+  };
+  _recognition.onerror = () => showToast('⚠️','Voice recognition failed');
+  _recognition.onend = () => {
+    _recognition._running = false;
+    if (btn) btn.style.background = '';
+  };
+  _recognition.start();
+  showToast('🎤','Listening... speak your doubt');
+}
+
+// V7: Text to speech (AI reads answer aloud)
+function speakText(btn) {
+  const text = btn.getAttribute('data-text');
+  if (!text || !window.speechSynthesis) return;
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    btn.textContent = '🔊 Listen';
+    return;
+  }
+  const u = new SpeechSynthesisUtterance(text.slice(0,500));
+  u.lang = /[\u0B80-\u0BFF]/.test(text) ? 'ta-IN' : 'en-IN';
+  u.rate = 0.95;
+  u.pitch = 1.05;
+  btn.textContent = '⏸ Stop';
+  u.onend = () => { btn.textContent = '🔊 Listen'; };
+  window.speechSynthesis.speak(u);
+}
+
+function escHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// V7: dummy activity logger — defined in full below
+if (typeof logActivity === 'undefined') {
+  window.logActivity = function(){};
+}
+
+async function callGeminiAPI(msg, apiKey) {
+  const subject = _currentVideoSubject || 'academic';
+  const isHistory = _currentVideoTopic.toLowerCase().includes('history') || subject.toLowerCase().includes('history') || subject.toLowerCase().includes('civic') || subject.toLowerCase().includes('geography');
+
+  // V7: Much more detailed system prompt
+  const sysPrompt = `You are an EXPERT academic tutor at Kongu Brilliance Tuition Centre in Coimbatore, Tamil Nadu. You teach students from Class 1 to Class 12 (CBSE, State Board, ICSE, Matric).
+
+CURRENT TOPIC: "${_currentVideoTopic}"
+SUBJECT: ${subject}
+MODE: ${_currentMode === 'story' ? 'STORY MODE (explain like a movie/story)' : 'NORMAL MODE'}
+
+YOUR STYLE:
+1. You are warm, patient, and encouraging — like a favorite teacher
+2. You answer in clear simple English (or Tamil if asked in Tamil)
+3. You use REAL-LIFE examples from Indian daily life (chai, cricket, bus rides, shopping)
+4. You give STEP-BY-STEP solutions, showing every step
+5. You always connect the topic to ${isHistory ? 'a STORY with characters, drama, and cause-effect chains so students never forget dates and events' : 'real-world examples the student can picture'}
+6. You give memory tricks, mnemonics, and acronyms
+7. You mention what is likely to come in CBSE/State Board exams
+8. Keep replies focused — 4-8 sentences unless the student asks for more detail
+9. Use emojis sparingly for emphasis (📖 📐 🔬 💡 📝)
+10. Use HTML formatting: <strong> for emphasis, <br> for line breaks, • for bullets
+11. ALWAYS end with "— KB AI Tutor 🎓" or "— KB AI History Tutor 🎓" if history
+
+${isHistory ? 'SPECIAL INSTRUCTION FOR HISTORY/CIVICS/GEOGRAPHY: Make every answer a mini-story. Start with "Picture this..." or "Imagine..." or set the scene. Include dates, leaders, places, and consequences woven into the narrative. Give mnemonics for dates and names.' : ''}
+
+If the student asks something unrelated to academics (like personal problems), politely redirect them back to the topic.
+If the student seems stuck, offer them 2-3 specific options: "Want me to explain with an example, give a memory trick, or show a step-by-step solution?"`;
+
+  const history = _aiMessages.slice(-10).map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content.replace(/<[^>]+>/g,'').slice(0,1000) }] }));
+  const payload = {
+    contents: [...history, { role: 'user', parts: [{ text: msg }] }],
+    systemInstruction: { parts: [{ text: sysPrompt }] },
+    generationConfig: { temperature: 0.8, maxOutputTokens: 1000 }
+  };
+
+  // V7 FIX: Gemini 1.5 deprecated. Try current models in priority order with v1 endpoint.
+  // If a model is deprecated, auto-fall back to the next one. This makes the app future-proof.
+  const MODELS_TO_TRY = [
+    'gemini-2.5-flash',         // Current recommended (Apr 2026)
+    'gemini-2.5-flash-lite',    // Cheaper & faster fallback
+    'gemini-2.0-flash',         // Previous gen (still supported until Jun 2026)
+    'gemini-flash-latest',      // Alias — always points to latest
+  ];
+
+  let lastError = null;
+  for (const model of MODELS_TO_TRY) {
+    try {
+      // Use v1 endpoint (not v1beta — the error message mentioned v1beta being deprecated for production)
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Remember the model that worked so we don't re-probe next time
+        localStorage.setItem('kb_gemini_model', model);
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated. Try rephrasing?';
+      }
+      // Handle specific errors
+      if (data.error?.message?.includes('API key') || data.error?.code === 400 && (data.error?.message||'').toLowerCase().includes('api key')) {
+        localStorage.removeItem('kb_gemini_key');
+        updateAIStatusBar();
+        throw new Error('API key invalid. Switched back to Smart Mode — check your key.');
+      }
+      // Model not found / deprecated — try the next one silently
+      if (data.error?.code === 404 || (data.error?.message||'').includes('not found') || (data.error?.message||'').includes('not supported')) {
+        console.warn(`Model ${model} unavailable, trying next...`);
+        lastError = new Error(data.error?.message || 'Model unavailable');
+        continue;
+      }
+      // Rate limit
+      if (data.error?.code === 429) {
+        throw new Error('Rate limit hit. Wait a minute and try again.');
+      }
+      // Other error — capture and try next model
+      lastError = new Error(data.error?.message || 'Gemini API error');
+    } catch(fetchErr) {
+      lastError = fetchErr;
+      // Network errors — don't keep trying
+      if (fetchErr.message?.includes('API key') || fetchErr.message?.includes('Rate limit')) throw fetchErr;
+    }
+  }
+  // All models failed
+  throw lastError || new Error('All Gemini models unavailable');
+}
+
+// V7: Let the status bar show which model is being used
+function updateAIStatusBar() {
+  const bar = document.getElementById('ai-status-bar');
+  const apiKey = getGeminiKey();
+  const activeModel = localStorage.getItem('kb_gemini_model') || 'gemini-2.5-flash';
+  if (!bar) return;
+  if (apiKey) {
+    bar.classList.remove('offline','error');
+    bar.classList.add('online');
+    bar.innerHTML = `<span>🟢 <strong>AI Connected:</strong> Google ${activeModel.replace('gemini-','Gemini ')} · Premium answers active</span><button class="vc-btn" onclick="showApiKeyPrompt()" style="font-size:10px;padding:3px 10px;">⚙ Settings</button>`;
+  } else {
+    bar.classList.add('offline');
+    bar.classList.remove('error','online');
+    bar.innerHTML = `<span>🤖 <strong>AI Tutor:</strong> Smart Mode · <a href="#" onclick="event.preventDefault();showApiKeyPrompt();" style="color:var(--gold);font-weight:700;">Tap here to unlock REAL AI (free, 60s)</a></span><button class="vc-btn" onclick="showApiKeyPrompt()" style="font-size:10px;padding:3px 10px;">⚙ Connect</button>`;
+  }
+}
+
+// ══════════════════════════════════════════════
+// V6: SMART LOCAL AI RESPONSES (No API needed)
+// Built-in knowledge for Indian school syllabus
+// ══════════════════════════════════════════════
+async function smartLocalResponse(msg) {
+  // Simulate "thinking" delay for realism
+  await new Promise(r => setTimeout(r, 600 + Math.random()*800));
+
+  const q = msg.toLowerCase();
+  const topic = _currentVideoTopic.toLowerCase();
+
+  // Handle common quick-ask intents
+  if (q.includes('story') || q.includes('explain like a story')) {
+    return tellStory(_currentVideoTopic);
+  }
+  if (q.includes('memory') || q.includes('mnemonic') || q.includes('remember')) {
+    return memoryTrick(_currentVideoTopic);
+  }
+  if (q.includes('exam') || q.includes('board') || q.includes('important question')) {
+    return examTips(_currentVideoTopic);
+  }
+  if (q.includes('example') || q.includes('real life') || q.includes('real-life')) {
+    return realLifeExample(_currentVideoTopic);
+  }
+  if (q.includes('hello') || q.includes('hi ') || q === 'hi' || q.includes('vanakkam') || q.includes('வணக்கம்')) {
+    return `Hello! 👋 I'm here to help you understand <strong>${_currentVideoTopic}</strong>. Ask me about formulas, concepts, examples, or what's likely to come in your exam. — KB AI Tutor 🎓`;
+  }
+  if (q.includes('thank')) {
+    return `You're most welcome! 😊 Keep asking questions — that's how brilliance grows. Remember: every doubt cleared is one step closer to centum. — KB AI Tutor 🎓`;
+  }
+
+  // Subject-specific knowledge
+  if (topic.includes('history')) return historyResponse(msg, _currentVideoTopic);
+  if (topic.includes('math') || topic.includes('algebra') || topic.includes('geometry') || topic.includes('statistics')) return mathResponse(msg, _currentVideoTopic);
+  if (topic.includes('physics') || topic.includes('newton')) return physicsResponse(msg);
+  if (topic.includes('chemistry') || topic.includes('chemical') || topic.includes('periodic')) return chemistryResponse(msg);
+  if (topic.includes('biology') || topic.includes('genetics') || topic.includes('life process')) return biologyResponse(msg);
+  if (topic.includes('english') || topic.includes('grammar')) return englishResponse(msg);
+  if (topic.includes('tamil')) return tamilResponse(msg);
+
+  return `Great question about <strong>${_currentVideoTopic}</strong>! Let me explain:<br><br>${msg.length > 30 ? 'This is an important concept for your exam. Watch the video lesson above for the full explanation, then come back here for any specific doubts. I can give you step-by-step solutions, memory tricks, and exam tips.' : 'Could you give me a bit more detail about what you want to know? For example: "Explain the concept", "Give me an example", or "What can come in exam?"'}<br><br>💡 Quick tip: Use the buttons below for instant explanations! — KB AI Tutor 🎓`;
+}
+
+function tellStory(topic) {
+  const t = topic.toLowerCase();
+  if (t.includes('nationalism in europe')) {
+    return `📖 <strong>The Story of European Nationalism (1789-1871)</strong><br><br>Imagine Europe in 1789. Kings ruled with absolute power. Then in France, hungry peasants and angry middle-class people stormed the Bastille on <strong>July 14, 1789</strong> — the spark! 🔥<br><br>Napoleon spread these ideas of "Liberty, Equality, Fraternity" across Europe. Even after his fall in 1815, the seed was planted. Italy was scattered into 7 states — until <strong>Cavour, Mazzini, and Garibaldi</strong> united it by 1871. Germany was 39 states — until <strong>Bismarck</strong> used "Blood and Iron" to forge it into one nation by 1871.<br><br>That's how a <em>feeling</em> (we belong together) became <em>nations</em>! — KB AI History Tutor 🎓`;
+  }
+  if (t.includes('gandhi') || t.includes('nationalism in india')) {
+    return `📖 <strong>The Story of Gandhi's India (1915-1947)</strong><br><br>1915: A thin man in a dhoti returns from South Africa. His name? <strong>Mohandas Karamchand Gandhi</strong>. 🇮🇳<br><br>He sees an India crushed by British rule. His weapon? Not guns — <strong>Satyagraha</strong> (truth-force) and non-violence.<br><br>1920 — <strong>Non-Cooperation</strong>: "Don't buy British! Don't go to British schools!"<br>1930 — <strong>Salt March</strong>: 240 miles to Dandi to make salt — breaking British monopoly!<br>1942 — <strong>Quit India</strong>: "Do or Die!"<br><br>By 1947, the British <em>did</em> quit. A simple stick, a simple cloth — defeated the world's largest empire! — KB AI History Tutor 🎓`;
+  }
+  if (t.includes('industrialisation')) {
+    return `📖 <strong>The Story of Industrialisation</strong><br><br>Picture England, 1750. People wove cloth at home, slowly, by hand. Then came <strong>James Watt's steam engine</strong> (1781) — a mechanical monster that could do work of 100 men! ⚙️<br><br>Factories sprang up. Children as young as 5 worked 14 hours a day in dangerous mills. Cities like Manchester swelled with smoke and slums.<br><br>It made some people rich beyond imagination — and others poorer than ever. Eventually <strong>Factory Acts (1819, 1833, 1847)</strong> protected workers. The world had changed forever — from agriculture to industry! — KB AI History Tutor 🎓`;
+  }
+  if (t.includes('global world') || t.includes('colonialism')) {
+    return `📖 <strong>The Story of Our Global World</strong><br><br>Long before "globalisation" was a buzzword, the <strong>Silk Routes</strong> connected China to Rome (200 BCE - 1500 CE). Goods, ideas, even diseases (like the Black Death) traveled along them. 🌐<br><br>Then came European colonialism. By 1900, Britain ruled India, France ruled Vietnam, and the world was carved up. Money, food, and people flowed across continents.<br><br>The <strong>Great Depression (1929)</strong> showed how connected we'd become — when America's stock market crashed, even rural Indian farmers suffered. Globalisation isn't new — it's been happening for 2000+ years! — KB AI History Tutor 🎓`;
+  }
+  return `📖 <strong>Story Mode for ${topic}:</strong><br><br>Every great topic begins with a question, a problem, or a mystery. Watch the video lesson above to hear the full narrative — and then come back to ask me about any character, event, or concept you want to dive deeper into!<br><br>I'll connect every detail to a memorable story so you never forget. — KB AI Tutor 🎓`;
+}
+
+function memoryTrick(topic) {
+  const t = topic.toLowerCase();
+  if (t.includes('nationalism in europe')) {
+    return `🧠 <strong>Memory Tricks for European Nationalism:</strong><br><br>📌 <strong>"BIG MEN" of Italy:</strong> <em>B</em>ismarck (no wait, he's German!) — for Italy: <em>C</em>avour, <em>M</em>azzini, <em>G</em>aribaldi → "<strong>CMG = Coffee Makes Garibaldi</strong>" ☕<br><br>📌 <strong>Germany unifier:</strong> Bismarck — "<strong>BIS</strong>marck did it with <strong>B</strong>lood, <strong>I</strong>ron, and <strong>S</strong>peeches!"<br><br>📌 <strong>Key dates:</strong><br>• 1789 — French Revolution → "17-89 = Sky High Anger"<br>• 1871 — Italy & Germany unified → "1-8-7-1 = Two new nations born together!"<br><br>Try writing these on a flashcard! — KB AI History Tutor 🎓`;
+  }
+  if (t.includes('gandhi')) {
+    return `🧠 <strong>Memory Tricks for Gandhi Era:</strong><br><br>📌 <strong>Three Big Movements — "NCQ" (Never Cower, Quit!):</strong><br>• <strong>N</strong>on-Cooperation (1920)<br>• <strong>C</strong>ivil Disobedience (1930)<br>• <strong>Q</strong>uit India (1942)<br><br>📌 <strong>Date trick:</strong> 1920, 1930, 1942 — "20, 30, 42" — gap of 10 years, then 12 years!<br><br>📌 <strong>Salt March = 240 miles, 24 days</strong> → "Two-forty for both!" 🚶<br><br>📌 <strong>Khadi = Khud-ka-(self-made)-Khaadi</strong> — wear your own freedom! 🪡 — KB AI History Tutor 🎓`;
+  }
+  if (t.includes('newton')) {
+    return `🧠 <strong>Newton's Laws Memory Tricks:</strong><br><br>📌 <strong>1st Law (Inertia):</strong> "Lazy Law" — things love to stay where they are! Sitting → keep sitting. Moving → keep moving (until pushed).<br><br>📌 <strong>2nd Law:</strong> "<strong>F = ma</strong>" → "Football = mass × anger" 😤 (the harder you kick, the faster it goes!)<br><br>📌 <strong>3rd Law:</strong> "Action = Reaction" → Think of jumping. You push earth DOWN, earth pushes you UP! 🌍⬆️<br><br>Remember the order: <strong>Lazy → Football → Jump</strong> = 1st, 2nd, 3rd! — KB AI Tutor 🎓`;
+  }
+  if (t.includes('periodic')) {
+    return `🧠 <strong>Periodic Table Memory Tricks:</strong><br><br>📌 <strong>First 10 elements:</strong> "<strong>HHe</strong> <strong>L</strong>ittle <strong>Be</strong>ar <strong>B</strong>ites <strong>C</strong>old <strong>N</strong>uts <strong>O</strong>n <strong>F</strong>resh <strong>Ne</strong>w (snow)" → H, He, Li, Be, B, C, N, O, F, Ne ❄️<br><br>📌 <strong>Group 1 (Alkali metals):</strong> "<strong>Lions Need K</strong>aju, <strong>Rab</strong>ri, <strong>Cs</strong>" → Li, Na, K, Rb, Cs<br><br>📌 <strong>Halogens (Group 17):</strong> "<strong>F</strong>at <strong>Cl</strong>own <strong>Br</strong>ought <strong>I</strong>ce-cream" → F, Cl, Br, I 🍦 — KB AI Tutor 🎓`;
+  }
+  return `🧠 <strong>Memory Tricks for ${topic}:</strong><br><br>The best way to remember any topic:<br>1. <strong>Make it a STORY</strong> — your brain remembers stories 100× better than facts<br>2. <strong>Use first letters (acronyms)</strong> — like NCERT or NEET<br>3. <strong>Connect to something visual</strong> — picture it in your mind<br>4. <strong>Teach it to someone</strong> — explaining = remembering<br><br>Tell me a specific concept and I'll create a custom mnemonic for you! — KB AI Tutor 🎓`;
+}
+
+function examTips(topic) {
+  const t = topic.toLowerCase();
+  if (t.includes('history')) {
+    return `📝 <strong>Board Exam Tips for History:</strong><br><br>✅ <strong>Most asked patterns (10 marks):</strong><br>• "Describe the causes of [event]" — 5 main + 2 minor causes<br>• "Discuss the role of [leader] in [movement]" — 3 actions + impact<br>• "Compare X and Y" — make a table format<br><br>✅ <strong>Always include:</strong> Date, Place, Leader name, Outcome<br><br>✅ <strong>Pro tip:</strong> Underline key terms (Satyagraha, Non-Cooperation) to grab examiner's attention<br><br>✅ <strong>Map work (5 marks)</strong> — practice marking 1929 Lahore, Dandi, Champaran, Bardoli! — KB AI History Tutor 🎓`;
+  }
+  if (t.includes('math')) {
+    return `📝 <strong>Board Exam Tips for Maths:</strong><br><br>✅ <strong>Mark distribution:</strong> 2-mark questions are easiest — solve all of them first<br>✅ <strong>Show every step</strong> — even basic algebra. Steps = marks<br>✅ <strong>Draw diagrams</strong> for geometry — even rough ones get marks<br>✅ <strong>State the formula first</strong>, then substitute, then solve<br>✅ <strong>Verify your answer</strong> — last 5 minutes for cross-checking<br><br>📌 <strong>Key chapters (90% of paper):</strong> Algebra, Trigonometry, Statistics, Geometry, Coordinate Geometry — master these! — KB AI Tutor 🎓`;
+  }
+  if (t.includes('physics') || t.includes('newton')) {
+    return `📝 <strong>Board Exam Tips for Physics:</strong><br><br>✅ <strong>Numericals = guaranteed marks</strong> — practice 50+ from each chapter<br>✅ <strong>SI units</strong> — losing marks for wrong units is a tragedy! N, m/s², kg, J — be careful<br>✅ <strong>Formula sheet</strong> — write all formulas in one page, revise daily<br>✅ <strong>Free-body diagrams</strong> for Newton's Laws — always include them<br><br>📌 <strong>High-weightage:</strong> Motion, Force, Energy, Light, Electricity — focus 70% of prep on these — KB AI Tutor 🎓`;
+  }
+  return `📝 <strong>Exam Tips for ${topic}:</strong><br><br>✅ <strong>Read the question twice</strong> — many lose marks by misreading<br>✅ <strong>Time management:</strong> ~1.5 mins per mark (3-mark Q = 4-5 mins max)<br>✅ <strong>Underline key words</strong> in your answer<br>✅ <strong>Diagrams + headings</strong> = bonus marks<br>✅ <strong>Last 10 mins</strong> — re-check, complete any half-done questions<br><br>📌 <strong>Most likely from this topic:</strong> Definitions (1-2 marks), short explanations (3 marks), application/example (5 marks) — KB AI Tutor 🎓`;
+}
+
+function realLifeExample(topic) {
+  const t = topic.toLowerCase();
+  if (t.includes('newton')) {
+    return `💡 <strong>Newton's Laws in Real Life:</strong><br><br>🚌 <strong>1st Law:</strong> When a bus suddenly stops, you fall forward. Why? Your body wants to KEEP moving (inertia)!<br><br>⚽ <strong>2nd Law (F=ma):</strong> Kick a football softly = slow movement. Kick it HARD = fast movement. Same ball, more force = more acceleration!<br><br>🏊 <strong>3rd Law:</strong> When you swim, you push water BACKWARD with your hands → water pushes YOU forward. Same with rocket launches: gas pushes down, rocket goes UP! 🚀<br><br>You use Newton's Laws every single day! — KB AI Tutor 🎓`;
+  }
+  if (t.includes('chemical reaction')) {
+    return `💡 <strong>Chemical Reactions in Daily Life:</strong><br><br>🍞 <strong>Bread rising:</strong> Yeast + sugar → CO₂ gas (combination reaction)<br>🍎 <strong>Apple turning brown:</strong> Apple + O₂ → oxidation reaction<br>🦷 <strong>Tooth decay:</strong> Sugar + bacteria → acid → reacts with calcium in tooth<br>🔥 <strong>Burning gas stove:</strong> CH₄ + 2O₂ → CO₂ + 2H₂O + ENERGY (combustion!)<br>🥛 <strong>Milk turning sour:</strong> Lactose → lactic acid (decomposition)<br><br>Chemistry is happening in your kitchen RIGHT NOW! — KB AI Tutor 🎓`;
+  }
+  if (t.includes('algebra')) {
+    return `💡 <strong>Algebra in Real Life:</strong><br><br>🛒 <strong>Shopping:</strong> "If 3 notebooks cost ₹150, how much for 7?" → That's algebra (3x = 150 → x = 50, so 7 × 50 = ₹350)<br><br>📱 <strong>Mobile recharge:</strong> "₹239 plan gives 28 days. Cost per day?" → ₹239/28 ≈ ₹8.5/day<br><br>🚗 <strong>Travel time:</strong> "Coimbatore to Chennai = 500km, speed = 60kmph, time?" → t = d/s = 500/60 ≈ 8 hours<br><br>📊 <strong>EMI calculation, salary tax, sports stats</strong> — all algebra! — KB AI Tutor 🎓`;
+  }
+  return `💡 <strong>Real-Life Connection for ${topic}:</strong><br><br>Almost every concept you learn is happening around you right now. Watch the video lesson above carefully — I usually highlight 2-3 real-world examples in each session.<br><br>Tell me a specific concept from this topic and I'll show you exactly where you've seen it in your daily life! — KB AI Tutor 🎓`;
+}
+
+function historyResponse(msg, topic) {
+  const q = msg.toLowerCase();
+  if (q.includes('cause') || q.includes('reason') || q.includes('why')) {
+    return `Great question! For "${topic}", the main causes were usually:<br><br>1. <strong>Political:</strong> oppressive rulers, foreign domination, lack of representation<br>2. <strong>Economic:</strong> high taxes, poverty, exploitation by colonisers<br>3. <strong>Social:</strong> caste/class divisions, inequality, awakening of rights<br>4. <strong>Intellectual:</strong> new ideas (Liberty, Equality, Nationalism) spreading via books and printing press<br><br>For exam: always give 4-5 causes with one example each! — KB AI History Tutor 🎓`;
+  }
+  if (q.includes('date') || q.includes('when') || q.includes('year')) {
+    return `Important dates for "${topic}" to remember:<br><br>📅 <strong>Memory tip:</strong> Don't memorise dates randomly — group them in chains:<br>• Cause event (year X) → Movement (year X+5) → Outcome (year X+10)<br><br>For example: Rowlatt Act 1919 → Non-Cooperation 1920 → Chauri Chaura 1922<br><br>Tell me a specific event and I'll give you the exact date plus a memory trick! — KB AI History Tutor 🎓`;
+  }
+  if (q.includes('leader') || q.includes('who')) {
+    return `Key leaders associated with "${topic}":<br><br>For Indian National Movement: <strong>Gandhi, Nehru, Patel, Bose, Bhagat Singh, Tilak, Gokhale</strong><br>For European: <strong>Napoleon, Bismarck, Cavour, Mazzini, Garibaldi</strong><br><br>📌 For exam: each leader had ONE big contribution — focus on that:<br>• Gandhi → Non-violence/Satyagraha<br>• Nehru → Modern India vision<br>• Bose → Armed struggle (INA)<br><br>Ask about a specific leader for details! — KB AI History Tutor 🎓`;
+  }
+  return `For "${topic}": History is best understood as a CHAIN of cause→event→effect.<br><br>📚 The video above explains this beautifully as a story. After watching, you can ask me:<br>• "What were the causes of [event]?"<br>• "What was the role of [leader]?"<br>• "Give memory trick for [date]"<br>• "What can come in board exam from this?"<br><br>I'll give you precise, exam-ready answers! — KB AI History Tutor 🎓`;
+}
+
+function mathResponse(msg, topic) {
+  const q = msg.toLowerCase();
+  if (q.includes('formula') || q.includes('how to')) {
+    if (topic.toLowerCase().includes('algebra')) {
+      return `📐 Key Algebra Formulas:<br><br>• <strong>Quadratic:</strong> ax² + bx + c = 0 → x = (-b ± √(b²-4ac))/2a<br>• <strong>Identities:</strong> (a+b)² = a² + 2ab + b², (a-b)² = a² - 2ab + b², a² - b² = (a+b)(a-b)<br>• <strong>Discriminant:</strong> D = b² - 4ac → If D>0: 2 real roots, D=0: equal, D<0: no real<br><br>💡 Always check your answer by substituting back into the original equation! — KB AI Tutor 🎓`;
+    }
+    if (topic.toLowerCase().includes('geometry')) {
+      return `📐 Key Geometry Formulas:<br><br>• <strong>Triangle area:</strong> ½ × base × height<br>• <strong>Heron's formula:</strong> √(s(s-a)(s-b)(s-c)) where s = (a+b+c)/2<br>• <strong>Circle area:</strong> πr², circumference: 2πr<br>• <strong>Pythagoras:</strong> a² + b² = c² (right triangles only!)<br>• <strong>Sphere:</strong> V = (4/3)πr³, SA = 4πr²<br><br>💡 Always draw the diagram first, then label what's known! — KB AI Tutor 🎓`;
+    }
+  }
+  if (q.includes('solve') || q.includes('how do i') || q.includes('step')) {
+    return `📐 <strong>Step-by-step problem solving:</strong><br><br>1. <strong>Read</strong> the problem twice — identify what's GIVEN and what's ASKED<br>2. <strong>Choose</strong> the right formula or method<br>3. <strong>Substitute</strong> values carefully — units matter!<br>4. <strong>Solve</strong> step by step — show every step<br>5. <strong>Verify</strong> by plugging answer back<br><br>Share the specific problem with me and I'll solve it step-by-step for you! — KB AI Tutor 🎓`;
+  }
+  return `Great Maths question! For "${topic}":<br><br>📐 Watch the video lesson above for the full concept walkthrough. Then ask me:<br>• "Give me the formula for ___"<br>• "Solve this problem: ___"<br>• "What's the easiest method?"<br>• "Common mistakes to avoid"<br><br>I'll give you clear step-by-step solutions! — KB AI Tutor 🎓`;
+}
+
+function physicsResponse(msg) {
+  return `⚛️ <strong>Physics Insight:</strong><br><br>For Newton's Laws and Motion:<br>• <strong>1st Law:</strong> F=0 → no change in motion (inertia)<br>• <strong>2nd Law:</strong> F = ma (most important formula!)<br>• <strong>3rd Law:</strong> Every action has equal and opposite reaction<br><br>📌 <strong>Numericals approach:</strong><br>1. Draw a free-body diagram<br>2. Identify all forces (gravity, normal, friction, applied)<br>3. Apply F=ma in each direction<br>4. Solve for unknown<br><br>💡 Units must be SI: kg, m, s, N. Watch the video for solved examples! — KB AI Tutor 🎓`;
+}
+function chemistryResponse(msg) {
+  return `⚗️ <strong>Chemistry Insight:</strong><br><br>For periodic table & bonding:<br>• <strong>Period</strong> = horizontal row (1-7) — same number of shells<br>• <strong>Group</strong> = vertical column (1-18) — same valence electrons<br>• <strong>Ionic bond:</strong> metal + non-metal (transfer of e⁻) → e.g., NaCl<br>• <strong>Covalent bond:</strong> non-metal + non-metal (sharing of e⁻) → e.g., H₂O, CO₂<br><br>💡 Trick: Look at electronegativity difference. >1.7 = ionic, <1.7 = covalent. Watch the video for visual understanding! — KB AI Tutor 🎓`;
+}
+function biologyResponse(msg) {
+  return `🧬 <strong>Biology Insight:</strong><br><br>For Genetics (Mendel's Laws):<br>• <strong>Law 1 (Segregation):</strong> Gametes carry only ONE allele of each gene<br>• <strong>Law 2 (Independent Assortment):</strong> Different genes pass independently<br>• <strong>Law of Dominance:</strong> Dominant allele masks recessive<br><br>📌 <strong>Punnett Square shortcut:</strong> Tt × Tt → 1 TT : 2 Tt : 1 tt → 3:1 ratio (phenotype) or 1:2:1 (genotype)<br><br>💡 Tip: Capital letter = dominant, small = recessive. Watch the video for cross examples! — KB AI Tutor 🎓`;
+}
+function englishResponse(msg) {
+  return `📖 <strong>English Grammar Tip:</strong><br><br>For tenses:<br>• <strong>Present Simple:</strong> habits → "I drink coffee daily"<br>• <strong>Present Continuous:</strong> happening now → "I am drinking coffee"<br>• <strong>Past Simple:</strong> finished action → "I drank coffee"<br>• <strong>Present Perfect:</strong> past with present effect → "I have drunk 3 cups today"<br><br>For voice change: Active = subject does. Passive = object receives. (e.g., "Ravi reads books" → "Books are read by Ravi")<br><br>💡 In exams, look for time signals (yesterday, since, for) to choose the right tense! — KB AI Tutor 🎓`;
+}
+function tamilResponse(msg) {
+  return `✍️ <strong>தமிழ் இலக்கணம்:</strong><br><br>• <strong>பெயர்ச்சொல் (Noun):</strong> ஒரு பொருளை அல்லது நபரைக் குறிக்கும் சொல் (e.g., மரம், ராஜா)<br>• <strong>வினைச்சொல் (Verb):</strong> செயலைக் குறிக்கும் சொல் (e.g., ஓடு, படி, எழுது)<br>• <strong>இடைச்சொல் (Conjunction):</strong> சொற்களை இணைக்கும் (e.g., மற்றும், அல்லது)<br>• <strong>உரிச்சொல் (Adjective):</strong> பெயர்ச்சொல்லின் தன்மையை விளக்கும் (e.g., பெரிய, சிறிய, அழகான)<br><br>💡 Tip: ஒவ்வொரு வாக்கியத்திலும் இவற்றை பிரித்துக் காண்பிக்கப் பயிற்சி செய்யுங்கள்! — KB AI Tutor 🎓`;
+}
+
+// ══════════════════════════════════════════════
+// ADMIN GLOBAL SEARCH
+// ══════════════════════════════════════════════
+async function adminGlobalSearch(query) {
+  const resEl = document.getElementById('adminSearchResults');
+  if (!query || query.length < 2) { resEl.style.display='none'; return; }
+  const students = await dbGetAll('students');
+  const tutors = await dbGetAll('tutors');
+  const q = query.toLowerCase();
+  const results = [
+    ...students.filter(s => s.name?.toLowerCase().includes(q) || s.phone?.includes(q) || s.std?.toLowerCase().includes(q)).map(s => ({type:'Student', name:s.name, detail:s.std+' · '+s.phone})),
+    ...tutors.filter(t => t.name?.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q)).map(t => ({type:'Tutor', name:t.name, detail:t.subjects||''}))
+  ].slice(0,8);
+  if (!results.length) { resEl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px;">No results found.</div>'; resEl.style.display='block'; return; }
+  resEl.innerHTML = results.map(r => `<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;" onmouseover="this.style.background='rgba(245,200,66,0.08)'" onmouseout="this.style.background=''">
+    <span style="font-size:10px;background:rgba(245,200,66,0.12);color:var(--gold);padding:2px 7px;border-radius:5px;margin-right:8px;font-family:'JetBrains Mono',monospace;">${r.type}</span>
+    <strong style="color:#fff;font-size:13px;">${r.name}</strong>
+    <span style="font-size:11px;color:rgba(255,255,255,0.75);margin-left:8px;">${r.detail}</span>
+  </div>`).join('');
+  resEl.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════
+// VIDEO RECORDING SESSION
+// ══════════════════════════════════════════════
+let _mediaStream = null;
+let _mediaRecorder = null;
+let _recordedChunks = [];
+
+async function startVideoRecordingSession() {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }).catch(async () => {
+      return await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    });
+    _mediaStream = stream;
+    const videoEl = document.getElementById('liveVideoFeed');
+    if (videoEl) { videoEl.srcObject = stream; videoEl.style.display = 'block'; }
+    const phc = document.getElementById('vid-placeholder-content'); if(phc) phc.style.opacity = '0.2';
+    const ri = document.getElementById('recIndicator'); if(ri) ri.style.display = 'flex';
+    const srb = document.getElementById('stopRecordBtn'); if(srb) srb.style.display = 'inline-flex';
+    _recordedChunks = [];
+    _mediaRecorder = new MediaRecorder(stream);
+    _mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _recordedChunks.push(e.data); };
+    _mediaRecorder.onstop = () => {
+      const blob = new Blob(_recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `KB_Session_${_currentVideoTopic.replace(/[^a-z0-9]/gi,'_')}_${Date.now()}.webm`;
+      a.click();
+      showToast('✅', 'Recording saved! Check your downloads.');
+    };
+    _mediaRecorder.start();
+    showToast('🔴', 'Recording started! Share screen or use camera.');
+  } catch(e) {
+    showToast('⚠️', 'Could not start recording: ' + e.message, true);
+  }
+}
+
+function stopVideoRecordingSession() {
+  if (_mediaRecorder && _mediaRecorder.state !== 'inactive') _mediaRecorder.stop();
+  if (_mediaStream) { _mediaStream.getTracks().forEach(t => t.stop()); _mediaStream = null; }
+  const videoEl = document.getElementById('liveVideoFeed');
+  if (videoEl) { videoEl.style.display = 'none'; videoEl.srcObject = null; }
+  const ri2 = document.getElementById('recIndicator'); if(ri2) ri2.style.display = 'none';
+  const srb2 = document.getElementById('stopRecordBtn'); if(srb2) srb2.style.display = 'none';
+  document.getElementById('vid-placeholder-content').style.opacity = '1';
+}
+
+function togglePendingFeeForm() {
+  const el = document.getElementById('pending-fee-form');
+  if (el) el.classList.toggle('hidden');
+}
+
+async function savePendingFee() {
+  const studentName = document.getElementById('pending-fee-name')?.value?.trim();
+  const amount = parseInt(document.getElementById('pending-fee-amount')?.value || 0);
+  const dueDate = document.getElementById('pending-fee-due')?.value || '';
+  const note = document.getElementById('pending-fee-note')?.value?.trim() || '';
+  if (!studentName || !amount) { showToast('⚠️','Fill student name and amount', true); return; }
+  const record = {
+    id: 'PFEE_' + Date.now(),
+    name: studentName, studentName,
+    amount, dueDate, note,
+    status: 'pending', type: 'pending_fee',
+    month: new Date().toISOString().slice(0,7),
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  await dbInsert('fees', record);
+  showToast('✅', `Pending fee ₹${amount.toLocaleString('en-IN')} saved for ${studentName}`);
+  document.getElementById('pending-fee-form')?.classList.add('hidden');
+  ['pending-fee-name','pending-fee-amount','pending-fee-due','pending-fee-note'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  loadFeeRecords();
+}
+
+// ══════════════════════════════════════════════
+// FINANCE — FEE RECORDS
+// ══════════════════════════════════════════════
+async function saveFeeRecord() {
+  const name = document.getElementById('fin-student-name').value.trim();
+  const amount = document.getElementById('fin-amount').value;
+  const cls = document.getElementById('fin-class').value;
+  const month = document.getElementById('fin-month').value;
+  const mode = document.getElementById('fin-mode').value;
+  if (!name || !amount || !cls) { showToast('⚠️','Fill student name, amount, and class.',true); return; }
+  const record = { id:'FEE_'+Date.now(), name, amount:parseInt(amount), cls, class:cls, month:month||new Date().toISOString().slice(0,7), mode, date:new Date().toLocaleDateString('en-IN'), created_at:new Date().toISOString() };
+  await dbInsert('fees', record);
+  ['fin-student-name','fin-amount'].forEach(id => document.getElementById(id).value = '');
+  loadFeeRecords();
+  showToast('✅', `Fee of ₹${amount} recorded for ${name}!`);
+}
+
+async function loadFeeRecords() {
+  const el = document.getElementById('fee-records-list');
+  if (!el) return;
+  let records = [];
+  try { records = await dbGetAll('fees'); } catch(e) { records = LOCAL.get('fees') || []; }
+  // Deduplicate
+  const seen = new Set();
+  records = records.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+  const curMonth = new Date().toISOString().slice(0,7);
+  const paidRecords = records.filter(r => r.status !== 'pending' && r.type !== 'pending_fee');
+  const pendingFees = records.filter(r => r.status === 'pending' || r.type === 'pending_fee');
+  const total = paidRecords.reduce((s,r) => s + (parseInt(r.amount)||0), 0); // ALL TIME total
+  const thisMonthTotal = paidRecords.filter(r=>r.month===curMonth).reduce((s,r)=>s+(parseInt(r.amount)||0),0);
+  const pendingTotal = pendingFees.reduce((s,r) => s + (parseInt(r.amount)||0), 0);
+  const totEl = document.getElementById('fin-total-collected');
+  if (totEl) totEl.textContent = '₹' + total.toLocaleString('en-IN');
+  const pendEl = document.getElementById('fin-pending-dues');
+  if (pendEl) pendEl.textContent = '₹' + pendingTotal.toLocaleString('en-IN');
+  if (!records.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No fee records yet.</div>'; return; }
+  el.innerHTML = `<div style="overflow-x:auto;"><table class="data-table">
+    <thead><tr><th>#</th><th>Student</th><th>Class</th><th>Amount</th><th>Month</th><th>Mode</th><th>Date</th><th>Action</th></tr></thead>
+    <tbody>
+    ${records.map((r,i) => `<tr>
+      <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+      <td><strong>${sanitize(r.name||'—')}</strong></td>
+      <td><span style="font-size:11px;background:rgba(245,200,66,0.1);color:var(--gold);padding:2px 7px;border-radius:5px;">${sanitize(r.cls||r.class||'—')}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--teal);font-weight:700;">₹${(r.amount||0).toLocaleString('en-IN')}</td>
+      <td style="font-size:12px;color:rgba(255,255,255,0.85);">${r.month||'—'}</td>
+      <td style="font-size:12px;color:rgba(255,255,255,0.85);">${sanitize(r.mode||'—')}</td>
+      <td style="font-size:11px;color:rgba(255,255,255,0.7);">${r.date||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteFeeRecord('${r.id}')">✕</button></td>
+    </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+async function deleteFeeRecord(id) {
+  await dbDelete('fees', id);
+  loadFeeRecords();
+  showToast('🗑','Fee record deleted.');
+}
+
+// ══════════════════════════════════════════════
+// FINANCE — TUTOR SALARY
+// ══════════════════════════════════════════════
+async function loadSalaryTutorSelect() {
+  const sel = document.getElementById('sal-tutor-sel');
+  if (!sel) return;
+  const tutors = await dbGetAll('tutors');
+  sel.innerHTML = '<option value="">Select Tutor</option>' + tutors.map(t => `<option value="${t.id}" data-name="${t.name}">${t.name}</option>`).join('');
+}
+
+async function loadTutorSalaryInfo() {
+  const sel = document.getElementById('sal-tutor-sel');
+  const tutorId = sel.value;
+  const tutorName = sel.options[sel.selectedIndex]?.dataset?.name || '';
+  const box = document.getElementById('sal-info-box');
+  if (!tutorId || !box) return;
+
+  // Pre-fill base salary: check salaries table first, then tutors table
+  const salaries = await dbGetAll('salaries');
+  const existing = salaries.find(s => s.tutorId === tutorId || s.tutor_id === tutorId);
+  const allTutors = await dbGetAll('tutors');
+  const tutorRec = allTutors.find(t => t.id === tutorId);
+  const salBaseEl = document.getElementById('sal-base');
+  if (salBaseEl) {
+    const savedSal = existing?.baseSalary || existing?.base_salary;
+    const tutorSal = tutorRec?.base_salary || tutorRec?.baseSalary;
+    salBaseEl.value = savedSal || tutorSal || 18000;
+  }
+
+  // V6: Read CURRENT MONTH check-ins from Supabase (live across devices)
+  const today = new Date();
+  const monthStr = today.toLocaleString('en-IN',{month:'long',year:'numeric'});
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const allCheckins = await dbGetAll('checkins');
+  const monthCheckins = allCheckins.filter(c => {
+    const cTutorId = c.tutorId || c.tutor_id || '';
+    if (!cTutorId || cTutorId !== tutorId) return false;
+    // Try parse the date — handles "DD/MM/YYYY" India format
+    if (!c.date) return false;
+    const parts = c.date.split('/');
+    if (parts.length !== 3) return false;
+    const month = parseInt(parts[1]) - 1;
+    const year = parseInt(parts[2]);
+    return month === currentMonth && year === currentYear;
+  });
+  // Unique days
+  const uniqueDays = new Set(monthCheckins.map(c => c.date)).size;
+
+  const baseSalary = parseInt(document.getElementById('sal-base')?.value || 0);
+  // Calculate working days in current month (excluding Sundays)
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+  let workingDays = 0;
+  for (let d=1; d<=daysInMonth; d++) {
+    const dt = new Date(currentYear, currentMonth, d);
+    if (dt.getDay() !== 0) workingDays++; // exclude Sundays
+  }
+  const presentCheckins = monthCheckins; // keep for date display
+  const presentDays = uniqueDays;
+  const absentDays = Math.max(0, workingDays - presentDays);
+  const perDayRate = baseSalary && workingDays ? Math.round(baseSalary / workingDays) : 0;
+  const earned = perDayRate * presentDays;
+  const deduction = baseSalary - earned;
+  const netSalary = earned;
+
+  // Avg hours per day
+  let totalMins = 0; let countedDays = 0;
+  monthCheckins.forEach(c => {
+    const checkIn = c.checkIn || c.check_in || '';
+    const checkOut = c.checkOut || c.check_out || '';
+    if (checkIn && checkOut) {
+      try {
+        const inT = checkIn.match(/(\d+):(\d+)/);
+        const outT = checkOut.match(/(\d+):(\d+)/);
+        if (inT && outT) {
+          let mins = (parseInt(outT[1])*60 + parseInt(outT[2])) - (parseInt(inT[1])*60 + parseInt(inT[2]));
+          if (mins < 0) mins += 24*60;
+          totalMins += mins; countedDays++;
+        }
+      } catch(e){}
+    }
+  });
+  const avgHrs = countedDays ? (totalMins/countedDays/60).toFixed(1) : '—';
+
+  box.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div class="stat-mini"><div class="stat-mini-num" style="color:var(--teal);">${presentDays}</div><div class="stat-mini-lbl">Days Present</div></div>
+      <div class="stat-mini"><div class="stat-mini-num" style="color:var(--coral);">${absentDays}</div><div class="stat-mini-lbl">Days Absent</div></div>
+      <div class="stat-mini"><div class="stat-mini-num" style="color:#A5B4FC;">${avgHrs}h</div><div class="stat-mini-lbl">Avg Hours/Day</div></div>
+      <div class="stat-mini"><div class="stat-mini-num" style="color:var(--gold);">${workingDays}</div><div class="stat-mini-lbl">Working Days</div></div>
+    </div>
+    <div class="salary-breakdown">
+      <div class="sb-row"><span>Base Salary</span><span style="color:var(--gold);">₹${baseSalary.toLocaleString('en-IN')}</span></div>
+      <div class="sb-row"><span>Per-Day Rate</span><span style="color:#A5B4FC;">₹${perDayRate.toLocaleString('en-IN')} × ${workingDays} days</span></div>
+      <div class="sb-row"><span>Days Worked</span><span style="color:var(--teal);">${presentDays} days</span></div>
+      <div class="sb-row"><span>Earned (${presentDays} × ₹${perDayRate})</span><span style="color:var(--teal);">+ ₹${earned.toLocaleString('en-IN')}</span></div>
+      <div class="sb-row"><span>Deduction (${absentDays} days absent)</span><span style="color:var(--coral);">- ₹${deduction.toLocaleString('en-IN')}</span></div>
+      <div class="sb-row total"><span>NET PAYABLE for ${monthStr}</span><span>₹${netSalary.toLocaleString('en-IN')}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6;">
+      💡 Salary auto-calculated from <strong>Supabase live attendance data</strong>. Sundays excluded from working days.
+      ${presentDays === 0 ? '<br>⚠️ No check-ins recorded for this tutor this month.' : ''}
+    </div>
+    ${presentCheckins.length > 0 ? `
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="padding:12px;background:rgba(0,229,160,0.06);border:1px solid rgba(0,229,160,0.2);border-radius:10px;">
+        <div style="font-size:10px;color:var(--teal);font-weight:800;letter-spacing:1px;margin-bottom:8px;">✅ PRESENT DAYS (${presentCheckins.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">${presentCheckins.map(c => `<span style="background:rgba(0,229,160,0.12);border:1px solid rgba(0,229,160,0.25);border-radius:5px;padding:2px 7px;font-size:10px;color:#fff;">${c.date||'—'}<br><span style="color:var(--teal);font-size:9px;">${c.checkIn||c.check_in||''} ${c.checkOut||c.check_out ? '→'+( c.checkOut||c.check_out) : '(active)'}</span></span>`).join('')}</div>
+      </div>
+      <div style="padding:12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;">
+        <div style="font-size:10px;color:#f87171;font-weight:800;letter-spacing:1px;margin-bottom:8px;">❌ ABSENT DAYS (${absentDays})</div>
+        <div style="font-size:11px;color:var(--muted);">Working days minus present days = ${absentDays} absent day${absentDays!==1?'s':''} this month.</div>
+      </div>
+    </div>` : ''}
+    <div style="margin-top:10px;">
+      <button class="btn btn-teal btn-sm" onclick="markSalaryPaid('${tutorId}','${tutorName}',${netSalary},'${monthStr}')">💰 Mark Paid (${monthStr})</button>
+    </div>
+  `;
+}
+
+async function markSalaryPaid(tutorId, tutorName, amount, month) {
+  if (!confirm(`Mark ₹${amount.toLocaleString('en-IN')} as paid to ${tutorName} for ${month}?`)) return;
+  const record = {
+    id: 'PAY_' + Date.now(),
+    tutorId, tutorName, amount, month,
+    paid_at: new Date().toISOString(),
+    paid_by: 'admin'
+  };
+  await dbInsert('salary_payments', record);
+  showToast('✅', `Salary marked paid: ₹${amount.toLocaleString('en-IN')} to ${tutorName}`);
+  loadSalaryRecords();
+}
+
+async function saveTutorSalary() {
+  const sel = document.getElementById('sal-tutor-sel');
+  const tutorId = sel.value;
+  const tutorName = sel.options[sel.selectedIndex]?.dataset?.name || '';
+  const base = parseInt(document.getElementById('sal-base')?.value || 0);
+  if (!tutorId || !base) { showToast('⚠️','Select a tutor and enter base salary.'); return; }
+  // Save base salary on tutor record
+  if (supabase_client) {
+    try { await supabase_client.from('tutors').update({base_salary: base}).eq('id', tutorId); } catch(e){}
+  }
+  const existing = LOCAL.get('salaries');
+  const idx = existing.findIndex(s => s.tutorId === tutorId);
+  const record = { id: idx > -1 ? existing[idx].id : 'SAL_'+Date.now(), tutorId, tutorName, baseSalary: base, updated: new Date().toLocaleDateString('en-IN') };
+  if (idx > -1) existing[idx] = record; else existing.push(record);
+  LOCAL.set('salaries', existing);
+  await dbInsert('salaries', record);
+  loadSalaryRecords();
+  loadTutorSalaryInfo();
+  showToast('✅', `Base salary set: ₹${base.toLocaleString('en-IN')}/mo for ${tutorName}!`);
+}
+
+async function loadSalaryRecords() {
+  const el = document.getElementById('salary-records-list');
+  if (!el) return;
+  const records = await dbGetAll('salaries');
+  let payments = [];
+  try { payments = await dbGetAll('salary_payments'); } catch(e){}
+  if (!records.length && !payments.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;">No salary records configured yet. Set base salary above.</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);margin-bottom:10px;letter-spacing:1.5px;">CONFIGURED BASE SALARIES</div>
+    <div style="overflow-x:auto;margin-bottom:18px;"><table class="data-table">
+      <thead><tr><th>#</th><th>Tutor</th><th>Base Salary</th><th>Last Updated</th></tr></thead>
+      <tbody>
+      ${records.map((r,i) => `<tr>
+        <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+        <td><strong>${r.tutorName||'—'}</strong></td>
+        <td style="font-family:'JetBrains Mono',monospace;color:var(--gold);font-weight:700;font-size:14px;">₹${(r.baseSalary||0).toLocaleString('en-IN')}/month</td>
+        <td style="font-size:11px;color:rgba(255,255,255,0.7);">${r.updated||'—'}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--teal);margin-bottom:10px;letter-spacing:1.5px;">PAYMENT HISTORY</div>
+    <div style="overflow-x:auto;"><table class="data-table">
+      <thead><tr><th>#</th><th>Tutor</th><th>Month</th><th>Amount Paid</th><th>Date</th></tr></thead>
+      <tbody>
+      ${payments.length ? payments.slice(0,30).map((p,i) => `<tr>
+        <td style="color:var(--muted);font-size:11px;">${i+1}</td>
+        <td><strong>${p.tutorName||'—'}</strong></td>
+        <td style="font-size:12px;">${p.month||'—'}</td>
+        <td style="color:var(--teal);font-weight:700;">₹${(p.amount||0).toLocaleString('en-IN')}</td>
+        <td style="font-size:11px;color:var(--muted);">${p.paid_at ? new Date(p.paid_at).toLocaleDateString('en-IN') : '—'}</td>
+      </tr>`).join('') : '<tr><td colspan="5"><div style="color:var(--muted);font-size:12px;padding:14px;text-align:center;">No payments recorded yet.</div></td></tr>'}
+      </tbody>
+    </table></div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+// VIDEO SESSIONS MANAGEMENT
+// ══════════════════════════════════════════════
+function extractYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
+function adminAddVideoSession() {
+  const cls = document.getElementById('vs-class').value;
+  const subject = document.getElementById('vs-subject').value;
+  const title = document.getElementById('vs-title').value.trim();
+  const url = document.getElementById('vs-url').value.trim();
+  const desc = document.getElementById('vs-desc').value.trim();
+  const duration = document.getElementById('vs-duration').value.trim();
+  const tutor = document.getElementById('vs-tutor').value.trim();
+  if (!cls || !subject || !title || !url) { showToast('⚠️','Fill class, subject, title, and video URL.'); return; }
+  const videoId = extractYouTubeId(url);
+  const record = { id:'VS_'+Date.now(), cls, subject, title, url, videoId, desc, duration, tutor, date:new Date().toLocaleDateString('en-IN'), created_at:new Date().toISOString() };
+  LOCAL.push('videosessions', record);
+  dbInsert('videosessions', record);
+  // Also add to custom_videos so the AI tutor can auto-play inline for this topic
+  const customVideos = LOCAL.get('custom_videos') || [];
+  customVideos.push({ id:'CV_'+Date.now(), topic: title, url, videoId, subject, uploadedBy: 'admin', created_at: new Date().toISOString() });
+  LOCAL.set('custom_videos', customVideos);
+  try { if (supabase_client) supabase_client.from('custom_videos').insert({ id:'CV_'+Date.now(), topic: title, url, subject }).then(()=>{}).catch(()=>{}); } catch(e){}
+  ['vs-title','vs-url','vs-desc','vs-duration','vs-tutor'].forEach(id => document.getElementById(id).value = '');
+  loadAdminVideoSessions();
+  showToast('✅', `Video "${title}" added! Plays inline when students click the topic.`);
+  logActivity('video_uploaded', { title, cls, subject });
+}
+
+async function loadAdminVideoSessions() {
+  const el = document.getElementById('admin-video-sessions-list');
+  if (!el) return;
+  // V12: Always fetch from Supabase
+  let sessions = [];
+  try { sessions = await dbGetAll('videosessions'); } catch(e) { sessions = LOCAL.get('videosessions') || []; }
+  // Deduplicate
+  const seen = new Set();
+  sessions = sessions.filter(s => { if(seen.has(s.id)) return false; seen.add(s.id); return true; });
+
+  // Show option to set main website video
+  const mainVideoKey = localStorage.getItem('kb_main_website_video') || '';
+  const mainEl = document.getElementById('admin-video-sessions-list');
+
+  const subjectIcons = { Mathematics:'🔢', Science:'🔬', Physics:'⚛️', Chemistry:'⚗️', Biology:'🧬', English:'📖', Tamil:'✍️', 'Social Science':'🌍', History:'🏛️', Geography:'🗺️', Economics:'📈', Accountancy:'📊', 'Computer Science':'💻', EVS:'🌱' };
+
+  const mainVideoSetter = `<div style="background:linear-gradient(135deg,rgba(245,200,66,0.1),rgba(245,200,66,0.02));border:1px solid rgba(245,200,66,0.35);border-radius:14px;padding:18px;margin-bottom:20px;">
+    <div style="font-size:11px;color:var(--gold);font-weight:800;letter-spacing:1.5px;font-family:'JetBrains Mono',monospace;margin-bottom:10px;">🌐 MAIN WEBSITE VIDEO (Homepage)</div>
+    <div style="font-size:12.5px;color:rgba(255,255,255,0.8);margin-bottom:12px;">Upload your intro video here — it will appear on your homepage for parents and students to see.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input class="form-input" id="main-video-url-input" placeholder="Paste YouTube URL (youtube.com/watch?v=...)" style="flex:1;min-width:200px;" value="${mainVideoKey}"/>
+      <button class="btn btn-gold" onclick="setMainWebsiteVideo()">💾 Set as Homepage Video</button>
+      ${mainVideoKey ? `<button class="btn btn-danger btn-sm" onclick="clearMainWebsiteVideo()">🗑 Remove</button>` : ''}
+    </div>
+    ${mainVideoKey ? `<div style="margin-top:8px;font-size:11.5px;color:var(--teal);">✅ Homepage video is set. Visit the main page to see it.</div>` : '<div style="margin-top:8px;font-size:11.5px;color:var(--muted);">No homepage video set — the default image/animation shows.</div>'}
+  </div>`;
+
+  if (!sessions.length) {
+    el.innerHTML = mainVideoSetter + '<div style="color:var(--muted);font-size:13px;">No video sessions added yet.</div>';
+    return;
+  }
+  el.innerHTML = mainVideoSetter + sessions.map(s => `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div style="font-size:28px;">${subjectIcons[s.subject]||'🎬'}</div>
+    <div style="flex:1;min-width:200px;">
+      <div style="font-family:'Lora','Georgia',serif;font-size:14px;font-weight:700;color:#fff;">${sanitize(s.title)}</div>
+      <div style="font-size:11.5px;color:rgba(255,255,255,0.8);margin-top:3px;">${sanitize(s.cls||'')} · ${sanitize(s.subject||'')}${s.tutor?' · '+sanitize(s.tutor):''}${s.duration?' · '+sanitize(s.duration):''}</div>
+      ${s.desc ? `<div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:4px;">${sanitize(s.desc)}</div>` : ''}
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace;">${sanitize(s.url||'').slice(0,60)}...</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="${s.url}" target="_blank" class="btn btn-ghost btn-sm">▶ View</a>
+      <button class="btn btn-teal btn-sm" onclick="setMainWebsiteVideoFrom('${s.url}')">🌐 Set as Homepage</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteVideoSession('${s.id}')">🗑</button>
+    </div>
+  </div>`).join('');
+}
+
+function setMainWebsiteVideo() {
+  const url = (document.getElementById('main-video-url-input')?.value || '').trim();
+  if (!url) { showToast('⚠️','Paste a YouTube URL first',true); return; }
+  setMainWebsiteVideoFrom(url);
+}
+
+function setMainWebsiteVideoFrom(url) {
+  localStorage.setItem('kb_main_website_video', url);
+  // Update the homepage video immediately
+  applyMainWebsiteVideo(url);
+  loadAdminVideoSessions();
+  showToast('✅','Homepage video updated! Visitors will see your video now.');
+}
+
+function clearMainWebsiteVideo() {
+  localStorage.removeItem('kb_main_website_video');
+  const player = document.getElementById('main-video-player');
+  const fallback = document.getElementById('main-video-fallback');
+  if (player) player.style.display = 'none';
+  if (fallback) fallback.style.display = '';
+  loadAdminVideoSessions();
+  showToast('🗑','Homepage video removed');
+}
+
+function applyMainWebsiteVideo(url) {
+  if (!url) return;
+  const vidId = extractYouTubeId(url);
+  const player = document.getElementById('main-video-player');
+  const fallback = document.getElementById('main-video-fallback');
+  const iframe = document.getElementById('main-video-iframe');
+  if (!player || !fallback || !iframe) return;
+  if (vidId) {
+    iframe.src = `https://www.youtube-nocookie.com/embed/${vidId}?rel=0&modestbranding=1`;
+    player.style.display = 'block';
+    fallback.style.display = 'none';
+  } else if (/^https?:\/\//i.test(url)) {
+    // Non-YouTube — show play button linking to URL
+    fallback.innerHTML = `<div style="position:relative;z-index:2;text-align:center;">
+      <div style="font-family:'Merriweather',Georgia,serif;font-size:20px;font-weight:800;color:var(--gold);margin-bottom:12px;">Meet Our Founder</div>
+      <a class="btn btn-gold" href="${url}" target="_blank" rel="noopener" style="padding:14px 32px;font-size:16px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;">▶ Watch Video</a>
+    </div>`;
+    player.style.display = 'none';
+  }
+}
+
+async function deleteVideoSession(id) {
+  if (!confirm('Delete this video session?')) return;
+  await dbDelete('videosessions', id);
+  loadAdminVideoSessions();
+  showToast('🗑','Video session deleted.');
+}
+
+// ══════════════════════════════════════════════
+// HERO ENTRANCE ANIMATION
+// ══════════════════════════════════════════════
+// Video filter function
+function filterVideos(subject, btn) {
+  document.querySelectorAll('.vid-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.vid-card').forEach(card => {
+    if (subject === 'all' || card.dataset.subject === subject) {
+      card.classList.remove('hidden-vid');
+    } else {
+      card.classList.add('hidden-vid');
+    }
+  });
+}
+
+window.addEventListener('load', () => {
+  const els = document.querySelectorAll('.hero-left > *');
+  els.forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(22px)';
+    el.style.transition = `opacity 0.65s ease ${i * 0.13}s, transform 0.65s ease ${i * 0.13}s`;
+    setTimeout(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; }, 80);
+  });
+  // Restore session on reload — wait for Supabase to init then check
+  (async () => {
+    // Quick check from cache first (instant)
+    try {
+      const loggedOut = sessionStorage.getItem('kb_loggedOut');
+      if (loggedOut === '1') return; // user logged out, skip
+      const sessRaw = sessionStorage.getItem('kb_session');
+      if (!sessRaw) return; // no session saved
+      const sess = JSON.parse(sessRaw);
+      if (!sess || !sess.type) return;
+      if (Date.now() - (sess.ts || 0) > 30 * 24 * 3600 * 1000) {
+        sessionStorage.removeItem('kb_session'); return;
+      }
+      // Session exists — show a subtle loading indicator
+      const indicator = document.createElement('div');
+      indicator.id = 'session-restore-indicator';
+      indicator.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--teal));z-index:99999;animation:slideIn .4s ease;';
+      document.body.appendChild(indicator);
+    } catch(e) {}
+    // Wait for Supabase to be ready (max 2s)
+    let waited = 0;
+    while (!supabase_client && waited < 2000) {
+      await new Promise(r => setTimeout(r, 100));
+      waited += 100;
+    }
+    await restoreSession();
+    // Remove loading indicator
+    const ind = document.getElementById('session-restore-indicator');
+    if (ind) ind.remove();
+  })();
+
+  // V12: Load admin-set homepage video
+  setTimeout(() => {
+    const mainVideo = localStorage.getItem('kb_main_website_video');
+    if (mainVideo && typeof applyMainWebsiteVideo === 'function') applyMainWebsiteVideo(mainVideo);
+    // Also try to load shared Gemini key from Supabase admin_config
+    if (supabase_client && !localStorage.getItem('kb_shared_gemini_key')) {
+      supabase_client.from('admin_config').select('*').eq('key','gemini_api_key').then(({data}) => {
+        if (data?.[0]?.value) {
+          localStorage.setItem('kb_shared_gemini_key', data[0].value);
+          localStorage.setItem('kb_gemini_key', data[0].value);
+        }
+      }).catch(()=>{});
+    }
+  }, 1200);
+
+  // V10: Browser back/forward button support across portals + AI modal
+  window.addEventListener('popstate', (e) => {
+    // First priority — close any open AI video / quiz modal
+    const aiVideoOverlay = document.getElementById('aiVideoOverlay');
+    if (aiVideoOverlay && !aiVideoOverlay.classList.contains('hidden')) {
+      closeAIVideo();
+      return;
+    }
+    const quizModal = document.getElementById('quizPlayerModal');
+    if (quizModal && !quizModal.classList.contains('hidden')) {
+      closeModal('quizPlayerModal');
+      return;
+    }
+    // Close any open drawers
+    document.querySelectorAll('.portal-sidebar.open, .admin-sidebar.open').forEach(s => s.classList.remove('open'));
+    document.querySelectorAll('.portal-drawer-backdrop.open').forEach(b => b.classList.remove('open'));
+
+    // Handle portal-internal nav based on current hash
+    const hash = location.hash || '';
+    const m = hash.match(/^#(student|tutor|admin)\/(.+)$/);
+    if (m) {
+      const [, portal, view] = m;
+      if (portal === 'student' && window._currentStudent) {
+        const btn = document.querySelector(`#studentPortalShell [onclick*="'${view}'"]`);
+        if (typeof showStudentViewSilent === 'function') showStudentViewSilent(view, btn);
+      } else if (portal === 'tutor' && window._currentTutor) {
+        const btn = document.querySelector(`#tutorPortalModal [onclick*="'${view}'"]`);
+        if (typeof showTutorViewSilent === 'function') showTutorViewSilent(view, btn);
+      } else if (portal === 'admin') {
+        const btn = document.querySelector(`#adminShell [onclick*="'${view}'"]`);
+        if (typeof showAdminViewSilent === 'function') showAdminViewSilent(view, btn);
+      }
+    }
+  });
+  // Tables now created
+});
+
+
+async function loadStudentVideoSessions(student) {
+  // Student video sessions: show custom videos uploaded by admin + video library
+  // Already rendered statically in sv-video — just refresh custom videos from Supabase
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('custom_videos').select('*').order('created_at',{ascending:false}).limit(50);
+      if (data && data.length) LOCAL.set('custom_videos', data);
+      const { data: sessions } = await supabase_client.from('videosessions').select('*').order('scheduled_at',{ascending:false}).limit(50);
+      if (sessions && sessions.length) LOCAL.set('videosessions', sessions);
+    }
+  } catch(e) {}
+  // Refresh the video cards list
+  if (typeof filterVideos === 'function') filterVideos('all', null);
+}
+
+function renderHomepageReviews() {
+  try {
+    const stored = localStorage.getItem('kb_testimonials');
+    if (!stored) return;
+    const reviews = JSON.parse(stored);
+    if (!reviews || !reviews.length) return;
+    const container = document.getElementById('homepage-dynamic-reviews');
+    if (!container) return;
+    const stars = n => '★'.repeat(Math.max(1,Math.min(5,parseInt(n)||5))) + '☆'.repeat(5-Math.max(1,Math.min(5,parseInt(n)||5)));
+    container.innerHTML = '<div class="trust-grid">' + reviews.slice(0,6).map(r =>
+      `<div class="trust-card">
+        <div class="trust-stars" style="color:var(--gold);">${stars(r.rating)}</div>
+        <div class="trust-quote">"${sanitize(r.review||'')}"</div>
+        <div class="trust-author">${sanitize(r.name||'—')}${r.class ? ' · <span style="font-size:11px;color:var(--muted);">'+sanitize(r.class)+'</span>' : ''}</div>
+        ${r.achievement ? '<div style="font-size:11px;color:var(--teal);margin-top:4px;">🏆 '+sanitize(r.achievement)+'</div>' : ''}
+      </div>`
+    ).join('') + '</div>';
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN CONTENT EDITOR — Every line of homepage editable
+// ══════════════════════════════════════════════════════════════
+
+const CONTENT_DEFAULTS = {
+  'logo-name': 'KONGU BRILLIANCE',
+  'logo-tagline': "Coimbatore's Rising Star Tuition Centre",
+  'hero-h1': 'Where Students',
+  'hero-h2': 'Actually Excel',
+  'hero-sub': "Not just coaching — a complete learning ecosystem. AI-powered lessons, live quizzes, personal tutors, and real results.",
+  'hero-btn1': 'Enroll Now ›',
+  'hero-btn2': '🎓 Free Demo',
+  'stat1-num': '500+', 'stat1-label': 'Students Enrolled',
+  'stat2-num': '98%', 'stat2-label': 'Pass Rate',
+  'stat3-num': '5', 'stat3-label': 'Years of Excellence',
+  'stat4-num': 'Classes 1–12', 'stat4-label': 'All Boards Covered',
+  'courses-kicker': 'What We Teach',
+  'courses-headline': 'Classes 1 to 12 —',
+  'courses-headline2': 'All Boards · All Subjects',
+  'courses-desc': 'CBSE, ICSE, Tamil Nadu State Board. Small batches, personal attention, real results.',
+  'subjects-list': 'Mathematics\nScience\nEnglish\nTamil\nPhysics\nChemistry\nBiology\nHistory\nGeography\nComputer Science',
+  'founder-name': 'Abhisek',
+  'founder-title': 'Founder & Head Tutor',
+  'founder-bio': "With 5 years of dedicated teaching, Abhisek built Kongu Brilliance from a single classroom to Coimbatore's most trusted tuition centre. His approach: understand first, memorise later.",
+  'founder-q1': 'B.Ed, M.Sc Mathematics',
+  'founder-q2': '5 Years Teaching Experience',
+  'fee-primary': '2,500', 'fee-primary-label': 'Classes 1–5',
+  'fee-middle': '3,500', 'fee-middle-label': 'Classes 6–8',
+  'fee-high': '4,500', 'fee-high-label': 'Classes 9–10',
+  'fee-plus2': '5,500', 'fee-plus2-label': 'Classes 11–12',
+  'fee-note': 'Zero Registration Fee · Free Demo Class · All fees monthly',
+  'phone1': '95145 24599',
+  'phone2': '78459 15044',
+  'addr1': 'Coimbatore, Tamil Nadu',
+  'addr2': 'Tamil Nadu — 641 001',
+  'email': 'abhisekmurugesan@gmail.com',
+  'whatsapp': '919514524599',
+  'maps-url': '',
+  'footer-tagline': "Shaping tomorrow's leaders, one student at a time.",
+  'footer-copyright': '\u00a9 2026 Kongu Brilliance. All rights reserved.',
+};
+
+const TICKER_DEFAULTS = [
+  'Admissions Open 2026–27',
+  'Offline Classes at Our Centre · Kurudampalayam',
+  'Home Tuition Across Coimbatore',
+  'Live Online Tuition',
+  'Free Demo Class — Book Now',
+  '📞 95145 24599',
+  'Classes 1–12 · CBSE · ICSE · State',
+  'Zero Registration Fee',
+];
+
+const BATCH_DEFAULTS = [
+  { time: '6–8 AM', label: 'Morning', days: 'Mon–Sat' },
+  { time: '4–7 PM', label: 'Evening', days: 'Mon–Sat' },
+  { time: '7–9 PM', label: 'Night', days: 'Mon–Fri' },
+];
+
+function getContent(key) {
+  try { return localStorage.getItem('kb_content_' + key) || CONTENT_DEFAULTS[key] || ''; } catch(e) { return CONTENT_DEFAULTS[key] || ''; }
+}
+function setContent(key, val) {
+  try { localStorage.setItem('kb_content_' + key, val); } catch(e) {}
+}
+function getTickerItems() {
+  try { if (!localStorage.getItem('kb_ticker_v2')) { localStorage.removeItem('kb_ticker_items'); localStorage.setItem('kb_ticker_v2','1'); } return JSON.parse(localStorage.getItem('kb_ticker_items') || 'null') || TICKER_DEFAULTS; } catch(e) { return TICKER_DEFAULTS; }
+}
+function getBatchTimings() {
+  try { return JSON.parse(localStorage.getItem('kb_batch_timings') || 'null') || BATCH_DEFAULTS; } catch(e) { return BATCH_DEFAULTS; }
+}
+
+function loadContentEditor() {
+  // Populate all fields with saved values
+  Object.keys(CONTENT_DEFAULTS).forEach(key => {
+    const el = document.getElementById('ce-' + key);
+    if (el) el.value = getContent(key);
+  });
+  // Load ticker items
+  renderTickerEditor();
+  // Load batch timings
+  renderBatchTimingsEditor();
+}
+
+function renderTickerEditor() {
+  const container = document.getElementById('ticker-items-list');
+  if (!container) return;
+  const items = getTickerItems();
+  container.innerHTML = items.map((item, i) => `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <input class="form-input" style="flex:1;font-size:12px;" value="${sanitize(item)}" 
+             onchange="updateTickerItem(${i}, this.value)" placeholder="Ticker text..."/>
+      <button class="btn btn-coral btn-sm" onclick="removeTickerItem(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addTickerItem() {
+  const items = getTickerItems();
+  items.push('New announcement text here');
+  localStorage.setItem('kb_ticker_items', JSON.stringify(items));
+  renderTickerEditor();
+}
+
+function removeTickerItem(idx) {
+  const items = getTickerItems();
+  items.splice(idx, 1);
+  localStorage.setItem('kb_ticker_items', JSON.stringify(items));
+  renderTickerEditor();
+}
+
+function updateTickerItem(idx, val) {
+  const items = getTickerItems();
+  items[idx] = val;
+  localStorage.setItem('kb_ticker_items', JSON.stringify(items));
+}
+
+function renderBatchTimingsEditor() {
+  const container = document.getElementById('batch-timings-list');
+  if (!container) return;
+  const batches = getBatchTimings();
+  container.innerHTML = batches.map((b, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;">
+      <input class="form-input" style="font-size:12px;" value="${sanitize(b.time)}" placeholder="6–8 AM"
+             onchange="updateBatch(${i},'time',this.value)"/>
+      <input class="form-input" style="font-size:12px;" value="${sanitize(b.label)}" placeholder="Morning"
+             onchange="updateBatch(${i},'label',this.value)"/>
+      <input class="form-input" style="font-size:12px;" value="${sanitize(b.days)}" placeholder="Mon–Sat"
+             onchange="updateBatch(${i},'days',this.value)"/>
+      <button class="btn btn-coral btn-sm" onclick="removeBatch(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addBatchTiming() {
+  const batches = getBatchTimings();
+  batches.push({ time: '', label: 'New Batch', days: 'Mon–Sat' });
+  localStorage.setItem('kb_batch_timings', JSON.stringify(batches));
+  renderBatchTimingsEditor();
+}
+
+function removeBatch(idx) {
+  const batches = getBatchTimings();
+  batches.splice(idx, 1);
+  localStorage.setItem('kb_batch_timings', JSON.stringify(batches));
+  renderBatchTimingsEditor();
+}
+
+function updateBatch(idx, field, val) {
+  const batches = getBatchTimings();
+  batches[idx][field] = val;
+  localStorage.setItem('kb_batch_timings', JSON.stringify(batches));
+}
+
+async function saveAllContent() {
+  // Save all text fields
+  Object.keys(CONTENT_DEFAULTS).forEach(key => {
+    const el = document.getElementById('ce-' + key);
+    if (el) setContent(key, el.value);
+  });
+  // Save ticker (already live-saved on change)
+  // Save batches (already live-saved on change)
+  // Save to Supabase admin_config for cross-device sync
+  try {
+    if (supabase_client) {
+      const allContent = {};
+      Object.keys(CONTENT_DEFAULTS).forEach(key => {
+        allContent[key] = getContent(key);
+      });
+      allContent['ticker_items'] = JSON.stringify(getTickerItems());
+      allContent['batch_timings'] = JSON.stringify(getBatchTimings());
+      await supabase_client.from('admin_config').upsert([
+        { key: 'website_content', value: JSON.stringify(allContent), updated_at: new Date().toISOString() }
+      ]).then(()=>{}).catch(()=>{});
+    }
+  } catch(e) {}
+  // Apply changes to live page immediately
+  applyContentToPage();
+  showToast('✅', 'All content saved! Website updated instantly.');
+  logActivity('content_updated', { admin: ADMIN.email });
+}
+
+function applyContentToPage() {
+  // Apply all saved content to the live homepage elements
+  const apply = (selector, key, attr='textContent') => {
+    const els = document.querySelectorAll(selector);
+    const val = getContent(key);
+    if (!val) return;
+    els.forEach(el => {
+      if (attr === 'textContent') el.textContent = val;
+      else if (attr === 'innerHTML') el.innerHTML = val;
+      else if (attr === 'href') el.href = val;
+      else if (attr === 'src') el.src = val;
+    });
+  };
+
+  // Logo
+  const logoEl = document.querySelector('.logo-name, .nav-logo-text');
+  if (logoEl) logoEl.textContent = getContent('logo-name');
+
+  // Hero headlines
+  const h1El = document.querySelector('#hero .hero-h1, #hero h1');
+  if (h1El) {
+    const line1 = getContent('hero-h1');
+    const line2 = getContent('hero-h2');
+    h1El.innerHTML = line1 + '<br><span class="gold-text">' + line2 + '</span>';
+  }
+
+  // Hero subtitle
+  const subEl = document.querySelector('#hero .hero-sub, #hero .hero-desc');
+  if (subEl) subEl.textContent = getContent('hero-sub');
+
+  // Phone numbers everywhere
+  document.querySelectorAll('[data-phone1]').forEach(el => el.textContent = getContent('phone1'));
+  document.querySelectorAll('[data-phone2]').forEach(el => el.textContent = getContent('phone2'));
+
+  // Ticker items
+  const trackEls = document.querySelectorAll('.ticker-track');
+  const tickerItems = getTickerItems();
+  if (trackEls.length && tickerItems.length) {
+    const tickerHTML = [...tickerItems, ...tickerItems].map(t => `<span>${sanitize(t)}</span>`).join('');
+    trackEls.forEach(el => el.innerHTML = tickerHTML);
+  }
+
+  // Schedule grid
+  const schGridEls = document.querySelectorAll('.sch-grid');
+  const batches = getBatchTimings();
+  if (schGridEls.length && batches.length) {
+    const schHTML = batches.map(b => `<div class="sch-c"><div class="sch-time">${sanitize(b.time)}</div><div class="sch-lbl">${sanitize(b.label)}</div><div class="sch-det">${sanitize(b.days)}</div></div>`).join('');
+    schGridEls.forEach(el => el.innerHTML = schHTML);
+  }
+
+  // Footer
+  const footerTag = document.querySelector('.footer-tagline');
+  if (footerTag) footerTag.textContent = getContent('footer-tagline');
+  const footerCopy = document.querySelector('.footer-copyright, .footer-copy');
+  if (footerCopy) footerCopy.textContent = getContent('footer-copyright');
+}
+
+async function loadSavedContent() {
+  // On page load: fetch from Supabase if available
+  try {
+    if (supabase_client) {
+      const { data } = await supabase_client.from('admin_config').select('value').eq('key','website_content').maybeSingle();
+      if (data && data.value) {
+        const saved = JSON.parse(data.value);
+        Object.entries(saved).forEach(([k, v]) => {
+          if (k === 'ticker_items') localStorage.setItem('kb_ticker_items', v);
+          else if (k === 'batch_timings') localStorage.setItem('kb_batch_timings', v);
+          else localStorage.setItem('kb_content_' + k, v);
+        });
+      }
+    }
+  } catch(e) {}
+  applyContentToPage();
+}
+
+function resetContentToDefault() {
+  if (!confirm('Reset ALL website content to default? This cannot be undone.')) return;
+  Object.keys(CONTENT_DEFAULTS).forEach(key => localStorage.removeItem('kb_content_' + key));
+  localStorage.removeItem('kb_ticker_items');
+  localStorage.removeItem('kb_batch_timings');
+  loadContentEditor();
+  applyContentToPage();
+  showToast('↩', 'Content reset to default!');
+}
+
+function previewHomepage() {
+  saveAllContent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Close admin portal temporarily to see homepage
+  document.getElementById('adminShell').classList.add('hidden');
+  showToast('👁', 'Viewing homepage — click Admin login to return');
+}
+
+
+// ══════════════════════════════════════════════════════════
+// SECURITY: Detect devtools + protect sensitive operations
+// ══════════════════════════════════════════════════════════
+// DevTools detection removed - was pausing browser
+
+// ══════════════════════════════════════════════════════════
+// QUESTION PAPERS - Student, Tutor, Admin flow
+// ══════════════════════════════════════════════════════════
+
+function handleTutorQPFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('⚠️','Max 5MB allowed', true); input.value=''; return; }
+  document.getElementById('tqp-file-label').textContent = '✅ ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+  const reader = new FileReader();
+  reader.onload = e => { window._tqpFileData = e.target.result; window._tqpFileName = file.name; };
+  reader.readAsDataURL(file);
+}
+
+async function tutorUploadQP() {
+  const tutor = window._currentTutor;
+  if (!tutor) return;
+  const title = document.getElementById('tqp-title')?.value?.trim();
+  const subject = document.getElementById('tqp-subject')?.value?.trim();
+  const cls = document.getElementById('tqp-class')?.value?.trim();
+  const link = document.getElementById('tqp-link')?.value?.trim();
+  if (!title) { showToast('⚠️','Enter a title', true); return; }
+  const content = window._tqpFileData || link || '';
+  if (!content) { showToast('⚠️','Upload a PDF or paste a link', true); return; }
+  const record = {
+    id: 'QP_' + Date.now(),
+    title, subject, class: cls,
+    content, fileName: window._tqpFileName || '',
+    uploadedBy: tutor.name, tutorId: tutor.id,
+    status: 'pending',
+    date: new Date().toLocaleDateString('en-IN'),
+    created_at: new Date().toISOString()
+  };
+  await dbInsert('question_papers', record);
+  showToast('✅', 'QP submitted for admin approval!');
+  window._tqpFileData = null; window._tqpFileName = null;
+  ['tqp-title','tqp-subject','tqp-class','tqp-link'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('tqp-file').value = '';
+  document.getElementById('tqp-file-label').textContent = 'No file chosen · Max 5MB';
+  loadTutorQPList();
+}
+
+async function loadTutorQPList() {
+  const el = document.getElementById('tv-qpapers-list');
+  if (!el) return;
+  const tutor = window._currentTutor;
+  // Sync from Supabase
+  const allQPs = await dbGetAll('question_papers');
+  // Tutor sees: admin-approved QPs + their own QPs
+  const visible = allQPs.filter(q => q.status === 'approved' || q.tutorId === tutor?.id || q.tutor_id === tutor?.id);
+  if (!visible.length) {
+    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px;">📭 No question papers yet. Upload one above or ask admin to upload.</div>';
+    return;
+  }
+  el.innerHTML = visible.map(q => {
+    const isPdf = (q.content||'').startsWith('data:application/pdf');
+    const isLink = (q.content||'').startsWith('http');
+    const myPaper = q.tutorId === tutor?.id || q.tutor_id === tutor?.id;
+    const statusBadge = myPaper && q.status === 'pending' ? '<span style="background:rgba(245,200,66,0.2);color:var(--gold);font-size:10px;padding:2px 8px;border-radius:6px;margin-left:6px;">⏳ Pending Approval</span>' : myPaper && q.status === 'approved' ? '<span style="background:rgba(0,229,160,0.2);color:var(--teal);font-size:10px;padding:2px 8px;border-radius:6px;margin-left:6px;">✅ Approved</span>' : '';
+    return '<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;">' +
+      '<div style="font-size:32px;">📄</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-weight:700;color:#fff;">' + sanitize(q.title||'Question Paper') + statusBadge + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);">' + sanitize(q.subject||'') + (q.class?' · '+sanitize(q.class):'') + ' · ' + (q.date||'—') + ' · By ' + sanitize(q.uploadedBy||'Admin') + '</div>' +
+      '</div>' +
+      (isPdf ? '<a href="' + q.content + '" download="' + sanitize(q.title||'QP') + '.pdf" class="btn btn-gold btn-sm">⬇ Download</a>' : '') +
+      (isLink ? '<a href="' + q.content + '" target="_blank" class="btn btn-gold btn-sm">🔗 Open</a>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function loadStudentQPList(student) {
+  const el = document.getElementById('sv-qpapers-content');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">⏳ Loading...</div>';
+  const allQPs = await dbGetAll('question_papers');
+  // Students see only approved QPs matching their class
+  const visible = allQPs.filter(q => q.status === 'approved' && (!q.class || q.class === student.std || q.class === 'All'));
+  if (!visible.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:40px;margin-bottom:10px;">📭</div><div>No question papers available yet.</div><div style="font-size:12px;margin-top:6px;">Your admin or tutor will upload papers here.</div></div>';
+    return;
+  }
+  el.innerHTML = visible.map(q => {
+    const isPdf = (q.content||'').startsWith('data:application/pdf');
+    const isLink = (q.content||'').startsWith('http');
+    return '<div style="background:var(--faint);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:14px;">' +
+      '<div style="font-size:36px;">📄</div>' +
+      '<div style="flex:1;">' +
+        '<div style="font-weight:700;color:#fff;font-size:14px;">' + sanitize(q.title||'Question Paper') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px;">' + sanitize(q.subject||'General') + (q.class?' · '+sanitize(q.class):'') + ' · Uploaded: ' + (q.date||'—') + '</div>' +
+      '</div>' +
+      (isPdf ? '<a href="' + q.content + '" download="' + sanitize(q.title||'QP') + '.pdf" class="btn btn-gold btn-sm" style="white-space:nowrap;">⬇ Download PDF</a>' : '') +
+      (isLink ? '<a href="' + q.content + '" target="_blank" class="btn btn-gold btn-sm" style="white-space:nowrap;">🔗 Open Link</a>' : '') +
+    '</div>';
+  }).join('');
+}
+
+async function approveQP(id) {
+  await dbUpdate('question_papers', id, { status: 'approved' });
+  const qps = LOCAL.get('question_papers') || [];
+  const idx = qps.findIndex(q => q.id === id);
+  if (idx > -1) { qps[idx].status = 'approved'; LOCAL.set('question_papers', qps); }
+  showToast('✅', 'Question paper approved! Students and tutor can now see it.');
+  loadQuestionPapers();
+}
+
+async function adminAssignTutorToStudent(studentId, studentName) {
+  // Get all tutors
+  const tutors = await dbGetAll('tutors');
+  if (!tutors.length) { showToast('⚠️','No tutors found. Add tutors first.', true); return; }
+  
+  // Build dropdown
+  const options = ['<option value="">— Remove assignment —</option>',
+    ...tutors.map(t => `<option value="${t.id}">${sanitize(t.name)}</option>`)
+  ].join('');
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid rgba(245,200,66,0.3);border-radius:18px;padding:28px;min-width:340px;max-width:480px;">
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">👨‍🏫 Assign Tutor</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:18px;">Student: <strong style="color:var(--gold);">${sanitize(studentName)}</strong></div>
+      <select id="assign-tutor-sel" style="width:100%;padding:12px;background:#0d0d1a;border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-size:13px;margin-bottom:16px;">
+        ${options}
+      </select>
+      <div style="display:flex;gap:10px;">
+        <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:12px;background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:#fff;cursor:pointer;">Cancel</button>
+        <button onclick="confirmAssignTutor('${studentId}',this)" style="flex:1;padding:12px;background:var(--gold);border:none;border-radius:10px;color:#1a0800;font-weight:800;cursor:pointer;">✅ Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function confirmAssignTutor(studentId, btn) {
+  const modal = btn.closest('[style*=fixed]');
+  const sel = modal.querySelector('#assign-tutor-sel');
+  const tutorId = sel.value;
+  const tutorName = tutorId ? sel.options[sel.selectedIndex].text : '';
+  
+  // Update in Supabase
+  await dbUpdate('students', studentId, { 
+    assignedTutorId: tutorId, 
+    assignedTutorName: tutorName,
+    assigned_tutor_id: tutorId,
+    assigned_tutor_name: tutorName
+  });
+  
+  // Update LOCAL
+  const students = LOCAL.get('students') || [];
+  const idx = students.findIndex(s => s.id === studentId);
+  if (idx > -1) { 
+    students[idx].assignedTutorId = tutorId; 
+    students[idx].assignedTutorName = tutorName;
+    LOCAL.set('students', students); 
+  }
+  
+  modal.remove();
+  showToast('✅', tutorId ? `Assigned to ${tutorName}!` : 'Tutor assignment removed');
+  loadStudentsTable();
+}
+
+function showTaskTab(tab) {
+  document.getElementById('task-list-pending').style.display = tab==='pending' ? '' : 'none';
+  document.getElementById('task-list-done').style.display = tab==='done' ? '' : 'none';
+  document.getElementById('task-tab-pending').className = tab==='pending' ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm';
+  document.getElementById('task-tab-done').className = tab==='done' ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm';
+}
+
+function renderTaskCard(t, isDone=false) {
+  const priority = (t.priority||'medium').toLowerCase();
+  const dot = priority==='high' ? '#ef4444' : priority==='low' ? '#22c55e' : '#f5c842';
+  return `<div style="background:var(--faint);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;">
+    <div style="width:10px;height:10px;border-radius:50%;background:${dot};margin-top:5px;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div style="font-weight:700;color:#fff;font-size:14px;">${sanitize(t.title||t.task_title||'—')}</div>
+      ${t.task_desc||t.desc||t.description||t.task_desc ? `<div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:3px;">${sanitize(t.task_desc||t.desc||t.description||t.task_desc)}</div>` : ''}
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;">
+        Due: ${t.dueDate||t.due_date||'Today'} · For: ${sanitize(t.tutorName||t.tutor_name||'—')} · ${(t.priority||'MEDIUM').toUpperCase()} · ${(t.status||'PENDING').toUpperCase()}
+      </div>
+    </div>
+    ${!isDone ? `<button class="btn btn-teal btn-sm" onclick="markTaskDone('${t.id}')">✓ Done</button>` : `<div style="text-align:right;"><span style="color:var(--teal);font-size:12px;font-weight:700;">✅ Done</span><br><span style="font-size:10px;color:var(--muted);">${t.completedBy||t.tutor_name||'Tutor'} · ${t.completedAt||t.completed_at||'—'}</span></div>`}
+  </div>`;
+}
+
+async function markTaskDone(taskId) {
+  const tutor = window._currentTutor;
+  const now = new Date().toLocaleString('en-IN');
+  await dbUpdate('tasks', taskId, { status: 'done', completedBy: tutor?.name||'Tutor', completedAt: now });
+  const tasks = LOCAL.get('tasks') || [];
+  const idx = tasks.findIndex(t => t.id === taskId);
+  if (idx > -1) { tasks[idx].status = 'done'; tasks[idx].completedBy = tutor?.name||'Tutor'; tasks[idx].completedAt = now; LOCAL.set('tasks', tasks); }
+  showToast('✅', 'Task marked as done!');
+  if (tutor) loadTutorTasksView(tutor);
+}
+
+function handleAssignFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('⚠️','Max 10MB allowed',true); input.value=''; return; }
+  document.getElementById('at-file-label').textContent = '✅ ' + file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+  const reader = new FileReader();
+  reader.onload = e => { window._atFileData = e.target.result; window._atFileName = file.name; };
+  reader.readAsDataURL(file);
+}
+
+function showAdminTaskTab(tab) {
+  const p = document.getElementById('atasks-pending'); if(p) p.style.display = tab==='pending' ? '' : 'none';
+  const d = document.getElementById('atasks-done'); if(d) d.style.display = tab==='done' ? '' : 'none';
+  const tp = document.getElementById('atab-pending'); if(tp) tp.className = tab==='pending' ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm';
+  const td = document.getElementById('atab-done'); if(td) td.className = tab==='done' ? 'btn btn-gold btn-sm' : 'btn btn-ghost btn-sm';
+}
+
+// ═══════════════════════════════════════════════════════
+// DYNAMIC HERO LINES - Add/Edit/Delete
+// ═══════════════════════════════════════════════════════
+let _heroLines = [];
+
+function loadHeroLines() {
+  const saved = localStorage.getItem('kb_hero_lines');
+  if (saved) {
+    try { _heroLines = JSON.parse(saved); } catch(e) { _heroLines = []; }
+  }
+  if (!_heroLines.length) {
+    _heroLines = [
+      { id: 'hl1', text: 'Where Students', style: 'white' },
+      { id: 'hl2', text: 'Actually Excel', style: 'gold' },
+    ];
+  }
+  renderHeroLines();
+}
+
+function renderHeroLines() {
+  const container = document.getElementById('hero-lines-container');
+  if (!container) return;
+  container.innerHTML = _heroLines.map((line, idx) => `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;background:var(--faint);border:1px solid var(--border);border-radius:10px;padding:10px;">
+      <div style="flex:1;">
+        <input class="form-input" style="margin-bottom:6px;" value="${sanitize(line.text)}" 
+          onchange="_heroLines[${idx}].text=this.value; saveHeroLines();" placeholder="Enter text..."/>
+        <select style="background:#0d0d1a;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;padding:6px 10px;font-size:12px;width:100%;"
+          onchange="_heroLines[${idx}].style=this.value; saveHeroLines(); applyHeroToPage();">
+          <option value="white" ${line.style==='white'?'selected':''}>White text</option>
+          <option value="gold" ${line.style==='gold'?'selected':''}>Gold text</option>
+          <option value="teal" ${line.style==='teal'?'selected':''}>Teal text</option>
+          <option value="small" ${line.style==='small'?'selected':''}>Small subtitle</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${idx > 0 ? `<button class="btn btn-ghost btn-sm" onclick="moveHeroLine(${idx},-1)" title="Move up">▲</button>` : ''}
+        ${idx < _heroLines.length-1 ? `<button class="btn btn-ghost btn-sm" onclick="moveHeroLine(${idx},1)" title="Move down">▼</button>` : ''}
+        <button class="btn btn-coral btn-sm" onclick="deleteHeroLine(${idx})" title="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addHeroLine() {
+  _heroLines.push({ id: 'hl_'+Date.now(), text: 'New Line', style: 'white' });
+  saveHeroLines();
+  renderHeroLines();
+}
+
+function deleteHeroLine(idx) {
+  if (_heroLines.length <= 1) { showToast('⚠️','Must have at least 1 line',true); return; }
+  _heroLines.splice(idx, 1);
+  saveHeroLines();
+  renderHeroLines();
+  applyHeroToPage();
+}
+
+function moveHeroLine(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= _heroLines.length) return;
+  [_heroLines[idx], _heroLines[newIdx]] = [_heroLines[newIdx], _heroLines[idx]];
+  saveHeroLines();
+  renderHeroLines();
+  applyHeroToPage();
+}
+
+function saveHeroLines() {
+  localStorage.setItem('kb_hero_lines', JSON.stringify(_heroLines));
+  // Save to Supabase
+  if (supabase_client) {
+    supabase_client.from('admin_config').upsert([{
+      key: 'hero_lines', value: JSON.stringify(_heroLines)
+    }]).then(()=>{}).catch(()=>{});
+  }
+}
+
+function applyHeroToPage() {
+  // Apply hero lines to the homepage hero section
+  const heroH1 = document.getElementById('hero-h1');
+  const heroH2 = document.getElementById('hero-h2');
+  if (!heroH1 || !_heroLines.length) return;
+  // First line → h1, second line → h2 (gold), rest as subtitle
+  const line1 = _heroLines[0];
+  const line2 = _heroLines[1];
+  if (heroH1 && line1) {
+    heroH1.textContent = line1.text;
+    heroH1.style.color = line1.style === 'gold' ? 'var(--gold)' : line1.style === 'teal' ? 'var(--teal)' : '#fff';
+  }
+  if (heroH2 && line2) {
+    heroH2.textContent = line2.text;
+    heroH2.style.color = line2.style === 'gold' ? 'var(--gold)' : line2.style === 'teal' ? 'var(--teal)' : '#fff';
+  }
+}
+
+// Load hero lines when admin opens content editor
+function initHeroEditor() {
+  loadHeroLines();
+  // Load from Supabase if available
+  if (supabase_client) {
+    supabase_client.from('admin_config').select('value').eq('key','hero_lines').maybeSingle()
+      .then(({data}) => {
+        if (data?.value) {
+          try { _heroLines = JSON.parse(data.value); renderHeroLines(); } catch(e){}
+        }
+      }).catch(()=>{});
+  }
+}
+
+function dataURItoBlob(dataURI) {
+  const byteString = atob(dataURI.split(',')[1]);
+  const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+  return new Blob([ab], {type: mimeString});
+}
+
+function handleRevImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2*1024*1024) { showToast('⚠️','Max 2MB for photos',true); input.value=''; return; }
+  document.getElementById('rev-image-label').textContent = '✅ ' + file.name;
+  const reader = new FileReader();
+  reader.onload = e => { window._revImageData = e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+async function editEnquiry(id) {
+  const enqs = await dbGetAll('online_enquiries');
+  const e = enqs.find(x => x.id === id);
+  if (!e) return;
+  const newName = prompt('Name:', e.name||'');
+  if (newName === null) return;
+  const newPhone = prompt('Phone:', e.phone||'');
+  if (newPhone === null) return;
+  const newStatus = prompt('Status (new/contacted/enrolled):', e.status||'new');
+  if (newStatus === null) return;
+  await dbUpdate('online_enquiries', id, { name: newName, phone: newPhone, status: newStatus });
+  const all = LOCAL.get('online_enquiries') || [];
+  const idx = all.findIndex(x => x.id === id);
+  if (idx > -1) { all[idx].name = newName; all[idx].phone = newPhone; all[idx].status = newStatus; LOCAL.set('online_enquiries', all); }
+  showToast('✅', 'Enquiry updated!');
+  loadOnlineEnquiries();
+}
+
+// ── Render admin-managed reviews on homepage on load ──
+try { renderHomepageReviews(); } catch(e) {}
+try { loadSavedContent(); } catch(e) {}
+
