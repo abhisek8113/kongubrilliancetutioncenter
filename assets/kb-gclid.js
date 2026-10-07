@@ -3,8 +3,9 @@
    - On pages with the demo form (#leadForm): WhatsApp buttons scroll to the form first,
      so every WhatsApp lead arrives with name, mobile, class, subject, board and area filled in.
    - Adds a Subject field to the form and a readable source line to WhatsApp messages.
-   - Pages without the form keep the details template as before. */
+   - Pages without the form send WhatsApp taps to /free-demo.html's form. */
 (function(){
+  if(window.__kbLead) return; window.__kbLead=1;
   var KEY='kb_gclid', DAYS=90;
   try{
     var p=new URLSearchParams(location.search);
@@ -22,7 +23,7 @@
   /* Add Subject field to the demo form */
   function addSubject(){
     var f=form(); if(!f||document.getElementById('kbSubj')) return;
-    var area=document.getElementById('area'); if(!area) return;
+    var area=document.getElementById('area')||f.querySelector('button[type=submit],.submit'); if(!area) return;
     var lab=document.createElement('label'); lab.textContent='Subject(s) needed';
     var sel=document.createElement('select'); sel.id='kbSubj'; sel.required=true;
     ['','Maths','Science','Maths + Science','Physics','Chemistry','Biology','English','Tamil','Social Science','Accountancy / Commerce','All subjects'].forEach(function(v){
@@ -38,7 +39,7 @@
     try{
       if(/wa\.me\//.test(url)){
         var u=new URL(url); var t=u.searchParams.get('text')||'';
-        if(subj()&&!/Subject/i.test(t)) t=t.replace(/(\nBoard:[^\n]*)/,'\nSubject: '+subj()+'$1');
+        if(subj()&&!/Subject/i.test(t)) t=/\nBoard:/.test(t)?t.replace(/(\nBoard:[^\n]*)/,'\nSubject: '+subj()+'$1'):t+'\nSubject: '+subj();
         if(!/Source:/.test(t)) t+='\n\n'+source();
         u.searchParams.set('text',t);
         /* open through a real link click so Google Ads / GTM WhatsApp conversion tracking fires */
@@ -66,6 +67,11 @@
       if(!n){n=document.createElement('p');n.id='kbNote';n.style.cssText='margin:0 0 10px;font-weight:600;color:#128C7E';
         n.textContent='Fill these quick details — WhatsApp opens with them so we can confirm your free demo faster.';f.insertBefore(n,f.firstChild);}
       return;
+    }
+    /* pages without the form: send to the free-demo form page */
+    if(!/free-demo/.test(location.pathname)){
+      e.preventDefault(); e.stopImmediatePropagation();
+      location.href='/free-demo.html?from='+encodeURIComponent(pageName())+'#formcard'; return;
     }
     try{
       var u=new URL(h,location.href); var t=u.searchParams.get('text')||'Hi Kongu Brilliance, I need tuition details.';
