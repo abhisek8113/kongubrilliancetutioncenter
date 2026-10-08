@@ -1,9 +1,8 @@
 /* Kongu Brilliance - lead quality + Google Ads attribution.
    - Stores gclid/gbraid/wbraid for 90 days; adds hidden gclid field to forms.
-   - On pages with the demo form (#leadForm): WhatsApp buttons scroll to the form first,
-     so every WhatsApp lead arrives with name, mobile, class, subject, board and area filled in.
+   - WhatsApp buttons open WhatsApp directly (no form gate); the form adds name/class/subject/board/area.
    - Adds a Subject field to the form and a readable source line to WhatsApp messages.
-   - Pages without the form send WhatsApp taps to /free-demo.html's form. */
+ */
 (function(){
   if(window.__kbLead) return; window.__kbLead=1;
   var KEY='kb_gclid', DAYS=90;
@@ -56,23 +55,6 @@
     var a=e.target.closest&&e.target.closest('a'); if(!a) return;
     var h=a.getAttribute('href')||'';
     if(!/wa\.me\//.test(h)||a.getAttribute('data-kb-done')) return;
-    if(formVisible()){
-      e.preventDefault(); e.stopImmediatePropagation();
-      var f=form(); f.scrollIntoView({behavior:'smooth',block:'center'});
-      var first=['pname','phone','cls','kbSubj','brd'].map(function(i){return document.getElementById(i);}).filter(function(x){return x&&!x.value;})[0];
-      setTimeout(function(){ if(first) first.focus(); },450);
-      var card=f.closest('.formcard')||f; card.style.transition='box-shadow .3s'; card.style.boxShadow='0 0 0 4px #25D366';
-      setTimeout(function(){card.style.boxShadow='';},2200);
-      var n=document.getElementById('kbNote');
-      if(!n){n=document.createElement('p');n.id='kbNote';n.style.cssText='margin:0 0 10px;font-weight:600;color:#128C7E';
-        n.textContent='Fill these quick details — WhatsApp opens with them so we can confirm your free demo faster.';f.insertBefore(n,f.firstChild);}
-      return;
-    }
-    /* pages without the form: send to the free-demo form page */
-    if(!/free-demo/.test(location.pathname)){
-      e.preventDefault(); e.stopImmediatePropagation();
-      location.href='/free-demo.html?from='+encodeURIComponent(pageName())+'#formcard'; return;
-    }
     try{
       var u=new URL(h,location.href); var t=u.searchParams.get('text')||'Hi Kongu Brilliance, I need tuition details.';
       if(!/Class:/i.test(t)) t+='\n\nStudent name: \nClass: \nSubject(s): \nBoard (CBSE/ICSE/State): \nMode (Online/Centre/Home): \nCity / Area: ';
