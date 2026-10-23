@@ -63,6 +63,23 @@
     }catch(err){}
   },true);
 
+  /* Save every form enquiry to the database BEFORE WhatsApp opens, so no lead is lost
+     if the parent never presses Send in WhatsApp. */
+  var SU='https://jpngmqyidbuzbzqbsyhp.supabase.co',
+      SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwbmdtcXlpZGJ1emJ6cWJzeWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NTk4MDcsImV4cCI6MjA5MjMzNTgwN30.Ol1NDfCM-BNEuI-MTpvl0bHrTPHxwzRuqJ9LTU6d8SA';
+  function val(id){var x=document.getElementById(id);return x&&x.value?String(x.value).trim():'';}
+  function saveLead(){
+    try{
+      var name=val('pname')||val('name'), phone=val('phone');
+      if(!name||!phone) return;
+      var key='kb_saved_'+phone; if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key,'1');
+      var msg='WEBSITE FORM | '+pageName()+' | Class: '+(val('cls')||'-')+' | Board: '+(val('brd')||'-')+' | Subject: '+(subj()||'-')+' | Area: '+(val('area')||'-')+' | Source: '+(get()?'Google Ad (gclid '+get()+')':'Website');
+      fetch(SU+'/rest/v1/enquiries',{method:'POST',keepalive:true,headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({id:'ENQ_'+Date.now(),name:name,phone:phone,msg:msg,message:msg,type:'enquiry',status:'new',date:new Date().toLocaleDateString('en-IN'),created_at:new Date().toISOString()})}).catch(function(){});
+    }catch(e){}
+  }
+  document.addEventListener('submit',function(e){ if(e.target&&e.target.id==='leadForm') saveLead(); },true);
+
   function init(){
     addSubject();
     var id=get(); if(!id) return;
