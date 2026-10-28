@@ -669,11 +669,7 @@ async function submitOnlineTuition() {
   if (!rateLimitOk('enquiries')) { showToast('⚠️','Too many submissions. Wait a minute.', true); restoreOTBtn(); return; }
 
   // Phone uniqueness: one phone = one enquiry
-  const existingEnquiries = await dbGetAll('online_enquiries');
-  if (existingEnquiries.find(e => e.phone === phone || e.phone === phone.replace(/\s/g,''))) {
-    showToast('⚠️','This mobile number already has an enquiry. Admin will contact you soon.', true);
-    restoreOTBtn(); return;
-  }
+  // Repeat enquiries from the same number are allowed (e.g. a second child); dedupe in the admin view.
 
   const record = {
     id: 'OT_' + Date.now(),
@@ -2526,10 +2522,7 @@ async function bookDemo() {
     showToast('⚠️','Too many requests. Please wait a minute.', true); return;
   }
   // Phone uniqueness: one phone = one demo booking
-  const existingDemos = await dbGetAll('demo_enquiries');
-  if (existingDemos.find(d => d.phone === phone)) {
-    showToast('ℹ️','This number already has a demo booking. Admin will contact you!'); return;
-  }
+  // Repeat demo requests from the same number are allowed; dedupe in the admin view.
   if (!name || !phone || !cls || !subject || !mode) {
     errEl.textContent = 'Please fill all required fields including tuition mode.';
     errEl.style.display = 'flex'; return;
