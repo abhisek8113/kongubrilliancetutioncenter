@@ -73,7 +73,7 @@
       var name=val('pname')||val('name'), phone=val('phone');
       if(!name||!phone) return;
       var key='kb_saved_'+phone; if(sessionStorage.getItem(key)) return; sessionStorage.setItem(key,'1');
-      var msg='WEBSITE FORM | '+pageName()+' | Class: '+(val('cls')||'-')+' | Board: '+(val('brd')||'-')+' | Subject: '+(subj()||'-')+' | Area: '+(val('area')||'-')+' | Source: '+(get()?'Google Ad (gclid '+get()+')':'Website');
+      var msg='WEBSITE FORM | '+pageName()+' | Class: '+(val('cls')||'-')+' | Board: '+(val('brd')||'-')+' | Subject: '+(subj()||'-')+' | Mode: '+(val('mode')||'-')+' | Area: '+(val('area')||'-')+' | Source: '+(get()?'Google Ad (gclid '+get()+')':'Website');
       fetch(SU+'/rest/v1/enquiries',{method:'POST',keepalive:true,headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify({id:'ENQ_'+Date.now(),name:name,phone:phone,msg:msg,message:msg,type:'enquiry',status:'new',date:new Date().toLocaleDateString('en-IN'),created_at:new Date().toISOString()})}).catch(function(){});
     }catch(e){}
