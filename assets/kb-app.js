@@ -47,18 +47,12 @@ const LOCAL = {
   push: (k, item) => { const arr = LOCAL.get(k); arr.unshift(item); LOCAL.set(k, arr.slice(0,500)); return arr; }
 };
 
-// Admin credentials
-// V6 SECURITY: Admin password is now stored as SHA-256 hash, NOT plain text.
-// To change the password, paste the new password in `_ADMIN_NEW_PWD` below
-// (only during one-time setup), open browser console, and copy the printed hash
-// into ADMIN.passHash, then remove the line again.
+// Admin session (Supabase Auth)
 const ADMIN = {
-  email: 'abhisekmurugesan@gmail.com',
-  // SHA-256 hash of "Kuttapattu@143" with the KB_SALT defined above
-  passHash: 'fb27d3c136bb3db9bdb5daa1242d0a8f507eedab9db8fbc9f713906f63891911'
+  email: '',
+  loggedIn: false
+  // Admin sign-in uses Supabase Auth (profiles.role = 'admin'). No password or hash lives in this file.
 };
-// To regenerate hash for a new password, uncomment + run once in console:
-// (async () => { const h = await hashPassword('YOUR_NEW_PASSWORD'); console.log('Replace ADMIN.passHash with:', h); })();
 
 // ══════════════════════════════════════════════
 // V12: DATABASE OPERATIONS — Supabase first, localStorage cache
@@ -87,7 +81,7 @@ function toSnakeCase(obj) {
 // ══════════════════════════════════════════════════════
 const SUPABASE_SAFE_FIELDS = {
   'demo_enquiries':    ['id','name','phone','std','subject','tuition_type','batch','type','status','date','created_at'],
-  'students':          ['id','name','phone','std','pass','pass_plain','subjects','enroll_mode','status','date','time','board','school','native','batch','parent','assigned_tutor_id','assigned_tutor_name','added_by','created_at'],
+  'students':          ['id','name','phone','std','pass','subjects','enroll_mode','status','date','time','board','school','native','batch','parent','assigned_tutor_id','assigned_tutor_name','added_by','created_at'],
   'online_enquiries':  ['id','name','phone','std','board','subjects','city','preferred_time','tuition_type','mode','msg','type','status','date','created_at'],
   'enquiries':         ['id','name','phone','message','type','status','date','created_at'],
   'materials':         ['id','class','subject','title','content','type','uploaded_by','tutor_id','tutor_name','status','date','file_url','created_at'],
@@ -104,7 +98,7 @@ const SUPABASE_SAFE_FIELDS = {
   'prizes':            ['id','student_id','student_name','prize','month','date','created_at'],
   'testimonials':      ['id','name','rating','text','date','status','created_at'],
   'custom_videos':     ['id','topic','url','video_id','uploaded_by','created_at'],
-  'tutors':            ['id','name','phone','pass','pass_plain','subjects','batches','salary','status','date','created_at'],
+  'tutors':            ['id','name','phone','pass','subjects','batches','salary','status','date','created_at'],
   'activity_log':      ['id','action','meta','time','created_at'],
 };
 
@@ -581,8 +575,7 @@ async function submitRegistration() {
   const record = {
     id: 'STU_' + Date.now(),
     name, phone, std, board, school, native, batch, parent,
-    pass: passHash, pass_plain: pass,                  // V6: SHA-256 hashed
-    pass_plain: pass,                // Admin-visible plain password
+    pass: passHash,                  // SHA-256 hashed; plain passwords are never stored
     subjects,
     enrollMode: enrollMode,          // online / offline / home
     status: 'pending',               // V6: must be approved by admin
@@ -2690,6 +2683,28 @@ function togglePwd(inputId, btn) {
 let adminFailCount = 0;
 let adminLockUntil = 0;
 
+
+async function kbAdminAuth(email, pass) {
+  if (!supabase_client) return false;
+  try {
+    const { data, error } = await supabase_client.auth.signInWithPassword({ email, password: pass });
+    if (error || !data || !data.user) return false;
+    const { data: prof } = await supabase_client.from('profiles').select('role').eq('id', data.user.id).single();
+    if (!prof || prof.role !== 'admin') { await supabase_client.auth.signOut(); return false; }
+    return true;
+  } catch (e) { return false; }
+}
+async function kbAdminSessionValid() {
+  if (!supabase_client) return false;
+  try {
+    const { data } = await supabase_client.auth.getSession();
+    const u = data && data.session && data.session.user; if (!u) return false;
+    const { data: prof } = await supabase_client.from('profiles').select('role').eq('id', u.id).single();
+    if (prof && prof.role === 'admin') { ADMIN.email = u.email; ADMIN.loggedIn = true; return true; }
+  } catch (e) {}
+  return false;
+}
+
 function adminLogin() {
   const email = document.getElementById('al-email').value.trim();
   const pass  = document.getElementById('al-pass').value.trim();
@@ -2702,9 +2717,8 @@ function adminLogin() {
   }
   if (!email || !pass) { errEl.textContent='Enter email and password'; errEl.style.display='flex'; return; }
 
-  // V6: verify against SHA-256 hash, not plain text
-  hashPassword(pass).then(h => {
-    const ok = (email === ADMIN.email) && (h === ADMIN.passHash);
+  // Supabase Auth sign-in; the account must have profiles.role = 'admin'
+  kbAdminAuth(email, pass).then(ok => {
     if (!ok) {
       adminFailCount++;
       if (adminFailCount >= 3) {
@@ -2721,6 +2735,7 @@ function adminLogin() {
       return;
     }
     adminFailCount = 0;
+    ADMIN.email = email; ADMIN.loggedIn = true;
     errEl.style.display = 'none';
     closeModal('loginModal');
     try { sessionStorage.removeItem('kb_loggedOut'); } catch(e){}
@@ -2730,6 +2745,7 @@ function adminLogin() {
 
 function adminLogout() {
   logActivity('admin_logout', { admin: ADMIN.email });
+  try { supabase_client && supabase_client.auth.signOut(); } catch(e){}
   ADMIN.loggedIn = false;
   window._currentTutor = null;
   window._currentStudent = null;
@@ -2820,6 +2836,7 @@ async function restoreSession() {
 
   try {
     if (sess.type === 'admin') {
+      if (!(await kbAdminSessionValid())) { sessionStorage.removeItem('kb_session'); return false; }
       await openAdminPanel();
       showToast('🔄', 'Welcome back, Admin!');
       return true;
@@ -6763,7 +6780,6 @@ async function adminAddStudent() {
   const record = {
     id:'STU_'+Date.now(), name, phone, std, board, school, native, batch, parent,
     pass: passHash,
-    pass_plain: pass,
     subjects,
     assignedTutorId, assignedTutorName,
     status: 'approved',     // admin-added = auto-approved
@@ -6807,7 +6823,6 @@ async function adminAddTutor() {
   const record = {
     id:'TUT_'+Date.now(), name, phone, email,
     pass: passHash,                  // V6: hashed
-    pass_plain: pass,                // Admin-visible plain password
     subjects, batches,
     status: 'active',
     base_salary: 18000,              // default — admin can change in salary section
