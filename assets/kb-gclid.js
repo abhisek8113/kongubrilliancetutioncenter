@@ -76,6 +76,9 @@
       var msg='WEBSITE FORM | '+pageName()+' | Class: '+(val('cls')||'-')+' | Board: '+(val('brd')||'-')+' | Subject: '+(subj()||'-')+' | Mode: '+(val('mode')||'-')+' | Area: '+(val('area')||'-')+' | Source: '+(get()?'Google Ad (gclid '+get()+')':'Website');
       fetch(SU+'/rest/v1/enquiries',{method:'POST',keepalive:true,headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify({id:'ENQ_'+Date.now(),name:name,phone:phone,msg:msg,message:msg,type:'enquiry',status:'new',date:new Date().toLocaleDateString('en-IN'),created_at:new Date().toISOString()})}).catch(function(){});
+      /* Instant email alert to the owner for every enquiry */
+      fetch('https://formsubmit.co/ajax/abhisekmurugesan@gmail.com',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({_subject:'NEW TUITION LEAD: '+name+' '+phone,_template:'table',_captcha:'false',Name:name,Phone:phone,Details:msg,Time:new Date().toLocaleString('en-IN')})}).catch(function(){});
     }catch(e){}
   }
   document.addEventListener('submit',function(e){ if(e.target&&e.target.id==='leadForm') saveLead(); },true);
