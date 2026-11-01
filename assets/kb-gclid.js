@@ -21,7 +21,7 @@
 
   /* Add Subject field to the demo form */
   function addSubject(){
-    var f=form(); if(!f||document.getElementById('kbSubj')) return;
+    var f=form(); if(!f||f.hasAttribute("data-nosubj")||document.getElementById("kbSubj")) return;
     var area=document.getElementById('area')||f.querySelector('button[type=submit],.submit'); if(!area) return;
     var lab=document.createElement('label'); lab.textContent='Subject(s) needed';
     var sel=document.createElement('select'); sel.id='kbSubj'; sel.required=true;
