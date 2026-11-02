@@ -612,7 +612,7 @@ async function submitRegistration() {
     <strong style="color:var(--gold);">⏳ Status: AWAITING ADMIN APPROVAL</strong><br><br>
     📧 Admin has been notified. Once approved, you'll be able to log in using your mobile number and password.<br><br>
     Approval usually takes <strong>under 24 hours</strong>.<br><br>
-    For urgent: <strong style="color:var(--gold);">95145 24599</strong>`;
+    For urgent: <strong style="color:var(--gold);">78459 15044</strong>`;
   showToast('🎉', `Saved to ${result.source === 'cloud' ? 'Supabase cloud ☁️' : 'local storage'} · Pending approval`);
 
   btn.textContent = '🎓 Submit Enrollment Application';
@@ -742,7 +742,7 @@ if (!supabase_client) { errEl.textContent = 'Login service unavailable. Please t
 
   // V6: check approval status
   if (student.status === 'rejected') {
-    errEl.textContent = '❌ Your enrollment was not approved. Contact admin: 95145 24599';
+    errEl.textContent = '❌ Your enrollment was not approved. Contact admin: 78459 15044';
     errEl.style.display = 'flex'; return;
   }
   if (student.status === 'pending') {
@@ -8309,12 +8309,12 @@ const CONTENT_DEFAULTS = {
   'fee-high': '4,500', 'fee-high-label': 'Classes 9–10',
   'fee-plus2': '5,500', 'fee-plus2-label': 'Classes 11–12',
   'fee-note': 'Zero Registration Fee · Free Demo Class · All fees monthly',
-  'phone1': '95145 24599',
-  'phone2': '78459 15044',
+  'phone1': '78459 15044',
+  'phone2': '95145 24599',
   'addr1': 'Coimbatore, Tamil Nadu',
   'addr2': 'Tamil Nadu — 641 001',
   'email': 'abhisekmurugesan@gmail.com',
-  'whatsapp': '919514524599',
+  'whatsapp': '917845915044',
   'maps-url': '',
   'footer-tagline': "Shaping tomorrow's leaders, one student at a time.",
   'footer-copyright': '\u00a9 2026 Kongu Brilliance. All rights reserved.',
@@ -8326,7 +8326,7 @@ const TICKER_DEFAULTS = [
   'Home Tuition Across Coimbatore',
   'Live Online Tuition',
   'Free Demo Class — Book Now',
-  '📞 95145 24599',
+  '📞 78459 15044',
   'Classes 1–12 · CBSE · ICSE · State',
   'Zero Registration Fee',
 ];
