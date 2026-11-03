@@ -86,7 +86,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     var msg='Hi Kongu Brilliance, I want to apply for the tuition vacancy: '+v.cls+' '+v.sub+' ('+v.area+', '+v.mode+').\nName: \nQualification: \nExperience: \nMy area: ';
     var d=document.createElement('div'); d.className='card';
     d.innerHTML='<b>'+v.cls+' · '+v.sub+'</b><p>'+v.area+' · '+v.mode+'<br>Tutor: '+v.tutor+'<br>'+v.time+'<br>Fee: '+v.fee+'</p>';
-    var a=document.createElement('a'); a.href='https://wa.me/919514524599?text='+encodeURIComponent(msg); a.target='_blank'; a.rel='noopener'; a.textContent='Apply on WhatsApp →'; a.setAttribute('data-kb-done','1');
+    var a=document.createElement('a'); a.href='https://wa.me/917845915044?text='+encodeURIComponent(msg); a.target='_blank'; a.rel='noopener'; a.textContent='Apply on WhatsApp →'; a.setAttribute('data-kb-done','1');
     d.appendChild(a); box.appendChild(d);
   });
 })();
@@ -98,7 +98,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <li>We verify your qualification and ID before your first assignment.</li>
 <li>When a parent's requirement matches your profile, we call/WhatsApp you to confirm availability and fee <b>before</b> sharing your details with the parent.</li>
 <li>You take a demo class; if the parent is happy, the assignment is confirmed.</li>
-<li>Update your availability anytime by WhatsApp: <a href="https://wa.me/919514524599?text=Tutor%20availability%20update">95145 24599</a>.</li>
+<li>Update your availability anytime by WhatsApp: <a href="https://wa.me/917845915044?text=Tutor%20availability%20update">78459 15044</a>.</li>
 </ol>
 <p><b>Please note:</b> registration does not guarantee an assignment. Assignments depend on parent requirements in your subjects, area and timings. We never charge tutors a registration fee.</p>
 <h2>Register as a tutor</h2>
@@ -124,7 +124,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="err" id="t_err"></div>
 <button type="submit">Register as tutor — free</button>
 </form>
-<div class="ok" id="t_ok"><b>✓ Registration received.</b><p>Thank you! We'll WhatsApp/call you for a short subject check. Questions? WhatsApp <a href="https://wa.me/919514524599">95145 24599</a>.</p></div>
+<div class="ok" id="t_ok"><b>✓ Registration received.</b><p>Thank you! We'll WhatsApp/call you for a short subject check. Questions? WhatsApp <a href="https://wa.me/917845915044">78459 15044</a>.</p></div>
 <h2>Looking for a tutor instead?</h2>
 <p>Parents: see <a href="/home-tuition-coimbatore.html">home tuition in Coimbatore</a>, <a href="/online-tuition-india.html">online tuition</a> or <a href="/free-demo.html">book a free demo</a>.</p>
 </main>
@@ -143,7 +143,7 @@ if(!d.name)miss.push('name'); if(phone.length!==10)miss.push('10-digit mobile');
 if(!d.subj.length)miss.push('subjects'); if(!d.cls.length)miss.push('classes'); if(!d.brd.length)miss.push('boards'); if(!d.mode.length)miss.push('teaching mode'); if(!d.time)miss.push('free timings');
 if(!document.getElementById('t_consent').checked)miss.push('consent');
 if(miss.length){err.textContent='Please fill: '+miss.join(', ');err.style.display='block';return;}
-try{var k='kb_tutor_'+phone; if(localStorage.getItem(k)){err.textContent='You have already registered with this number. To update details, WhatsApp 95145 24599.';err.style.display='block';return;}}catch(x){}
+try{var k='kb_tutor_'+phone; if(localStorage.getItem(k)){err.textContent='You have already registered with this number. To update details, WhatsApp 78459 15044.';err.style.display='block';return;}}catch(x){}
 var msg='TUTOR APPLICATION | Qual: '+d.qual+' | Exp: '+(d.exp||'-')+' | Subjects: '+d.subj.join(', ')+' | Classes: '+d.cls.join(', ')+' | Boards: '+d.brd.join(', ')+' | Mode: '+d.mode.join(', ')+' | Areas: '+(d.area||'-')+' | Travel: '+(d.km||'-')+' | Timings: '+d.time+' | Fee: '+(d.fee||'-')+' | Languages: '+(d.lang||'-')+' | Consent: yes';
 var btn=e.target.querySelector('button'); btn.disabled=true; btn.textContent='Submitting…';
 fetch(SU+'/rest/v1/enquiries',{method:'POST',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json','Prefer':'return=minimal'},
@@ -154,7 +154,7 @@ try{gtag('event','tutor_registration',{method:'form'})}catch(x){}
 e.target.style.display='none'; document.getElementById('t_ok').style.display='block'; })
 .catch(function(){
 btn.disabled=false; btn.textContent='Register as tutor — free';
-err.innerHTML='Could not save right now. Please send your details on <a href="https://wa.me/919514524599?text='+encodeURIComponent(msg.replace('TUTOR APPLICATION','Tutor registration: '+d.name+' '+phone))+'">WhatsApp</a>.'; err.style.display='block';
+err.innerHTML='Could not save right now. Please send your details on <a href="https://wa.me/917845915044?text='+encodeURIComponent(msg.replace('TUTOR APPLICATION','Tutor registration: '+d.name+' '+phone))+'">WhatsApp</a>.'; err.style.display='block';
 });
 });
 })();
