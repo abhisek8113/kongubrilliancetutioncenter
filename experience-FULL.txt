@@ -494,8 +494,8 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
   <h2 class="reveal">Human teaching. Intelligent learning.</h2>
   <p class="tag reveal">Better futures — for Classes 1–12, in Coimbatore.</p>
   <div class="ctarow reveal">
-    <a href="https://wa.me/919514524599?text=Hi%2C%20I%27d%20like%20to%20book%20a%20free%20consultation%20at%20Kongu%20Brilliance" target="_blank" rel="noopener" class="btn btn-primary">Book a consultation <svg class="ic"><use href="#i-arrow"/></svg></a>
-    <a href="tel:+919514524599" class="btn btn-ghost"><svg class="ic"><use href="#i-phone"/></svg> Call +91 95145 24599</a>
+    <a href="https://wa.me/917845915044?text=Hi%2C%20I%27d%20like%20to%20book%20a%20free%20consultation%20at%20Kongu%20Brilliance" target="_blank" rel="noopener" class="btn btn-primary">Book a consultation <svg class="ic"><use href="#i-arrow"/></svg></a>
+    <a href="tel:+917845915044" class="btn btn-ghost"><svg class="ic"><use href="#i-phone"/></svg> Call +91 78459 15044</a>
     <button class="btn btn-ai" id="talkK2"><svg class="ic"><use href="#i-spark"/></svg> Talk to Tutor K</button>
   </div>
 </div></section>
@@ -506,7 +506,7 @@ footer{border-top:1px solid var(--line);padding:52px 0 30px}
     <div><div class="brand" style="margin-bottom:14px"><span class="m"><svg viewBox="0 0 24 24"><path d="M6 20V7l6 6 6-6v13"/></svg></span><span class="t">Kongu Brilliance<small>Where Brilliance is Born</small></span></div><p style="color:var(--muted);font-size:.88rem">Home, centre &amp; online tuition for Classes 1–12 · CBSE · ICSE · State · Matric · ISC · IGCSE. Founded 2021.</p></div>
     <div class="fcol"><h4>Learn</h4><a href="#worlds">Offline tuition</a><a href="#worlds">Online tuition</a><a href="#worlds">Home tuition</a><a href="#worlds">Engineering tuition</a></div>
     <div class="fcol"><h4>Explore</h4><a href="/index.html">Home</a><a href="#room">AI Tutor</a><a href="/exam-portal.html">Exam Portal</a><a href="#growth">Student growth</a></div>
-    <div class="fcol"><h4>Visit &amp; contact</h4><p>Nilamukil Complex, Mettupalayam Rd,<br>K. Vadamadurai, Coimbatore – 641017</p><a href="tel:+919514524599">+91 95145 24599</a><a href="tel:+917845915044">+91 78459 15044</a><a href="https://wa.me/919514524599" target="_blank" rel="noopener">WhatsApp</a></div>
+    <div class="fcol"><h4>Visit &amp; contact</h4><p>Nilamukil Complex, Mettupalayam Rd,<br>K. Vadamadurai, Coimbatore – 641017</p><a href="tel:+917845915044">+91 78459 15044</a><a href="tel:+919514524599">+91 95145 24599</a><a href="https://wa.me/917845915044" target="_blank" rel="noopener">WhatsApp</a></div>
   </div>
   <div class="fbot"><span>© <span id="yr"></span> Kongu Brilliance, Coimbatore</span><span>Human teaching · Intelligent learning</span></div>
   <p class="disc">About the demonstrations: the AI Tutor Room, paper evaluation, knowledge graph and growth figures are interactive demonstrations of how AI-assisted learning works. Voice uses your browser's built-in speech engine; free-form answers use the live AI model where available and otherwise fall back to a scripted lesson. Numbers shown are illustrative examples, not real student records, and no audio or personal data is stored on this page. Business details are from kongubrilliance.com; replace testimonials and any headline statistics with verified content before publishing.</p>
@@ -671,7 +671,7 @@ HOW TO TEACH:
 - Adapt: if the student is confused or wrong, re-explain more simply using a concrete real-life analogy, then re-ask. If they answer well, praise briefly and go a little deeper or harder.
 - Keep each turn focused: about 3 to 6 short sentences or a few worked steps. Never dump a whole chapter at once.
 - Use LaTeX for ALL mathematics: inline $...$ and display $$...$$. Never write formulae in words. Mark a final answer with ==...==.
-- Never invent fees, exam results, or statistics. For admissions or fees, tell them to call 95145 24599.
+- Never invent fees, exam results, or statistics. For admissions or fees, tell them to call 78459 15044.
 ALWAYS reply as STRICT JSON only, no extra text, with these keys:
 {"board":"the explanation to show on the whiteboard — use LaTeX and put each step on its own line","speak":"one or two short spoken sentences in plain English, with any numbers or math said in words (no symbols), summarising what you just showed","question":"a single short check-question for the student, or empty string if none","topic":"short current topic name"}`;
 let history=[];
