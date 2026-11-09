@@ -81,9 +81,28 @@
         body:JSON.stringify({_subject:'NEW TUITION LEAD: '+name+' '+phone,_template:'table',_captcha:'false',Name:name,Phone:phone,Details:msg,Time:new Date().toLocaleString('en-IN')})}).catch(function(){});
     }catch(e){}
   }
-  document.addEventListener('submit',function(e){ if(e.target&&e.target.id==='leadForm') saveLead(); },true);
+  /* Google Ads conversion: Website form lead (KB) */
+  var AW='AW-18485311514', AWL='e-wVCPv53K0dEJrwve5E';
+  function awInit(){
+    try{
+      window.dataLayer=window.dataLayer||[];
+      if(!window.gtag){window.gtag=function(){window.dataLayer.push(arguments);};}
+      if(window.__kbAw) return; window.__kbAw=1;
+      var s=document.createElement('script'); s.async=true; s.src='https://www.googletagmanager.com/gtag/js?id='+AW; document.head.appendChild(s);
+      window.gtag('js',new Date()); window.gtag('config',AW);
+    }catch(e){}
+  }
+  function awLead(){
+    try{
+      var k='kb_aw_'+val('phone'); if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1');
+      window.gtag('event','conversion',{send_to:AW+'/'+AWL});
+      window.dataLayer.push({event:'kb_lead_submit'});
+    }catch(e){}
+  }
+  document.addEventListener('submit',function(e){ if(e.target&&e.target.id==='leadForm'){ saveLead(); if(val('phone')) awLead(); } },true);
 
   function init(){
+    awInit();
     addSubject();
     var id=get(); if(!id) return;
     Array.prototype.forEach.call(document.querySelectorAll('form'),function(f){
